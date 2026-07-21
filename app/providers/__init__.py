@@ -9,6 +9,7 @@ from app.providers.base import (
     make_cache_key,
 )
 from app.providers.fake import FakeProvider
+from app.providers.news import RecordedNewsProvider
 
 __all__ = [
     "CacheKey",
@@ -16,6 +17,7 @@ __all__ = [
     "InMemoryTTLCache",
     "Provider",
     "ProviderResultContractError",
+    "RecordedNewsProvider",
     "create_provider_result",
     "fetch_required_providers",
     "fetch_with_policy",

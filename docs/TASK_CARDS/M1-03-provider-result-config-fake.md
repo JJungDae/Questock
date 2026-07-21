@@ -35,6 +35,9 @@ M1-03은 실제 NAVER/OpenDART adapter를 만들지 않는다. 외부 credential
   - M1-02 PASS, 보완 SHA `a727fccbf8175c53d5e62198ba47b1f7486df80f`
   - M1-03 최초 구현 SHA: `2cc5cb4b22209872f70119194ae733536c273639`
   - M1-03 최초 구현 main push 완료: 예, 사용자가 검수 목적으로 push
+  - M1-03 보완 SHA: `f9bf35bde1d7929eb96d9a897c244ad906e1255a`
+  - M1-03 보완 main push 완료: 예
+  - M1-03 상태: 완료
   - `.env.example`에는 `OPENDART_API_KEY`, `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`, `LLM_PROVIDER`, `LLM_API_KEY`, `LLM_MODEL` 이름이 존재한다.
   - provider base protocol, config loader, fake provider, timeout wrapper, cache interface 구현 존재.
 - 미확인 사항:
@@ -47,7 +50,7 @@ M1-03은 실제 NAVER/OpenDART adapter를 만들지 않는다. 외부 credential
 - [x] M1-02 `SecurityResolver` PASS
 - [x] 지원 종목 3개 canonical fixture 존재
 - [x] M1-03 계획 CONDITIONAL PASS
-- [ ] commit/push 별도 승인
+- [x] main push 완료
 
 ## 5. 입력·출력
 - production provider protocol 입력:
@@ -299,8 +302,11 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.config import ProviderConf
 - 구현 기준 commit: `a727fccbf8175c53d5e62198ba47b1f7486df80f`
 - 최초 구현 SHA: `2cc5cb4b22209872f70119194ae733536c273639`
 - 최초 구현 main push 완료: 예, 사용자가 검수 목적으로 push
-- 현재 판정: CONDITIONAL PASS
-- 보완 SHA: 미생성, 사용자 별도 승인 전 commit/push 미수행
+- 보완 SHA: `f9bf35bde1d7929eb96d9a897c244ad906e1255a`
+- 보완 main push 완료: 예
+- M1-03 상태: 완료
+- 독립 검수 판정: PASS
+- 현재 판정: PASS
 - 수정 파일:
   - `.env.example`
   - `app/config.py`
@@ -312,6 +318,7 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.config import ProviderConf
   - `docs/TASK_CARDS/M1-03-provider-result-config-fake.md`
 - 실제 테스트 결과:
   - PYTHONPATH: `.test_deps;.`
+  - 구현 환경 테스트: PASS
   - targeted unit 명령: `python -m pytest tests/unit/test_provider_base.py tests/unit/test_config.py -q`
   - targeted unit exit code: `0`
   - targeted unit 출력: `41 passed in 0.18s`
@@ -335,6 +342,5 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.config import ProviderConf
 - GitHub CI: `NOT_RUN`
 - 독립 검수 환경 재실행: `NOT_RUN`
 - 미실행:
-  - commit/push: NOT_RUN, 별도 승인 전 수행 금지
   - Provider live adapter/retrieval/API/UI/LiteLLM/Gemini: NOT_RUN, 범위 제외
-- 최종 판정: CONDITIONAL PASS, 보완 재검수 전
+- 최종 판정: PASS

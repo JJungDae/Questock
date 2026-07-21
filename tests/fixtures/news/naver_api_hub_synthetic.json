@@ -1,0 +1,28 @@
+{
+  "fixture_type": "synthetic_unit",
+  "body": {
+    "items": [
+      {
+        "title": "<b>삼성전자</b> &amp; SK하이닉스 HBM 공급 점검",
+        "originallink": "https://news.example.com/articles/hbm?ref=unit#section",
+        "link": "https://mirror.example.com/articles/hbm",
+        "description": "SK하이닉스와 삼성전자 관련 synthetic unit fixture입니다.",
+        "pubDate": "Tue, 21 Jul 2026 09:00:00 +0900"
+      },
+      {
+        "title": "현대자동차 전기차 생산 synthetic update",
+        "originallink": "",
+        "link": "https://news.example.com/articles/hyundai-ev",
+        "description": "현대차 관련 synthetic unit fixture입니다.",
+        "pubDate": "Tue, 21 Jul 2026 10:00:00 +0900"
+      },
+      {
+        "title": "SK하이닉스 메모리 투자 synthetic update",
+        "originallink": "https://news.example.com/articles/sk-memory",
+        "link": "https://mirror.example.com/articles/sk-memory",
+        "description": "하이닉스 관련 synthetic unit fixture입니다.",
+        "pubDate": "Tue, 21 Jul 2026 11:00:00 +0900"
+      }
+    ]
+  }
+}
