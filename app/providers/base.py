@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import unicodedata
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from typing import Any, Protocol, TypeVar
@@ -20,6 +20,15 @@ _FAILURE_ERROR_CODES: dict[ProviderStatus, str] = {
     ProviderStatus.TIMEOUT: "attempt_timeout",
     ProviderStatus.PROVIDER_UNAVAILABLE: "provider_unavailable",
     ProviderStatus.PARSE_ERROR: "parse_error",
+}
+_FAILURE_MESSAGES: dict[str, str] = {
+    "invalid_query": "provider rejected the query",
+    "unauthorized": "provider authorization failed",
+    "rate_limited": "provider rate limit reached",
+    "attempt_timeout": "provider attempt timed out",
+    "total_deadline_exceeded": "provider total deadline exceeded",
+    "provider_unavailable": "provider unavailable",
+    "parse_error": "provider response could not be parsed",
 }
 _RETRYABLE_STATUSES = {ProviderStatus.TIMEOUT, ProviderStatus.PROVIDER_UNAVAILABLE}
 
@@ -86,13 +95,8 @@ def _ensure_utc(value: datetime) -> datetime:
     return value.astimezone(UTC)
 
 
-def _sanitize_message(message: str | None, default: str) -> str:
-    if not message:
-        return default
-    sanitized = " ".join(message.split())
-    if len(sanitized) > 160:
-        sanitized = sanitized[:157] + "..."
-    return sanitized
+def _safe_failure_message(error_code: str) -> str:
+    return _FAILURE_MESSAGES[error_code]
 
 
 def create_provider_result(
@@ -152,7 +156,7 @@ def create_provider_result(
         status=status,
         data=None,
         error_code=stable_error_code,
-        message=_sanitize_message(message, stable_error_code),
+        message=_safe_failure_message(stable_error_code),
         fetched_at=fetched_at,
         from_cache=from_cache,
     )
@@ -181,14 +185,14 @@ class InMemoryTTLCache:
         if self._now() - stored_at >= self.ttl_seconds:
             self._items.pop(key, None)
             return None
-        return result.model_copy(update={"from_cache": True})
+        return result.model_copy(deep=True, update={"from_cache": True})
 
     def set(self, key: CacheKey, result: ProviderResult[Any]) -> None:
         if self.ttl_seconds == 0:
             return
         if result.status != ProviderStatus.OK:
             return
-        self._items[key] = (self._now(), result.model_copy(update={"from_cache": False}))
+        self._items[key] = (self._now(), result.model_copy(deep=True, update={"from_cache": False}))
 
 
 def _total_deadline_result() -> ProviderResult[Any]:
@@ -218,13 +222,16 @@ async def _call_once(
             timeout=attempt_timeout_seconds,
         )
     except TimeoutError:
-        message = "provider total deadline exceeded"
-        if timeout_error_code == "attempt_timeout":
-            message = "provider attempt timed out"
         return create_provider_result(
             status=ProviderStatus.TIMEOUT,
             error_code=timeout_error_code,
-            message=message,
+            message=timeout_error_code,
+        )
+    except Exception:
+        return create_provider_result(
+            status=ProviderStatus.PROVIDER_UNAVAILABLE,
+            error_code="provider_unavailable",
+            message="provider_unavailable",
         )
     return create_provider_result(
         status=result.status,
@@ -285,6 +292,10 @@ async def fetch_required_providers(
     cache: InMemoryTTLCache | None = None,
     clock: Callable[[], float] | None = None,
 ) -> dict[str, ProviderResult[Any]]:
+    for provider_key, provider in providers.items():
+        if provider_key != provider.key:
+            raise ValueError("provider mapping key must match provider.key")
+
     async def run_provider(provider_key: str, provider: Provider[Any]) -> tuple[str, ProviderResult[Any]]:
         try:
             result = await fetch_with_policy(

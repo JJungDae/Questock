@@ -33,8 +33,10 @@ M1-03은 실제 NAVER/OpenDART adapter를 만들지 않는다. 외부 credential
 - 현재 동작:
   - M1-01 PASS, 기준 SHA `0358fd88e65b11082369d35cf37c8d3c3a3163ab`
   - M1-02 PASS, 보완 SHA `a727fccbf8175c53d5e62198ba47b1f7486df80f`
+  - M1-03 최초 구현 SHA: `2cc5cb4b22209872f70119194ae733536c273639`
+  - M1-03 최초 구현 main push 완료: 예, 사용자가 검수 목적으로 push
   - `.env.example`에는 `OPENDART_API_KEY`, `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`, `LLM_PROVIDER`, `LLM_API_KEY`, `LLM_MODEL` 이름이 존재한다.
-  - provider base protocol, config loader, fake provider, timeout wrapper, cache interface 구현은 아직 없음.
+  - provider base protocol, config loader, fake provider, timeout wrapper, cache interface 구현 존재.
 - 미확인 사항:
   - 실제 OpenDART/NAVER credential 값
   - live OpenDART/NAVER API 응답
@@ -100,11 +102,13 @@ M1-03은 실제 NAVER/OpenDART adapter를 만들지 않는다. 외부 credential
 - provider는 종목 ambiguity를 다시 판정하지 않는다.
 - provider는 최종 사용자 답변을 생성하지 않는다.
 - raw exception, raw provider 객체, credential 값은 반환·로그·문서 fixture에 남기지 않는다.
+- 실패 상태 message는 caller raw message를 채택하지 않고 프로젝트 소유 고정 문구로 정규화한다.
 - `no_data`는 정상 조회 결과 없음이고, `timeout`, `rate_limited`, `parse_error`, `provider_unavailable`, `unauthorized`, `invalid_query`와 분리한다.
 - `low_relevance`는 retrieval 상태이므로 provider 상태로 사용하지 않는다.
 
 ## 9. Retry·deadline 계약
 - `retry_count=1`은 최초 1회와 재시도 최대 1회, 총 2 attempts를 의미한다.
+- 일반 provider exception은 raw 문자열을 버리고 `provider_unavailable` 결과로 정규화하며 retry loop 안에서 처리한다.
 - retry 대상:
   - `timeout`
   - `provider_unavailable`
@@ -208,10 +212,13 @@ M1-03은 실제 NAVER/OpenDART adapter를 만들지 않는다. 외부 credential
 - deadline:
   - retry 포함 전체 20초 deadline config
   - deadline 부족 시 남은 작업 대기 없음
-  - pending task cancel 확인
+- pending task cancel 확인
+- provider exception 후 retry: `scenario=["raise", "ok"]`, `retry_count=1`이면 총 2 attempts 후 `ok`
+- timeout 후 retry: `scenario=["timeout", "ok"]`, `retry_count=1`이면 총 2 attempts 후 `ok`
 - parallel:
   - requested provider key가 모두 결과 dict에 남음
   - 한 provider timeout이 다른 provider ok 결과를 막지 않음
+  - 병렬 total deadline에서 OK provider 결과를 보존하고 pending provider는 `timeout/total_deadline_exceeded`, cancel count 1
 - cache:
   - TTL 300 기본값
   - TTL 0 cache 비활성화
@@ -220,7 +227,8 @@ M1-03은 실제 NAVER/OpenDART adapter를 만들지 않는다. 외부 credential
   - hit은 원래 fetched_at 유지와 복사본 `from_cache=True`
   - expired는 miss
 - secret:
-  - repr, str, JSON dump, safe summary, exception, log에 secret 실제 값 미노출
+  - repr, str, JSON dump, safe summary, exception, failure result 문자열에 secret 실제 값 미노출
+  - 실제 logging 호출 없음
 - regression:
   - M1-01 core model/status tests
   - M1-02 security resolver tests
@@ -239,7 +247,13 @@ M1-03은 실제 NAVER/OpenDART adapter를 만들지 않는다. 외부 credential
 - [x] 한 provider 실패가 다른 provider 결과를 막지 않음
 - [x] 요청된 모든 provider key가 결과 dict에 남음
 - [x] injectable clock 기반 TTL cache 테스트 통과
-- [x] key 로그·repr·summary·JSON dump 미노출 테스트 통과
+- [x] key repr·str·summary·JSON dump 미노출 테스트 통과, logging 호출 없음
+- [x] 일반 provider exception이 `provider_unavailable`으로 정규화되고 retry loop 안에서 처리됨
+- [x] timeout retry 테스트 통과
+- [x] 병렬 total deadline에서 OK 결과 보존, pending timeout 결과 보존, pending cancel 확인
+- [x] failure result 문자열에 sentinel secret 미노출
+- [x] cache get/set mutable payload deep copy
+- [x] mapping key와 `provider.key` 불일치 fail-fast
 - [x] live API 호출 없이 unit test 통과
 - [x] M1-01/M1-02 회귀 없음
 
@@ -283,7 +297,10 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.config import ProviderConf
 ## 21. 구현 결과 기록
 - 기록 일시: 2026-07-21
 - 구현 기준 commit: `a727fccbf8175c53d5e62198ba47b1f7486df80f`
-- 구현 SHA: 미생성, 사용자 별도 승인 전 commit/push 미수행
+- 최초 구현 SHA: `2cc5cb4b22209872f70119194ae733536c273639`
+- 최초 구현 main push 완료: 예, 사용자가 검수 목적으로 push
+- 현재 판정: CONDITIONAL PASS
+- 보완 SHA: 미생성, 사용자 별도 승인 전 commit/push 미수행
 - 수정 파일:
   - `.env.example`
   - `app/config.py`
@@ -297,13 +314,22 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.config import ProviderConf
   - PYTHONPATH: `.test_deps;.`
   - targeted unit 명령: `python -m pytest tests/unit/test_provider_base.py tests/unit/test_config.py -q`
   - targeted unit exit code: `0`
-  - targeted unit 출력: `34 passed in 0.17s`
+  - targeted unit 출력: `41 passed in 0.18s`
   - regression 명령: `python -m pytest tests/unit/test_core_models.py tests/unit/test_status_contracts.py tests/unit/test_security_resolver.py tests/unit/test_provider_base.py tests/unit/test_config.py -q`
   - regression exit code: `0`
-  - regression 출력: `107 passed in 0.20s`
+  - regression 출력: `114 passed in 0.21s`
   - smoke 명령: `python -c "from app.config import ProviderConfig; from app.providers.fake import FakeProvider; print('ok')"`
   - smoke exit code: `0`
   - smoke 출력: `ok`
+- 보완 범위:
+  - `_call_once`에서 일반 provider exception을 raw 문자열 없이 `provider_unavailable`로 정규화
+  - `scenario=["raise", "ok"]` retry 성공 테스트 추가
+  - `scenario=["timeout", "ok"]` retry 성공 테스트 추가
+  - 병렬 total deadline에서 OK 결과 보존과 pending timeout/cancel 테스트 추가
+  - failure message를 caller raw message가 아닌 고정 safe message로 정규화
+  - cache get/set deep copy 추가
+  - mapping key와 `provider.key` 불일치 fail-fast
+  - 실제 logging 코드가 없으므로 logging 호출 없음으로 문구 정정
 - live OpenDART 검증: `NOT_RUN — 승인 범위 제외`
 - live NAVER 검증: `NOT_RUN — 승인 범위 제외`
 - GitHub CI: `NOT_RUN`
@@ -311,4 +337,4 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.config import ProviderConf
 - 미실행:
   - commit/push: NOT_RUN, 별도 승인 전 수행 금지
   - Provider live adapter/retrieval/API/UI/LiteLLM/Gemini: NOT_RUN, 범위 제외
-- 최종 판정: 사용자 검수 전
+- 최종 판정: CONDITIONAL PASS, 보완 재검수 전
