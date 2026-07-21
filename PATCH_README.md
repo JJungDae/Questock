@@ -1,42 +1,39 @@
-# PATCH_README.md
+# LiteLLM + Gemini 2.5 Flash 무료 등급 문서 패치
 
-## 적용 방법
+프로젝트 루트에서 압축 해제하면 `docs/` 아래 파일이 교체·추가된다.
 
-이 ZIP을 프로젝트 루트에서 압축 해제하면 다음 파일이 교체·추가된다.
+## 교체
 
-```text
-docs/agent_handoff/
-docs/TASK_CARDS/
-```
+- docs/agent_handoff/PROJECT_PLAN_FINAL_PASS.md
+- docs/agent_handoff/FINANCIAL_CAPABILITY_BASELINE.md
+- docs/agent_handoff/RISK_RESPONSE_MATRIX.md
+- docs/agent_handoff/AGENT_WORKFLOW.md
+- docs/TASK_CARDS/B0-M0-01-03-planning.md
 
-기존 파일을 덮어쓰기 전에 Git diff 또는 별도 백업으로 현재 내용을 확인한다.
+## 추가
 
-## 교체 파일
+- docs/agent_handoff/LLM_STACK_DECISION.md
+- docs/agent_handoff/LOCAL_AGENT_LLM_STACK_CHANGE_PROMPT.md
 
-- PROJECT_PLAN_FINAL_PASS.md
-- FINANCIAL_CAPABILITY_BASELINE.md
-- RISK_RESPONSE_MATRIX.md
-- EXTENSION_COMPATIBILITY.md
-- EVALUATION_TAXONOMY_DRAFT.md
-- AGENT_WORKFLOW.md
-- B0-M0-01-03-planning.md
-- M1-01-core-models.md
+## 의도적으로 수정하지 않음
 
-## 추가 파일
+- `.gitignore`
+- `.env.example`
+- M1-01 Task Card
+- app·tests·pyproject.toml
+- credential 값
 
-- STOCK_SCOPE_CHANGE_NOTICE.md
-- LOCAL_AGENT_STOCK_SCOPE_CHANGE_PROMPT.md
+M1-01은 LiteLLM 도입과 독립적인 core 계약이므로 재작업하지 않는다.
 
-README_AGENT_RULES.md와 승인·Git 안전 절차는 변경하지 않는다.
+기본 모델은 `gemini/gemini-2.5-flash` 무료 등급이며, 유료 모델 전환은 MVP 완성 이후 별도 결정한다.
 
 
-## 이번 최종 정합성 수정
+## 검수 후 추가 보완
 
-- RISK_RESPONSE_MATRIX의 R30 요약 행과 상세 행 구조 복구
-- 리포트 schema의 단일 security_id 제거
-- FinancialDocument·Evidence scope별 validation 불변조건 추가
-- 세 종목 각각 뉴스·공시·리포트 golden coverage 충족
-- 공식 P0 범위를 세 종목으로 통일
-- B0 승인 상태와 미확인 목록 충돌 제거
-- A23-M/A23-H 범위 정합성 수정
-- 직접 종목 비교를 현재 기본 큐에서 제외
+- 무료 등급의 데이터 이용 조건과 최소 전송 원칙
+- 리포트 manifest에 `external_llm_processing_allowed` 1개 필드만 추가
+- `usage_basis`는 기존 `usage_note`로 대체
+- redaction pipeline은 P0에서 만들지 않음
+- LLM 작업 ID를 M3-01로 통일
+- LLMStatus·thinking/output/timeout 설정·sanitized live smoke gate
+- LiteLLM dependency 승인·제거·lock file 산출물

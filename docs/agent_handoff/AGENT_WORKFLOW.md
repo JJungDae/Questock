@@ -2,7 +2,7 @@
 
 > 작성일: 2026-07-20  
 > 개정일: 2026-07-21  
-> 개정 사유: P0 지원 종목 확정과 공동 기사 Evidence 귀속 계약 정합성 보완  
+> 개정 사유: P0 지원 종목 확정과 공동 기사 Evidence 귀속 계약 정합성 보완  ; LiteLLM·Gemini LLMClient 결정 문서 연결; M3 LLM 작업을 M3-01에 통합하고 dependency 산출물 명시
 > 프로젝트: 증권 AI 투자 어시스턴트 프로토타입 개발  
 > 목적: 여러 AI 코딩·문서 에이전트를 사용하더라도 프로젝트 범위, 코드 구조, 테스트 기준, Git 이력을 일관되게 유지하고, 사용자가 핵심 흐름을 직접 이해할 수 있도록 표준 작업 절차를 정의한다.  
 > 기준 문서: `EXTENSION_COMPATIBILITY.md`, `RISK_RESPONSE_MATRIX.md`, `FINANCIAL_CAPABILITY_BASELINE.md`, `REFERENCE_SYNTHESIS.md`, `EVALUATION_TAXONOMY_DRAFT.md`
@@ -99,6 +99,7 @@ M4: 배포 환경의 대표 질문 end-to-end
 | 2 | `EXTENSION_COMPATIBILITY.md` | P0·P1·P2·P3·X 기능 범위 |
 | 3 | `RISK_RESPONSE_MATRIX.md` | 위험, fallback, 제거·중단 기준 |
 | 4 | `FINANCIAL_CAPABILITY_BASELINE.md` | 코어 모델·인터페이스·상태 계약 |
+| 4-1 | `LLM_STACK_DECISION.md` | LiteLLM·Gemini 모델·adapter 경계·제외 범위 |
 | 5 | `EVALUATION_TAXONOMY_DRAFT.md` | 테스트 범주와 실패 조건 |
 | 6 | `REFERENCE_SYNTHESIS.md` | 외부 저장소 참고·반면교사 |
 | 7 | `IDEA_BACKLOG.md` | 아직 채택되지 않은 아이디어 |
@@ -801,7 +802,7 @@ hybrid·reranker는 baseline이 안정된 후 별도 실험 Task로 둔다.
 권장 Task:
 
 ```text
-M3-01 answer schema와 안정적인 단일 응답 방식
+M3-01 answer schema, project-owned LLMClient, LiteLLM Gemini adapter와 안정적인 단일 응답
 M3-02 beginner explanation
 M3-03 fact·interpretation·inference
 M3-04 positive·risk·uncertainty cards
@@ -926,6 +927,15 @@ DB migration은 한 branch에서 순차적으로 관리한다.
 - 배포 영향
 - 제거 방법
 - lock file 변화
+
+LiteLLM을 구현하는 M3-01에서는 다음을 필수 산출물로 남긴다.
+
+- `pyproject.toml`과 lock file diff
+- `litellm` exact version과 license 확인
+- 실제 값이 없는 `.env.example`의 `GEMINI_API_KEY`, `LLM_MODEL`, thinking/output/timeout 변수
+- adapter mock과 compatibility fixture
+- sanitized live smoke 또는 `NOT_RUN/BLOCKED` 기록
+- removal path와 이미지 크기·startup 영향
 
 ---
 

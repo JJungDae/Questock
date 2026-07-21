@@ -2,7 +2,7 @@
 
 > 작성일: 2026-07-20  
 > 개정일: 2026-07-21  
-> 개정 사유: P0 지원 종목 확정과 공동 기사 Evidence 귀속 계약 정합성 보완  
+> 개정 사유: P0 지원 종목 확정과 공동 기사 Evidence 귀속 계약 정합성 보완  ; LiteLLM·Gemini 호출 및 환각 통제 위험 추가; 무료 Gemini 데이터 전송 위험 R61 추가
 > 프로젝트: 증권 AI 투자 어시스턴트 프로토타입 개발  
 > 기준 문서: `EXTENSION_COMPATIBILITY.md`, `FINANCIAL_CAPABILITY_BASELINE.md`, `REFERENCE_SYNTHESIS.md`, `EVALUATION_TAXONOMY_DRAFT.md`  
 > 목적: 범위가 큰 MVP를 단계별로 구현하면서 일정 초과, 데이터 실패, 검색·생성 오류, UI 복잡도, 안전성 문제를 조기에 감지하고 **기능 축소 순서와 대체 경로를 미리 고정**한다.
@@ -158,6 +158,7 @@ Evidence Decision
 | R30 | 숫자·단위 또는 숫자의 귀속 회사가 변형됨 | H | H | 10 |
 | R38 | 직접 투자 조언·목표가 출력 | M | H | 11 |
 | R53 | golden set을 늦게 작성해 결함을 마지막에 발견 | H | H | 12 |
+| R61 | 무료 Gemini에 민감정보·외부 처리 미허용 자료 전송 | M | H | 13 |
 
 ---
 
@@ -265,6 +266,9 @@ Evidence Decision
 | R56 | Langfuse 도입이 자체 목적이 되어 구현 지연 | M4 | M/M | tracing 설정에 시간 과다 | 관측 최소 범위: latency·provider·evidence·LLM call | 단순 구조 로그로 대체 | Langfuse P1로 이동 가능 | 요청별 trace 또는 JSON log |
 | R57 | 로그에 원문·API key·사용자 대화가 과도하게 저장 | M4/A1 | M/H | 민감 정보 평문 trace | sanitizer, 최소 로그, secret 제거 | 해당 로그 삭제·관측 중단 | 사용자 기능 전에는 익명 최소 로그 | logging privacy test |
 | R58 | README·보고서에 재현하지 않은 성능 수치를 기재 | M4 | M/H | 외부 저장소 수치 인용, 테스트 조건 없음 | 자체 측정값만 사용, 조건·표본 명시 | 수치 삭제 또는 “미재현” 표시 | 정성 평가와 test 통과율만 제시 | raw result·실행 명령 보존 |
+| R59 | LiteLLM과 Gemini API의 요청·응답 옵션이 버전 차이로 불일치 | M3~M4 | M/H | structured output 인자 거부, 예외 mapping 변화, 응답 field 누락 | LiteLLM 버전 pin, adapter 단위 mock, 소수 live smoke, raw 객체 격리 | structured output 기능을 끄고 JSON-only + Pydantic parse로 축소 | LiteLLM adapter만 교체하고 composer 계약 유지 | compatibility unit·live smoke |
+| R60 | Gemini가 schema에 맞지만 Evidence 밖 사실·수치·URL을 생성 | M3~M4 | H/H | JSON parse는 성공하지만 source ID·숫자·회사 귀속 불일치 | Evidence ID 제한, 종목·수치·citation validator, search grounding 금지 | 위반 문장 제거 또는 전체 `blocked`·고정 보류 | 핵심·위험·근거 template로 축소 | unsupported-claim·numeric·citation Critical fixture |
+| R61 | 무료 Gemini API에 기밀·개인정보 또는 외부 처리 미허용 리포트가 전송됨 | M0·M1·M3 | M/H | prompt에 계좌·보유량·secret·전체 세션·미허용 리포트 원문 포함 | 최소 snippet 전송, UI 주의문, secret·path sanitizer, manifest `external_llm_processing_allowed` gate | 호출 차단, 해당 자료 제거, fixed template·비LLM 경로 사용 | 허용 여부 불명확 자료 전체를 LLM 경로에서 제외 | prompt sanitizer·manifest gate·privacy fixture |
 
 ---
 
@@ -351,12 +355,20 @@ Evidence Decision
 - [ ] 상충 자료 제한형과 여러 자료 연결 제한형
 - [ ] A15-M 승격 시 상승·하락 배경의 선행·장중·후속 구분
 - [ ] A23-M 단일 안전 구조화 답변의 필수 section과 금지 표현 테스트
+- [ ] LiteLLM→Gemini structured output compatibility와 parse failure 처리
+- [ ] schema-valid 응답도 Evidence·수치·citation validator를 통과해야 함
+
+- [ ] 외부 처리 허용 Evidence만 Gemini에 전송
+- [ ] personal·secret·local path·전체 세션 전송 차단
+- [ ] sanitized live smoke와 fixture 결과를 구분
+- [ ] 무료 quota 실패 시 자동 billing·유료 전환 없음
 - [ ] A17-M이 활성 P0이면 문서 근거·예측 금지 테스트
 
 ### M3 실패 대응
 
 - 관점 모드 비활성화
 - 카드 수를 핵심·위험·근거로 축소
+- LiteLLM structured output이 불안정하면 JSON-only + Pydantic parse로 축소
 - LLM 자유형 출력 대신 고정 구조 사용
 - 상승·하락 원인 기능을 숨기고 최근 이슈·공시·리포트 요약을 우선 안정화
 

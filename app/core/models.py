@@ -13,7 +13,6 @@ T = TypeVar("T")
 EvidenceScope = Literal["company_specific", "industry_common", "multi_company"]
 
 _WINDOWS_ABSOLUTE_PATH = re.compile(r"^[A-Za-z]:[\\/]")
-_POSIX_LOCAL_PATH = re.compile(r"^/(Users|home|var|tmp|mnt|c)/")
 
 
 def _has_duplicates(values: list[str]) -> bool:
@@ -26,7 +25,7 @@ def _looks_like_local_absolute_path(value: str) -> bool:
         value.startswith("file://")
         or value.startswith("\\\\")
         or bool(_WINDOWS_ABSOLUTE_PATH.match(value))
-        or bool(_POSIX_LOCAL_PATH.match(normalized))
+        or normalized.startswith("/")
     )
 
 
@@ -243,4 +242,3 @@ def ensure_evidence_matches_document(evidence: Evidence, document: FinancialDocu
     invalid_ids = evidence_security_ids - document.security_ids
     if invalid_ids:
         raise ValueError("evidence security IDs must be present in the linked document")
-

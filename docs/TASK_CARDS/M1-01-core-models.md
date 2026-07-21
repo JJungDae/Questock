@@ -165,3 +165,23 @@ FastAPI/RAG 구현 전에 금융 RAG의 최소 데이터 계약과 상태 계층
   - targeted unit test와 import smoke 실행
   - live API 호출은 credential이 없으면 실행하지 않음
 - Git 작업 승인 포함 여부: 기본 `아니오`
+
+## 13. CONDITIONAL PASS 보완 실행 결과
+- 기록 일시: 2026-07-21
+- 완료 승인 상태: 미승인, CONDITIONAL PASS 보완 진행
+- 보완 범위:
+  - 모든 core model JSON serialization round-trip 테스트 추가
+  - SK하이닉스 전용 company_specific 정상 fixture 추가
+  - Document primary/mentioned 내부 중복 실패 테스트 추가
+  - Evidence subject/mentioned 내부 중복 실패 테스트 추가
+  - `/root`, `/opt`, `/workspace` 등을 포함한 POSIX 절대경로 차단 테스트 추가
+  - POSIX 절대경로 차단 로직을 모든 `/...` absolute path로 강화
+- 실행 명령:
+  - `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_core_models.py tests/unit/test_status_contracts.py -q`
+  - `$env:PYTHONPATH = ".deps;."; python -c "from app.core.models import SecurityIdentifier, Evidence; print('ok')"`
+- 실제 결과:
+  - unit: PASS, `32 passed in 0.10s`
+  - import smoke: PASS, `ok`
+- 미실행:
+  - live OpenDART/NAVER/LLM 검증: NOT_RUN, credential 없음
+  - commit/push: NOT_RUN, 별도 확인 전 수행 금지
