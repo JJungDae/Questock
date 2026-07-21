@@ -99,6 +99,8 @@ class _SecurityRecord(QuestockModel):
         expected = f"{self.market.upper()}:{self.ticker}"
         if self.security_id != expected:
             raise FixtureValidationError("security_id must match market:ticker")
+        if self.verification_status == "verified" and not (self.corp_code and self.corp_code.strip()):
+            raise FixtureValidationError("verified security requires corp_code")
         normalized_aliases = [_normalize_lookup(alias) for alias in self.aliases]
         if any(not alias for alias in normalized_aliases):
             raise FixtureValidationError("aliases must not contain empty values")

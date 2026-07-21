@@ -195,6 +195,16 @@ def test_verified_corp_codes_are_returned():
     assert result.security.corp_code == "00126380"
 
 
+@pytest.mark.parametrize("corp_code", [None, "", "   "])
+def test_fixture_rejects_verified_status_without_corp_code(corp_code):
+    fixture = load_fixture()
+    fixture["securities"][0]["verification_status"] = "verified"
+    fixture["securities"][0]["corp_code"] = corp_code
+
+    with pytest.raises(FixtureValidationError):
+        SecurityResolver(fixture_data=fixture)
+
+
 def test_fixture_rejects_duplicate_security_id():
     fixture = load_fixture()
     fixture["securities"].append(copy.deepcopy(fixture["securities"][0]))
