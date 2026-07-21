@@ -168,7 +168,9 @@ FastAPI/RAG 구현 전에 금융 RAG의 최소 데이터 계약과 상태 계층
 
 ## 13. CONDITIONAL PASS 보완 실행 결과
 - 기록 일시: 2026-07-21
-- 완료 승인 상태: 미승인, CONDITIONAL PASS 보완 진행
+- 완료 승인 상태: PASS
+- 완료 커밋: `0358fd88e65b11082369d35cf37c8d3c3a3163ab`
+- main push 완료: 예
 - 보완 범위:
   - 모든 core model JSON serialization round-trip 테스트 추가
   - SK하이닉스 전용 company_specific 정상 fixture 추가
@@ -184,4 +186,9 @@ FastAPI/RAG 구현 전에 금융 RAG의 최소 데이터 계약과 상태 계층
   - import smoke: PASS, `ok`
 - 미실행:
   - live OpenDART/NAVER/LLM 검증: NOT_RUN, credential 없음
-  - commit/push: NOT_RUN, 별도 확인 전 수행 금지
+  - M1-02 구현: NOT_RUN, 별도 승인 전 수행 금지
+
+## 14. 최종 확인
+- 사용자 확인: 2026-07-21, "M1-01 보완 결과를 확인했고 PASS로 승인합니다."
+- 기준 커밋: `0358fd88e65b11082369d35cf37c8d3c3a3163ab`
+- Git 상태: main push 완료

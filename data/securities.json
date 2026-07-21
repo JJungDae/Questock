@@ -1,0 +1,82 @@
+{
+  "securities": [
+    {
+      "security_id": "KRX:005930",
+      "market": "KRX",
+      "ticker": "005930",
+      "security_name": "삼성전자",
+      "security_type": "common_stock",
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "verification_status": "candidate",
+      "verified_at": null,
+      "aliases": [
+        "삼전",
+        "Samsung Electronics"
+      ]
+    },
+    {
+      "security_id": "KRX:000660",
+      "market": "KRX",
+      "ticker": "000660",
+      "security_name": "SK하이닉스",
+      "security_type": "common_stock",
+      "corp_code": "00164779",
+      "corp_name": "에스케이하이닉스",
+      "verification_status": "candidate",
+      "verified_at": null,
+      "aliases": [
+        "하이닉스",
+        "SK  하이닉스",
+        "SK hynix"
+      ]
+    },
+    {
+      "security_id": "KRX:005380",
+      "market": "KRX",
+      "ticker": "005380",
+      "security_name": "현대자동차",
+      "security_type": "common_stock",
+      "corp_code": "00164742",
+      "corp_name": "현대자동차",
+      "verification_status": "candidate",
+      "verified_at": null,
+      "aliases": [
+        "현대차"
+      ]
+    }
+  ],
+  "ambiguous_terms": [
+    {
+      "term": "삼성",
+      "candidate_security_ids": [
+        "KRX:005930"
+      ],
+      "message": "지원 종목 중 삼성전자를 의미하는지 확인이 필요합니다."
+    },
+    {
+      "term": "SK",
+      "candidate_security_ids": [
+        "KRX:000660"
+      ],
+      "message": "지원 종목 중 SK하이닉스를 의미하는지 확인이 필요합니다."
+    },
+    {
+      "term": "현대",
+      "candidate_security_ids": [
+        "KRX:005380"
+      ],
+      "message": "지원 종목 중 현대자동차를 의미하는지 확인이 필요합니다."
+    }
+  ],
+  "unsupported": [
+    {
+      "term": "삼성전자우",
+      "reason": "preferred_stock"
+    },
+    {
+      "term": "005935",
+      "reason": "preferred_stock"
+    }
+  ]
+}
