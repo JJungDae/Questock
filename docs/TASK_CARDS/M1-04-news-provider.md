@@ -50,7 +50,7 @@ M1-04에서는 `RecordedNewsProvider`만 구현한다. NAVER API HUB News 형식
 - [x] M1-02 `SecurityResolver` PASS
 - [x] M1-03 provider base/config/fake PASS
 - [x] 지원 종목 3개 scope 확정
-- [ ] M1-04 구현 승인
+- [x] M1-04 구현 승인
 - [ ] live NAVER 호출 별도 승인, M1-04에서는 사용하지 않음
 - [ ] commit/push 별도 승인
 
@@ -98,8 +98,10 @@ NewsProvider는 provider 호출 전 종목을 다시 추론하지 않는다. 입
 - `primary_security_ids`:
   - title에 명시된 지원 종목
   - title에 두 종목 이상이 나오면 해당 종목들을 모두 primary
+  - title에 지원 종목이 없고 description에 질문 종목이 있으면 질문 종목
 - `mentioned_security_ids`:
-  - description에만 나온 지원 종목
+  - description에만 나온 지원 종목 중 질문 종목 primary와 중복되지 않는 종목
+  - description에 질문 종목과 다른 지원 종목이 함께 나오면 질문 종목은 primary, 다른 지원 종목은 mentioned
   - primary와 중복 금지
 - `title`: HTML tag 제거 후 비어 있지 않아야 함
 - `description`: 선택 필드이며 HTML tag 제거 후 text에 결합
@@ -109,6 +111,9 @@ NewsProvider는 provider 호출 전 종목을 다시 추론하지 않는다. 입
   - valid `link`
   - 둘 다 없으면 `None`
   - URL fragment만 제거하고 path/query는 보존
+  - scheme과 hostname은 소문자로 정규화
+  - HTTP 80, HTTPS 443 기본 port는 제거
+  - username/password가 포함된 URL과 invalid port는 거부
 - `text`: title + snippet 기반 제한 text
 - `locator`: 비어 있지 않은 dict
   - 예: `provider`, `source_url`, `published_at`, `raw_index`, `query`
@@ -134,8 +139,12 @@ NewsProvider는 provider 호출 전 종목을 다시 추론하지 않는다. 입
 모든 결과는 M1-03 `create_provider_result` 경계를 통과한다.
 
 Parse 정책:
+- raw response가 dict가 아니면 `parse_error`.
 - top-level `body.items` schema 오류는 `parse_error`.
 - `items`가 원래 비어 있으면 `no_data`.
+- 개별 item이 dict가 아니면 malformed item으로 제외.
+- title은 실제 `str`일 때만 허용하며 `None`이나 숫자를 `str()`로 변환하지 않는다.
+- description이 없거나 `None`/non-string이면 빈 문자열로 처리한다.
 - title/pubDate가 잘못된 개별 item은 제외.
 - 모든 item이 malformed이면 `parse_error`.
 - 유효 item이 관련성 또는 date filter에서 모두 제외되면 `no_data`.
@@ -146,6 +155,8 @@ Parse 정책:
   - 없으면 normalized title + published_at
 - 같은 기사 중복은 1개만 유지한다.
 - 중복 시 API 순서상 첫 항목 유지.
+- title에 지원 종목이 없고 description에 질문 종목이 있으면 질문 종목을 primary로 둔다.
+- description에 질문 종목과 다른 지원 종목이 함께 있으면 질문 종목은 primary, 다른 종목은 mentioned로 둔다.
 - title에 질문 종목이 없고 description에만 질문 종목이 나오며 title 중심 종목이 다른 지원 종목이면 wrong-company로 제외한다.
 - ambiguous group name만 있는 기사는 지원 종목 mention으로 보지 않고 제외한다.
 - 삼성전자·SK하이닉스 공동 제목에서는 둘 다 primary로 둔다.
@@ -266,6 +277,16 @@ Parse 정책:
 - [x] synthetic 종목별 recorded fixture 존재
 - [ ] 실제 coverage 종목별 10건 이상 검증
 - [x] wrong-company fixture 통과
+- [x] description-only 질문 종목 primary attribution 테스트 통과
+- [x] description-only 질문 종목 primary 및 다른 지원 종목 mentioned 테스트 통과
+- [x] `security_type` 포함 canonical security validation 테스트 통과
+- [x] unsupported ticker 및 preferred_stock 입력 테스트 통과
+- [x] raw response non-dict 및 non-dict item parser 경계 테스트 통과
+- [x] title non-string 제외 및 description non-string 빈 문자열 처리 테스트 통과
+- [x] URL scheme/host 소문자, default port 제거, userinfo/invalid port 거부 테스트 통과
+- [x] host 대소문자와 default port 차이 URL dedupe 테스트 통과
+- [x] URL 없는 normalized title + published_at dedupe 테스트 통과
+- [x] shared normalizer provider_key/ingestion_version 주입 테스트 통과
 - [x] 공동 제목 두 primary 테스트 통과
 - [x] ambiguous 그룹명만 있는 기사 제외 테스트 통과
 - [x] 동일 fixture 재실행 동일 결과 테스트 통과
@@ -312,7 +333,10 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.providers.news import Reco
 ## 18. 구현 결과 기록
 - 기록 일시: 2026-07-21
 - 구현 기준 commit: `f9bf35bde1d7929eb96d9a897c244ad906e1255a`
-- 구현 SHA: 미생성, 사용자 별도 승인 전 commit/push 미수행
+- 최초 구현 SHA: `751274529f0948e489655694ab64c0d642f57078`
+- 최초 구현 main push: 완료, 사용자 검수 목적
+- 사용자 검수 판정: `CONDITIONAL PASS`
+- 보완 SHA: 미생성, 사용자 별도 승인 전 commit/push 미수행
 - 구현 범위:
   - `RecordedNewsProvider` only
   - NAVER API HUB News 형식 recorded fixture
@@ -346,4 +370,40 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.providers.news import Reco
 - live NAVER 검증: `NOT_RUN — 승인 범위 제외`
 - GitHub CI: `NOT_RUN`
 - 독립 검수 환경 재실행: `NOT_RUN`
-- 최종 판정: 사용자 검수 전
+- 독립 검수 판정: `CONDITIONAL PASS`
+- M1-04 상태: 보완 구현 완료, 사용자 재검수 전
+
+## 19. CONDITIONAL PASS 보완 결과 기록
+- 기록 일시: 2026-07-22
+- 최초 구현 SHA: `751274529f0948e489655694ab64c0d642f57078`
+- 최초 구현 main push: 완료, 사용자 검수 목적
+- 사용자 검수 판정: `CONDITIONAL PASS`
+- 보완 SHA: 미생성, 사용자 별도 승인 전 commit/push 미수행
+- 보완 범위:
+  - description-only 질문 종목 attribution을 primary로 수정
+  - description에 질문 종목과 다른 지원 종목이 함께 있을 때 질문 종목 primary, 다른 종목 mentioned 처리
+  - `NewsSecurityRecord.security_type` 추가 및 `data/securities.json` 기반 canonical security validation 강화
+  - P0 `common_stock`만 허용
+  - raw response non-dict, non-dict item, title non-string, description non-string parser 경계 강화
+  - URL scheme/host 소문자 정규화, default port 제거, userinfo/invalid port 거부
+  - shared normalizer가 `provider_key`와 `ingestion_version`을 인자로 반영하는 확장성 계약 테스트
+  - URL 없는 normalized title + UTC `published_at` dedupe 테스트
+- 구현 환경 테스트:
+  - PYTHONPATH: `.test_deps;.`
+  - targeted unit 명령: `python -m pytest tests/unit/test_news_provider.py -q`
+  - targeted unit exit code: `0`
+  - targeted unit 출력: `37 passed in 0.17s`
+  - regression 명령: `python -m pytest tests/unit/test_core_models.py tests/unit/test_status_contracts.py tests/unit/test_security_resolver.py tests/unit/test_provider_base.py tests/unit/test_config.py tests/unit/test_news_provider.py -q`
+  - regression exit code: `0`
+  - regression 출력: `151 passed in 0.27s`
+  - smoke 명령: `python -c "from app.providers.news import RecordedNewsProvider, normalize_naver_api_hub_news_response; print('ok')"`
+  - smoke exit code: `0`
+  - smoke 출력: `ok`
+- live NAVER 검증: `NOT_RUN — 승인 범위 제외`
+- legacy NAVER Developers endpoint: `NOT_RUN — 승인 범위 제외`
+- live NAVER API HUB adapter: `NOT_IMPLEMENTED — 승인 범위 제외`
+- live adapter 상태: `PLANNED/NOT_IMPLEMENTED`
+- 실제 뉴스 coverage 종목별 10건 이상: `NOT_RUN — 승인 범위 제외`
+- GitHub CI: `NOT_RUN`
+- 독립 검수 환경 재실행: `NOT_RUN`
+- M1-05 구현: `NOT_RUN — M1-04 보완 재검수 PASS 전 시작 금지`

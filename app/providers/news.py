@@ -38,6 +38,7 @@ class NewsSecurityRecord:
     market: str
     ticker: str
     security_name: str
+    security_type: str
     aliases: tuple[str, ...]
 
 
@@ -54,6 +55,8 @@ class NewsMentionLexicon:
             and record.market == security.market
             and record.ticker == security.ticker
             and record.security_name == security.security_name
+            and record.security_type == security.security_type
+            and record.security_type == "common_stock"
         )
 
     def canonical_name(self, security_id: str) -> str:
@@ -90,6 +93,7 @@ def load_news_mention_lexicon(securities_path: str | Path = DEFAULT_SECURITIES_P
             market=item["market"],
             ticker=item["ticker"],
             security_name=item["security_name"],
+            security_type=item["security_type"],
             aliases=tuple(item.get("aliases", [])),
         )
         records_by_id[security_id] = record
@@ -114,7 +118,7 @@ def build_news_query(security: SecurityIdentifier, query: str | None, lexicon: N
 
 
 def normalize_naver_api_hub_news_response(
-    raw_response: dict[str, Any],
+    raw_response: Any,
     *,
     security: SecurityIdentifier,
     query: str,
@@ -229,20 +233,25 @@ class RecordedNewsProvider:
         return create_provider_result(status=ProviderStatus.OK, data=documents)
 
 
-def _extract_items(raw_response: dict[str, Any]) -> list[dict[str, Any]]:
+def _extract_items(raw_response: Any) -> list[Any]:
+    if not isinstance(raw_response, dict):
+        raise NewsParseError("news response must be an object")
     body = raw_response.get("body")
     if not isinstance(body, dict):
         raise NewsParseError("news response body must be an object")
     items = body.get("items")
     if not isinstance(items, list):
         raise NewsParseError("news response body.items must be a list")
-    if not all(isinstance(item, dict) for item in items):
-        raise NewsParseError("news response items must be objects")
     return items
 
 
-def _parse_item(raw_item: dict[str, Any], raw_index: int) -> ParsedNewsItem | None:
-    title = _clean_text(str(raw_item.get("title", "")))
+def _parse_item(raw_item: Any, raw_index: int) -> ParsedNewsItem | None:
+    if not isinstance(raw_item, dict):
+        return None
+    raw_title = raw_item.get("title")
+    if not isinstance(raw_title, str):
+        return None
+    title = _clean_text(raw_title)
     if not title:
         return None
     pub_date = raw_item.get("pubDate")
@@ -251,7 +260,8 @@ def _parse_item(raw_item: dict[str, Any], raw_index: int) -> ParsedNewsItem | No
     published_at = _parse_pub_date(pub_date)
     if published_at is None:
         return None
-    description = _clean_text(str(raw_item.get("description", "")))
+    raw_description = raw_item.get("description")
+    description = _clean_text(raw_description) if isinstance(raw_description, str) else ""
     source_url = _select_source_url(raw_item.get("originallink"), raw_item.get("link"))
     return ParsedNewsItem(
         title=title,
@@ -285,10 +295,26 @@ def _select_source_url(originallink: Any, link: Any) -> str | None:
 def _canonical_url(value: Any) -> str | None:
     if not isinstance(value, str) or not value.strip():
         return None
-    parts = urlsplit(value.strip())
-    if parts.scheme not in {"http", "https"} or not parts.netloc:
+    try:
+        parts = urlsplit(value.strip())
+    except ValueError:
         return None
-    return urlunsplit((parts.scheme, parts.netloc, parts.path, parts.query, ""))
+    scheme = parts.scheme.lower()
+    if scheme not in {"http", "https"} or not parts.netloc:
+        return None
+    if parts.username is not None or parts.password is not None:
+        return None
+    hostname = parts.hostname
+    if hostname is None:
+        return None
+    try:
+        port = parts.port
+    except ValueError:
+        return None
+    normalized_host = hostname.lower()
+    default_port = (scheme == "http" and port == 80) or (scheme == "https" and port == 443)
+    netloc = normalized_host if port is None or default_port else f"{normalized_host}:{port}"
+    return urlunsplit((scheme, netloc, parts.path, parts.query, ""))
 
 
 def _document_id(item: ParsedNewsItem) -> str:
@@ -317,8 +343,14 @@ def _attribute_item(
     if query_security_id not in title_ids and query_security_id not in description_ids:
         return None
 
-    primary_ids = sorted(title_ids)
-    mentioned_ids = sorted(description_ids - title_ids)
+    if query_security_id in title_ids:
+        primary_id_set = title_ids
+        mentioned_id_set = description_ids - primary_id_set
+    else:
+        primary_id_set = {query_security_id}
+        mentioned_id_set = description_ids - primary_id_set
+    primary_ids = sorted(primary_id_set)
+    mentioned_ids = sorted(mentioned_id_set)
     if not primary_ids and not mentioned_ids:
         return None
     return primary_ids, mentioned_ids

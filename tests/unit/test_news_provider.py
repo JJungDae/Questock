@@ -13,6 +13,7 @@ from app.providers.news import (
     RecordedNewsProvider,
     build_news_query,
     load_news_mention_lexicon,
+    normalize_naver_api_hub_news_response,
 )
 
 FIXTURE_PATH = Path("tests/fixtures/news/naver_api_hub_synthetic.json")
@@ -114,6 +115,40 @@ def test_mismatched_security_identifier_is_invalid_query():
     assert result.error_code == "invalid_query"
 
 
+def test_unsupported_ticker_is_invalid_query():
+    provider = RecordedNewsProvider(recorded_response=response_with([]))
+    unsupported = SecurityIdentifier(
+        market="KRX",
+        ticker="123456",
+        security_name=security().security_name,
+        security_type="common_stock",
+        corp_code=None,
+        corp_name=security().security_name,
+    )
+
+    result = run(provider.fetch(unsupported))
+
+    assert result.status == ProviderStatus.INVALID_QUERY
+    assert result.error_code == "invalid_query"
+
+
+def test_preferred_stock_identifier_is_invalid_query():
+    provider = RecordedNewsProvider(recorded_response=response_with([]))
+    preferred_stock = SecurityIdentifier(
+        market="KRX",
+        ticker="005930",
+        security_name=security().security_name,
+        security_type="preferred_stock",
+        corp_code=None,
+        corp_name=security().security_name,
+    )
+
+    result = run(provider.fetch(preferred_stock))
+
+    assert result.status == ProviderStatus.INVALID_QUERY
+    assert result.error_code == "invalid_query"
+
+
 def test_document_id_is_deterministic_and_url_fragment_is_removed():
     recorded = response_with(
         [
@@ -176,6 +211,51 @@ def test_originallink_priority_and_link_fallback():
     assert docs[1].source_url == "https://link.example.com/b?x=1"
 
 
+def test_url_canonicalization_normalizes_case_ports_and_rejects_unsafe_urls():
+    samsung = security().security_name
+    recorded = response_with(
+        [
+            item(
+                f"{samsung} canonical URL",
+                originallink="HTTPS://News.Example.COM:443/Path?A=1#Frag",
+            ),
+            item(
+                f"{samsung} invalid original userinfo",
+                originallink="https://user:pass@news.example.com/private",
+                link="https://fallback.example.com/safe#frag",
+            ),
+            item(
+                f"{samsung} invalid port",
+                originallink="https://news.example.com:bad/path",
+                link="",
+            ),
+        ]
+    )
+    provider = RecordedNewsProvider(recorded_response=recorded)
+
+    docs = fetch_docs(provider)
+
+    assert docs[0].source_url == "https://news.example.com/Path?A=1"
+    assert docs[1].source_url == "https://fallback.example.com/safe"
+    assert docs[2].source_url is None
+
+
+def test_host_case_and_default_port_dedupe_to_first_api_item():
+    samsung = security().security_name
+    recorded = response_with(
+        [
+            item(f"{samsung} first URL", originallink="https://NEWS.example.com:443/a#one"),
+            item(f"{samsung} second URL", originallink="https://news.example.com/a#two"),
+        ]
+    )
+    provider = RecordedNewsProvider(recorded_response=recorded)
+
+    docs = fetch_docs(provider)
+
+    assert len(docs) == 1
+    assert docs[0].title == f"{samsung} first URL"
+
+
 def test_html_tag_entity_and_whitespace_cleanup():
     recorded = response_with(
         [
@@ -198,7 +278,9 @@ def test_html_tag_entity_and_whitespace_cleanup():
 def test_malformed_items_are_excluded_but_valid_items_remain_ok():
     recorded = response_with(
         [
+            "not-an-item",
             item("", pub_date="Tue, 21 Jul 2026 09:00:00 +0900"),
+            item(123, pub_date="Tue, 21 Jul 2026 09:10:00 +0900"),
             item("삼성전자 malformed date", pub_date="not-a-date"),
             item("삼성전자 valid synthetic", pub_date="Tue, 21 Jul 2026 10:00:00 +0900"),
         ]
@@ -211,9 +293,45 @@ def test_malformed_items_are_excluded_but_valid_items_remain_ok():
     assert docs[0].title == "삼성전자 valid synthetic"
 
 
+def test_missing_or_non_string_description_is_empty_text_suffix():
+    samsung = security().security_name
+    recorded = response_with(
+        [
+            {
+                "title": f"{samsung} no description",
+                "pubDate": "Tue, 21 Jul 2026 10:00:00 +0900",
+                "originallink": "https://desc.example.com/a",
+            },
+            item(
+                f"{samsung} none description",
+                description=None,
+                originallink="https://desc.example.com/b",
+            ),
+            item(
+                f"{samsung} numeric description",
+                description=123,
+                originallink="https://desc.example.com/c",
+            ),
+        ]
+    )
+    provider = RecordedNewsProvider(recorded_response=recorded)
+
+    docs = fetch_docs(provider)
+
+    assert [doc.text for doc in docs] == [
+        f"{samsung} no description",
+        f"{samsung} none description",
+        f"{samsung} numeric description",
+    ]
+
+
 @pytest.mark.parametrize(
     "recorded",
     [
+        ["not-dict"],
+        {"body": {"items": ["not-dict"]}},
+        {"body": {"items": [item(None)]}},
+        {"body": {"items": [item(123)]}},
         {"body": {"items": [item("", pub_date="bad")]}},
         {"body": {"items": "not-list"}},
         {"body": {}},
@@ -273,14 +391,33 @@ def test_joint_title_makes_both_supported_companies_primary():
     assert doc.mentioned_security_ids == []
 
 
-def test_description_only_mentions_are_mentioned_not_primary():
+def test_description_only_query_security_is_primary():
     recorded = response_with([item("반도체 synthetic 업황", description="삼성전자 관련 설명")])
     provider = RecordedNewsProvider(recorded_response=recorded)
 
     doc = fetch_docs(provider)[0]
 
-    assert doc.primary_security_ids == []
-    assert doc.mentioned_security_ids == [SAMSUNG]
+    assert doc.primary_security_ids == [SAMSUNG]
+    assert doc.mentioned_security_ids == []
+
+
+def test_description_only_query_security_is_primary_and_other_description_mentions_are_mentioned():
+    samsung = security().security_name
+    sk_hynix = sk_hynix_security().security_name
+    recorded = response_with(
+        [
+            item(
+                "market synthetic update",
+                description=f"{samsung} and {sk_hynix} are both in the body",
+            )
+        ]
+    )
+    provider = RecordedNewsProvider(recorded_response=recorded)
+
+    doc = fetch_docs(provider)[0]
+
+    assert doc.primary_security_ids == [SAMSUNG]
+    assert doc.mentioned_security_ids == [SK_HYNIX]
 
 
 def test_wrong_company_title_is_excluded_when_query_security_only_in_description():
@@ -314,6 +451,49 @@ def test_deduplicates_by_canonical_url_and_keeps_first_api_item():
 
     assert len(docs) == 1
     assert docs[0].title == "삼성전자 first duplicate"
+
+def test_deduplicates_without_url_by_normalized_title_and_published_at():
+    samsung = security().security_name
+    recorded = response_with(
+        [
+            item(
+                f"<b>{samsung}</b> no URL duplicate",
+                originallink="",
+                link="",
+            ),
+            item(
+                f"{samsung} no URL duplicate",
+                originallink="",
+                link="",
+            ),
+        ]
+    )
+    provider = RecordedNewsProvider(recorded_response=recorded)
+
+    docs = fetch_docs(provider)
+
+    assert len(docs) == 1
+    assert docs[0].title == f"{samsung} no URL duplicate"
+
+
+def test_shared_normalizer_uses_injected_provider_key_and_ingestion_version():
+    samsung = security().security_name
+    lexicon = load_news_mention_lexicon()
+
+    docs = normalize_naver_api_hub_news_response(
+        response_with([item(f"{samsung} live-compatible synthetic")]),
+        security=security(),
+        query=samsung,
+        date_range=None,
+        provider_key="naver_api_hub_news",
+        ingestion_version="news-live-v1",
+        lexicon=lexicon,
+    )
+
+    assert len(docs) == 1
+    assert docs[0].provider == "naver_api_hub_news"
+    assert docs[0].ingestion_version == "news-live-v1"
+    assert docs[0].locator["provider"] == "naver_api_hub_news"
 
 
 @pytest.mark.parametrize(
