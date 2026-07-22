@@ -23,8 +23,24 @@ _MANIFEST_ID_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 _SEGMENT_ID_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 _SOURCE_ASSET_ID_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_RFC3339_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(Z|[+-]\d{2}:\d{2})$")
 _WINDOWS_ABSOLUTE_PATH_RE = re.compile(r"^[A-Za-z]:[\\/]")
-_SECRET_QUERY_KEYS = {"api_key", "apikey", "token", "secret", "key", "auth", "credential"}
+REPORT_TITLE_SEPARATOR = " - "
+_SECRET_QUERY_KEYS = {
+    "accesstoken",
+    "apikey",
+    "authorization",
+    "authtoken",
+    "bearertoken",
+    "clientsecret",
+    "credential",
+    "key",
+    "secret",
+    "signature",
+    "token",
+    "xamzsignature",
+    "xapikey",
+}
 
 _MANIFEST_REQUIRED_FIELDS = frozenset(
     {
@@ -163,7 +179,7 @@ class NormalizedReportDocument:
     security_id: str
     mentioned_security_ids: tuple[str, ...]
     subject_scope: str
-    page: int
+    page: int | None
     page_basis: str
     section: str
     text: str
@@ -194,6 +210,9 @@ def load_normalized_report_documents(path: str | Path) -> NormalizedReportDocume
     extra = set(data) - {"fixture_version", "fixture_type", "manifest_id", "documents"}
     if extra:
         raise ReportDocumentValidationError("normalized report wrapper contains unsupported fields")
+    fixture_version = data.get("fixture_version")
+    if type(fixture_version) is not int or fixture_version != 1:
+        raise ReportDocumentValidationError("normalized report fixture_version is unsupported")
     fixture_type = _required_str(data, "fixture_type", ReportDocumentValidationError)
     manifest_id = _required_str(data, "manifest_id", ReportDocumentValidationError)
     if fixture_type != "synthetic_unit":
@@ -261,8 +280,8 @@ def validate_report_manifest(raw_manifest: Mapping[str, Any]) -> ReportManifest:
     document_ids = tuple(_required_list_str(value, ReportManifestValidationError) for value in raw_documents)
     if len(set(document_ids)) != len(document_ids):
         raise ReportManifestValidationError("manifest documents must not contain duplicates")
-    if any(not document_id.startswith(f"report:{manifest_id}:") for document_id in document_ids):
-        raise ReportManifestValidationError("manifest document ids must be deterministic report ids")
+    for document_id in document_ids:
+        _validate_report_document_id(document_id, manifest_id, ReportManifestValidationError)
     ingestion_version = _required_str(raw_manifest, "ingestion_version", ReportManifestValidationError)
     if ingestion_version != REPORT_INGESTION_VERSION:
         raise ReportManifestValidationError("report manifest ingestion_version is unsupported")
@@ -330,8 +349,8 @@ def validate_normalized_report_document(raw_document: Mapping[str, Any]) -> Norm
         raise ReportDocumentValidationError("company_specific report sections must not have mentions")
     if subject_scope == "company_centered_with_mentions" and not mentioned_security_ids:
         raise ReportDocumentValidationError("company_centered_with_mentions sections require mentions")
-    page = _positive_int(raw_document.get("page"), "page", ReportDocumentValidationError)
     page_basis = _enum_value(raw_document.get("page_basis"), _PAGE_BASES, "page_basis", ReportDocumentValidationError)
+    page = _page_for_basis(raw_document.get("page"), page_basis)
     section = _required_str(raw_document, "section", ReportDocumentValidationError)
     text = _required_str(raw_document, "text", ReportDocumentValidationError)
     text_kind = _enum_value(raw_document.get("text_kind"), _TEXT_KINDS, "text_kind", ReportDocumentValidationError)
@@ -368,6 +387,8 @@ def validate_report_bundle(
     manifest: ReportManifest,
     documents: NormalizedReportDocumentBundle | Sequence[NormalizedReportDocument],
 ) -> tuple[NormalizedReportDocument, ...]:
+    if isinstance(documents, NormalizedReportDocumentBundle) and documents.manifest_id != manifest.manifest_id:
+        raise ReportBundleValidationError("report bundle manifest_id mismatch")
     normalized_documents = _document_tuple(documents)
     if not normalized_documents:
         raise ReportBundleValidationError("report bundle must include documents")
@@ -386,7 +407,7 @@ def validate_report_bundle(
 
 
 def verify_manifest_source_hash(manifest: ReportManifest, source_bytes: bytes | None) -> bool:
-    if source_bytes is None:
+    if type(source_bytes) is not bytes:
         raise ReportManifestValidationError("source bytes are required for hash verification")
     return hashlib.sha256(source_bytes).hexdigest() == manifest.file_hash
 
@@ -400,23 +421,21 @@ def normalize_manual_research_report(
     source_bytes: bytes | None = None,
     available_asset_ids: set[str] | None = None,
 ) -> FinancialDocument:
-    wrapped_documents: NormalizedReportDocumentBundle | list[NormalizedReportDocument]
+    _validate_build_mode_and_date(mode, as_of_date)
+    _validate_single_report_document(manifest, document)
+    if manifest.published_local_date > as_of_date:
+        raise ReportIngestValidationError("published_at must not be in the future")
     if mode == "synthetic_unit":
-        wrapped_documents = NormalizedReportDocumentBundle(
-            manifest_id=document.manifest_id,
-            fixture_type="synthetic_unit",
-            documents=(document,),
-        )
+        _validate_synthetic_build(manifest, [document], None)
     else:
-        wrapped_documents = [document]
-    return build_manual_research_documents(
-        manifest,
-        wrapped_documents,
-        mode=mode,
-        as_of_date=as_of_date,
-        source_bytes=source_bytes,
-        available_asset_ids=available_asset_ids,
-    )[0]
+        _validate_corpus_build(
+            manifest,
+            [document],
+            raw_documents=[document],
+            source_bytes=source_bytes,
+            available_asset_ids=available_asset_ids,
+        )
+    return _build_financial_document(manifest, document, mode=mode, as_of_date=as_of_date)
 
 
 def build_manual_research_documents(
@@ -428,10 +447,7 @@ def build_manual_research_documents(
     source_bytes: bytes | None = None,
     available_asset_ids: set[str] | None = None,
 ) -> list[FinancialDocument]:
-    if mode not in _BUILD_MODES:
-        raise ReportIngestValidationError("report build mode is unsupported")
-    if not isinstance(as_of_date, date) or isinstance(as_of_date, datetime):
-        raise ReportIngestValidationError("as_of_date must be a date")
+    _validate_build_mode_and_date(mode, as_of_date)
     ordered_documents = validate_report_bundle(manifest, documents)
     if manifest.published_local_date > as_of_date:
         raise ReportIngestValidationError("published_at must not be in the future")
@@ -441,6 +457,7 @@ def build_manual_research_documents(
         _validate_corpus_build(
             manifest,
             ordered_documents,
+            raw_documents=documents,
             source_bytes=source_bytes,
             available_asset_ids=available_asset_ids,
         )
@@ -486,7 +503,7 @@ def calculate_report_coverage(
 def _load_json_object(path: str | Path) -> dict[str, Any]:
     try:
         data = json.loads(Path(path).read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise ReportIngestValidationError("report ingest JSON is malformed") from exc
     if not isinstance(data, dict):
         raise ReportIngestValidationError("report ingest JSON must be an object")
@@ -568,6 +585,14 @@ def _positive_int(value: Any, field: str, error_type: type[ReportIngestValidatio
     return value
 
 
+def _page_for_basis(value: Any, page_basis: str) -> int | None:
+    if page_basis == "source_section_only":
+        if value is not None:
+            raise ReportDocumentValidationError("source_section_only page must be null")
+        return None
+    return _positive_int(value, "page", ReportDocumentValidationError)
+
+
 def _parse_published_at(value: Any) -> ParsedPublicationDate:
     if not isinstance(value, str) or not value.strip():
         raise ReportManifestValidationError("published_at must be a string")
@@ -584,6 +609,10 @@ def _parse_published_at(value: Any) -> ParsedPublicationDate:
             timezone_basis="Asia/Seoul",
             local_date=local_day,
         )
+    match = _RFC3339_RE.fullmatch(text)
+    if match is None:
+        raise ReportManifestValidationError("published_at datetime is invalid")
+    offset_text = match.group(1)
     try:
         parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
     except ValueError as exc:
@@ -594,7 +623,7 @@ def _parse_published_at(value: Any) -> ParsedPublicationDate:
     return ParsedPublicationDate(
         published_at=published_at,
         precision="datetime",
-        timezone_basis="RFC3339",
+        timezone_basis="UTC" if offset_text == "Z" else offset_text,
         local_date=published_at.astimezone(SEOUL_TZ).date(),
     )
 
@@ -636,7 +665,7 @@ def _optional_url(value: Any, error_type: type[ReportIngestValidationError]) -> 
     if parts.fragment:
         raise error_type("source_url must not include a fragment")
     for key, _ in parse_qsl(parts.query, keep_blank_values=True):
-        if key.strip().casefold() in _SECRET_QUERY_KEYS:
+        if _normalize_query_key(key) in _SECRET_QUERY_KEYS:
             raise error_type("source_url must not include credential query parameters")
     host = parts.hostname.lower()
     default_port = (scheme == "http" and port == 80) or (scheme == "https" and port == 443)
@@ -665,6 +694,40 @@ def _looks_like_local_absolute_path(value: str) -> bool:
     )
 
 
+def _validate_report_document_id(
+    document_id: str,
+    manifest_id: str,
+    error_type: type[ReportIngestValidationError],
+) -> str:
+    prefix = f"report:{manifest_id}:"
+    if not document_id.startswith(prefix):
+        raise error_type("document_id must be deterministic")
+    segment_id = document_id[len(prefix) :]
+    if not _SEGMENT_ID_RE.fullmatch(segment_id):
+        raise error_type("document_id segment suffix must be a stable opaque id")
+    return segment_id
+
+
+def _validate_build_mode_and_date(mode: str, as_of_date: date) -> None:
+    if mode not in _BUILD_MODES:
+        raise ReportIngestValidationError("report build mode is unsupported")
+    if not isinstance(as_of_date, date) or isinstance(as_of_date, datetime):
+        raise ReportIngestValidationError("as_of_date must be a date")
+
+
+def _validate_single_report_document(manifest: ReportManifest, document: NormalizedReportDocument) -> None:
+    if document.document_id not in manifest.documents:
+        raise ReportBundleValidationError("report document must be listed in manifest")
+    if document.manifest_id != manifest.manifest_id:
+        raise ReportBundleValidationError("report document manifest_id mismatch")
+    if document.security_id != manifest.security_id:
+        raise ReportBundleValidationError("report document security_id mismatch")
+
+
+def _normalize_query_key(value: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", value.casefold())
+
+
 def _validate_permission_gate(
     *,
     usage_review_status: str,
@@ -689,9 +752,11 @@ def _document_tuple(
 def _validate_synthetic_build(
     manifest: ReportManifest,
     documents: Sequence[NormalizedReportDocument],
-    raw_documents: NormalizedReportDocumentBundle | Sequence[NormalizedReportDocument],
+    raw_documents: NormalizedReportDocumentBundle | Sequence[NormalizedReportDocument] | None,
 ) -> None:
-    if not isinstance(raw_documents, NormalizedReportDocumentBundle) or raw_documents.fixture_type != "synthetic_unit":
+    if raw_documents is not None and (
+        not isinstance(raw_documents, NormalizedReportDocumentBundle) or raw_documents.fixture_type != "synthetic_unit"
+    ):
         raise ReportBundleValidationError("synthetic build requires synthetic_unit fixture")
     if manifest.usage_review_status != "synthetic":
         raise ReportBundleValidationError("synthetic build requires synthetic usage review status")
@@ -707,9 +772,12 @@ def _validate_corpus_build(
     manifest: ReportManifest,
     documents: Sequence[NormalizedReportDocument],
     *,
+    raw_documents: NormalizedReportDocumentBundle | Sequence[NormalizedReportDocument],
     source_bytes: bytes | None,
     available_asset_ids: set[str] | None,
 ) -> None:
+    if isinstance(raw_documents, NormalizedReportDocumentBundle) and raw_documents.fixture_type == "synthetic_unit":
+        raise ReportBundleValidationError("corpus build rejects synthetic_unit fixture")
     if manifest.usage_review_status != "approved":
         raise ReportBundleValidationError("corpus build requires approved usage review")
     if not manifest.corpus_ingest_allowed:
@@ -734,7 +802,7 @@ def _build_financial_document(
     as_of_date: date,
 ) -> FinancialDocument:
     age_days = (as_of_date - manifest.published_local_date).days
-    title = manifest.title if document.section == manifest.title else f"{manifest.title} - {document.section}"
+    title = manifest.title if document.section == manifest.title else f"{manifest.title}{REPORT_TITLE_SEPARATOR}{document.section}"
     locator = {
         "manifest_id": manifest.manifest_id,
         "document_id": document.document_id,
@@ -795,6 +863,7 @@ __all__ = [
     "MANUAL_REPORT_PROVIDER",
     "REPORT_INGESTION_VERSION",
     "REPORT_SOURCE_TYPE",
+    "REPORT_TITLE_SEPARATOR",
     "SUPPORTED_SECURITY_IDS",
     "NormalizedReportDocument",
     "NormalizedReportDocumentBundle",

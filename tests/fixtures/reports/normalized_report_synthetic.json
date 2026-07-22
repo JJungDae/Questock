@@ -28,7 +28,7 @@
         "KRX:000660"
       ],
       "subject_scope": "company_centered_with_mentions",
-      "page": 2,
+      "page": null,
       "page_basis": "source_section_only",
       "section": "Synthetic Peer Context",
       "text": "Synthetic manual summary referencing a supported peer without real report text.",

@@ -121,6 +121,8 @@ Rules:
 - `multi_company` is rejected in P0.
 - `page` is a positive integer; bool is rejected.
 - `page_basis`: `pdf_1_based`, `printed_page`, `source_section_only`.
+- `pdf_1_based` and `printed_page` require positive integer `page`.
+- `source_section_only` requires `page: null`.
 - `text_kind`: `source_excerpt`, `manual_summary`.
 - `manual_verification_status`: `synthetic`, `pending`, `verified_against_source`.
 - Numeric metadata is boolean only.
@@ -142,11 +144,14 @@ Corpus build requires:
 - All documents `manual_verification_status == "verified_against_source"`.
 - Valid source URL or resolvable `source_asset_id`.
 - `source_bytes` supplied and SHA-256 hash verified.
+- `synthetic_unit` wrapper is rejected in corpus mode.
+- Corpus mode currently accepts a plain validated document sequence; a future corpus bundle requires separate approval.
 
 Synthetic fixture output is unit-test evidence only. It is not recorded as real corpus coverage, permission approval, source hash verification, or asset availability.
 
 ## 7. Source Locator Contract
 - `source_url` must be HTTP(S), include host, contain no userinfo, contain no fragment, and contain no credential-like query key.
+- Credential-like query keys include case, separator, and percent-encoded variants of token, access token, auth token, bearer token, client secret, API key, x-api-key, authorization, credential, signature, and X-Amz-Signature.
 - URL scheme and hostname are normalized to lowercase; default ports are removed.
 - Local paths, `file://`, Windows absolute paths, POSIX absolute paths, UNC paths, and invalid ports are rejected.
 - `source_asset_id` is an opaque stable ID with only letters, digits, dot, hyphen, underscore.
@@ -192,6 +197,7 @@ Synthetic fixture output is unit-test evidence only. It is not recorded as real 
 - `source_url`: manifest source URL or None.
 - `text`: normalized section text.
 - `title`: manifest title, or `{manifest.title} - {section}` when section differs.
+- Title separator is fixed as ` - `.
 - `metadata.content_level`: `research_report_section`.
 - Metadata includes publisher, analyst, report type, basis date, language, usage fields, hash fields, publication precision/timezone, freshness fields, text provenance fields, subject scope, numeric flags, and build mode.
 
@@ -269,23 +275,44 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.ingest.reports import load
 - Implementation status: complete, awaiting user review.
 - Commit/push: `NOT_RUN`
 
+## 14.1 Initial Review Status
+- Initial implementation SHA: `b8c091c8c8ebc3651aa70c3a61768dc7cb302630`
+- Initial main push: complete
+- Independent review: `CONDITIONAL PASS`
+- M1-06 status before supplement: mandatory supplement pending
+- GitHub CI: `NOT_RUN`
+- Independent pytest rerun: `NOT_RUN`
+
+## 14.2 CONDITIONAL PASS Supplement
+- Supplement date: 2026-07-22
+- Supplement scope:
+  - Corpus mode rejects `synthetic_unit` wrappers.
+  - Corpus unit tests now use plain validated document sequences.
+  - Coverage helper excludes synthetic wrappers from actual coverage.
+  - Bundle wrapper `manifest_id` mismatch raises `ReportBundleValidationError`.
+  - Wrapper `fixture_version` must be integer `1`; bool, string, and other versions fail.
+  - `source_section_only` requires `page: null`; PDF/printed page bases require positive integer page.
+  - `normalize_manual_research_report()` can convert a single document from a multi-section manifest without exact-set bundle validation.
+  - Loader and hash errors are typed and sanitized.
+  - `source_bytes` must be actual bytes.
+  - Credential query key blocking covers required token/signature variants.
+  - RFC3339 datetime validation is stricter and preserves input offset basis.
+  - Manifest document ID suffix is validated against segment ID rules.
+  - Title separator is centralized as ` - `.
+- Supplement commit/push: `NOT_RUN`
+- M1-06 status after supplement: implementation complete, user review pending
+
 ## 15. Actual Verification Results
 - PYTHONPATH: `.test_deps;.`
-- targeted first command: `python -m pytest tests/unit/test_report_ingest.py -q`
-- targeted first exit code: `1`
-- targeted first output: `.test_deps` pytest import `PermissionError`
-- targeted rerun command: `python -m pytest tests/unit/test_report_ingest.py -q`
-- targeted rerun exit code: `0`
-- targeted rerun output: `105 passed in 0.18s`
+- targeted command: `python -m pytest tests/unit/test_report_ingest.py -q`
+- targeted exit code: `0`
+- targeted passed count: `126`
 - regression command: `python -m pytest tests/unit/test_core_models.py tests/unit/test_status_contracts.py tests/unit/test_security_resolver.py tests/unit/test_provider_base.py tests/unit/test_config.py tests/unit/test_news_provider.py tests/unit/test_disclosure_provider.py tests/unit/test_report_ingest.py -q`
 - regression exit code: `0`
-- regression output: `326 passed in 0.43s`
-- smoke first command: `python -c "from app.ingest.reports import load_report_manifest, normalize_manual_research_report, build_manual_research_documents; print('ok')"`
-- smoke first exit code: `1`
-- smoke first output: `ImportError: cannot import name 'BaseModel' from 'pydantic' (unknown location)`
-- smoke rerun command: `python -c "from app.ingest.reports import load_report_manifest, normalize_manual_research_report, build_manual_research_documents; print('ok')"`
-- smoke rerun exit code: `0`
-- smoke rerun output: `ok`
+- regression passed count: `347`
+- smoke command: `python -c "from app.ingest.reports import load_report_manifest, normalize_manual_research_report, build_manual_research_documents; print('ok')"`
+- smoke exit code: `0`
+- smoke passed count: `N/A`
 
 ## 16. NOT_RUN / BLOCKED
 - Actual report source URLs/files: `NOT_RUN - user has not provided source corpus`

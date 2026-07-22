@@ -96,7 +96,7 @@ def corpus_documents(*updates):
     second = document_data(1, manual_verification_status="verified_against_source")
     for target, patch in zip((first, second), updates):
         target.update(patch)
-    return documents(first, second)
+    return tuple(validate_normalized_report_document(raw) for raw in (first, second))
 
 
 def assert_invalid(raw_manifest=None, raw_document=None, exc=ReportIngestValidationError):
@@ -156,14 +156,12 @@ def test_identical_fixture_rerun_is_deterministic():
     assert first == second
 
 
-def test_normalize_manual_research_report_helper_accepts_single_document_manifest():
-    one_doc_manifest = manifest(
-        documents=["report:synthetic-report-001:section-1"],
-    )
+def test_normalize_manual_research_report_helper_accepts_single_document_from_multi_section_manifest():
+    multi_doc_manifest = manifest()
     one_doc = validate_normalized_report_document(document_data())
 
     doc = normalize_manual_research_report(
-        one_doc_manifest,
+        multi_doc_manifest,
         one_doc,
         mode="synthetic_unit",
         as_of_date=date(2026, 7, 22),
@@ -219,6 +217,7 @@ def test_manifest_rejects_unexpected_fields_and_report_level_truth_stays_out_of_
         {"documents": []},
         {"documents": ["report:synthetic-report-001:section-1", "report:synthetic-report-001:section-1"]},
         {"documents": ["report:other:section-1"]},
+        {"documents": ["report:synthetic-report-001:bad/section"]},
     ],
 )
 def test_manifest_basic_validation_errors(updates):
@@ -264,6 +263,16 @@ def test_approved_manifest_can_disable_external_llm_and_still_be_valid():
         "https://example.com:bad/report.pdf",
         "https://example.com/report.pdf#section",
         "https://example.com/report.pdf?api_key=secret",
+        "https://example.com/report.pdf?access_token=secret",
+        "https://example.com/report.pdf?auth-token=secret",
+        "https://example.com/report.pdf?bearer.token=secret",
+        "https://example.com/report.pdf?client%5Fsecret=secret",
+        "https://example.com/report.pdf?api-key=secret",
+        "https://example.com/report.pdf?x-api-key=secret",
+        "https://example.com/report.pdf?authorization=secret",
+        "https://example.com/report.pdf?credential=secret",
+        "https://example.com/report.pdf?signature=secret",
+        "https://example.com/report.pdf?X-Amz-Signature=secret",
     ],
 )
 def test_source_url_safety_validation(source_url):
@@ -306,6 +315,8 @@ def test_source_url_or_source_asset_id_is_required_and_access_note_alone_is_not_
     "updates",
     [
         {"published_at": "2026-01-15T10:30:00"},
+        {"published_at": "2026-01-15 10:30:00+09:00"},
+        {"published_at": "2026-01-15T10:30+09:00"},
         {"published_at": "not-a-date"},
         {"published_at": "2026-02-31"},
         {"basis_date": "2026-02-31"},
@@ -321,6 +332,7 @@ def test_rfc3339_publication_datetime_is_timezone_aware_utc():
 
     assert result.published_at == datetime(2026, 1, 15, 0, 30, tzinfo=UTC)
     assert result.published_at_precision == "datetime"
+    assert result.published_at_timezone_basis == "+09:00"
 
 
 def test_future_publication_is_rejected_at_build_time():
@@ -355,6 +367,8 @@ def test_stale_boundary_is_deterministic():
         {"subject_scope": "company_centered_with_mentions", "mentioned_security_ids": []},
         {"page": 0},
         {"page": True},
+        {"page": None},
+        {"page": 2, "page_basis": "source_section_only"},
         {"page_basis": "zero_based"},
         {"section": "  "},
         {"text": "  "},
@@ -391,6 +405,17 @@ def test_bundle_requires_exact_manifest_document_set_and_matching_security():
         )
 
 
+def test_bundle_wrapper_manifest_id_must_match_target_manifest():
+    bad_bundle = NormalizedReportDocumentBundle(
+        manifest_id="other-manifest",
+        fixture_type="synthetic_unit",
+        documents=load_normalized_report_documents(DOCUMENTS_PATH).documents,
+    )
+
+    with pytest.raises(ReportBundleValidationError):
+        build_synthetic(selected_documents=bad_bundle)
+
+
 def test_bundle_output_order_follows_manifest_order_not_document_input_order():
     loaded_manifest = manifest()
     reversed_bundle = documents(document_data(1), document_data())
@@ -422,6 +447,8 @@ def test_verify_manifest_source_hash_true_false_and_requires_bytes():
     assert verify_manifest_source_hash(approved, b"different") is False
     with pytest.raises(ReportManifestValidationError):
         verify_manifest_source_hash(approved, None)
+    with pytest.raises(ReportManifestValidationError):
+        verify_manifest_source_hash(approved, bytearray(source_bytes))
 
 
 @pytest.mark.parametrize(
@@ -560,12 +587,36 @@ def test_load_normalized_report_documents_rejects_bad_wrapper(tmp_path):
         load_normalized_report_documents(bad_file)
 
 
+@pytest.mark.parametrize("fixture_version", [True, "1", 2, 0])
+def test_load_normalized_report_documents_rejects_bad_fixture_version(tmp_path, fixture_version):
+    bad_file = tmp_path / "bad_version.json"
+    data = wrapper_data(fixture_version=fixture_version)
+    bad_file.write_text(json.dumps(data), encoding="utf-8")
+
+    with pytest.raises(ReportDocumentValidationError):
+        load_normalized_report_documents(bad_file)
+
+
 def test_json_loaders_reject_non_object_json(tmp_path):
     bad_file = tmp_path / "bad.json"
     bad_file.write_text("[]", encoding="utf-8")
 
     with pytest.raises(ReportIngestValidationError):
         load_report_manifest(bad_file)
+
+
+def test_loaders_normalize_io_and_unicode_errors_without_paths(tmp_path):
+    missing_file = tmp_path / "missing.json"
+    invalid_unicode = tmp_path / "invalid_unicode.json"
+    invalid_unicode.write_bytes(b"\xff")
+
+    for path in (missing_file, invalid_unicode):
+        with pytest.raises(ReportIngestValidationError) as exc:
+            load_report_manifest(path)
+        message = str(exc.value)
+        assert str(tmp_path) not in message
+        assert "missing.json" not in message
+        assert "invalid_unicode.json" not in message
 
 
 def test_error_messages_do_not_include_raw_secret_or_local_path():
