@@ -10,12 +10,17 @@
 - M1-07A status: `PASS`
 - M1-07B status: `PASS`
 - M1-07B completion commit: `40543c425b8f5c0d6987940536be83a5a7b7a96a`
-- Current status: `M1-08 supplement implemented - final independent review pending`
+- Current status: `M1-08 second supplement implemented - user review pending`
 - Implementation SHA: `fa8831e0e1deca56effb509dd25c9ac755f901e5`
 - Implementation commit: `Implement m1-08`
 - Implementation main push: `complete`
 - Initial independent review: `CONDITIONAL PASS`
-- Supplement status: `implemented - final independent review pending`
+- Supplement SHA: `3bfac55f2acf6fdf81e9252cbd9f3b1640e8e331`
+- Supplement commit: `m1-08 conditional pass updates`
+- Supplement main push: `complete`
+- Supplement independent review: `CONDITIONAL PASS`
+- Supplement status: `additional required items addressed - user review pending`
+- Remaining items from supplement review: `static POSIX public-path coverage; Python parse fail-open; Python mapping credential coverage`
 - B3/M1-06~08 readiness completion: `pending final independent review`
 - Dependency changes in Section 6: `APPROVED`
 - README creation: `APPROVED`
@@ -1242,9 +1247,87 @@ Detailed executed commands and results are recorded below.
   - exit code: `0`
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
-- Supplement commit/push: `NOT_RUN`
+- Supplement SHA: `3bfac55f2acf6fdf81e9252cbd9f3b1640e8e331`
+- Supplement commit: `m1-08 conditional pass updates`
+- Supplement main push: `complete`
+- Supplement independent review: `CONDITIONAL PASS`
+- Remaining items:
+  - static POSIX public-path coverage
+  - Python parse fail-open
+  - Python mapping credential coverage
 - Final independent review: `NOT_RUN`
-- M1-08 supplement: `implemented`
-- Final state: `final independent review pending`
+- M1-08 supplement: `CONDITIONAL PASS - additional supplement required`
+- Final state: `additional supplement implemented - user review pending`
 - B3/M1-06~08 readiness completion: `pending final PASS`
 - Full M1 milestone completion: `NOT_CLAIMED - M1-09 MarketSnapshot remains open`
+
+### 25.3 Additional Supplement Result Log - M05/M06/M07
+
+- Supplement trigger:
+  - Prior supplement SHA: `3bfac55f2acf6fdf81e9252cbd9f3b1640e8e331`
+  - Prior supplement commit: `m1-08 conditional pass updates`
+  - Prior supplement main push: `complete`
+  - Prior supplement independent review: `CONDITIONAL PASS`
+  - Required remaining items: static POSIX public-path coverage, Python parse fail-open, Python mapping credential coverage.
+- Additional supplement modified files:
+  - `app/phase_slice.py`
+  - `scripts/secret_scan.py`
+  - `tests/unit/test_secret_scan.py`
+  - `docs/TASK_CARDS/M1-08-health-config-phase-slice.md`
+- Additional supplement changes:
+  - Static public-surface POSIX path detection now generalizes beyond fixed roots while allowing normal HTTP(S) URLs and `/health` route documentation.
+  - Python syntax parse failure now falls back to line-based credential scanning instead of returning a clean result.
+  - Python dict mapping entries with exact credential keys and direct literal string values are detected.
+  - Python mapping environment references such as `os.getenv(...)` remain allowed.
+- Compile pre-test command: `python -m compileall app tests scripts -q`
+  - exit code: `0`
+- Targeted first command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_health_phase_slice.py tests/unit/test_phase_slice_cli.py tests/unit/test_secret_scan.py tests/unit/test_api_health.py -q`
+  - execution: sandboxed run
+  - exit code: `1`
+  - output: `No module named pytest.__main__; 'pytest' is a package and cannot be directly executed`
+- Targeted second command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_health_phase_slice.py tests/unit/test_phase_slice_cli.py tests/unit/test_secret_scan.py tests/unit/test_api_health.py -q`
+  - execution: approved elevated run
+  - exit code: `1`
+  - passed count: `105 passed`
+  - failure count: `1 failed`
+  - fix: allowed documented `/health` route text in static and runtime public-path checks.
+- Targeted final command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_health_phase_slice.py tests/unit/test_phase_slice_cli.py tests/unit/test_secret_scan.py tests/unit/test_api_health.py -q`
+  - execution: approved elevated run
+  - exit code: `0`
+  - passed count: `107 passed`
+  - warning: FastAPI TestClient emitted Starlette deprecation warning for `httpx`.
+- Regression command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_core_models.py tests/unit/test_status_contracts.py tests/unit/test_security_resolver.py tests/unit/test_provider_base.py tests/unit/test_config.py tests/unit/test_news_provider.py tests/unit/test_disclosure_provider.py tests/unit/test_report_ingest.py tests/unit/test_glossary_ingest.py tests/unit/test_health_phase_slice.py tests/unit/test_phase_slice_cli.py tests/unit/test_secret_scan.py tests/unit/test_api_health.py -q`
+  - execution: approved elevated run
+  - exit code: `0`
+  - passed count: `722 passed`
+  - warning: FastAPI TestClient emitted Starlette deprecation warning for `httpx`.
+- CLI smoke first command: `$env:PYTHONPATH = ".deps;."; python scripts/m1_phase_slice.py`
+  - execution: sandboxed run
+  - exit code: `1`
+  - output: `ImportError: cannot import name 'PrivateAttr' from 'pydantic'`
+- CLI smoke rerun command: `$env:PYTHONPATH = ".deps;."; python scripts/m1_phase_slice.py`
+  - execution: approved elevated run
+  - exit code: `0`
+  - output summary: `status=ok`, `mode=fixture_readiness`, `financial_document_count=4`
+- Secret scan command: `python scripts/secret_scan.py`
+  - exit code: `0`
+  - output: `[]`
+- API smoke command: `$env:PYTHONPATH = ".deps;."; python -c "from fastapi.testclient import TestClient; from app.api.main import app; response=TestClient(app).get('/health'); body=response.json(); print(response.status_code, body['status'], body['mode'])"`
+  - execution: approved elevated run
+  - exit code: `0`
+  - output: `200 ok fixture_readiness`
+  - warning: FastAPI TestClient emitted Starlette deprecation warning for `httpx`.
+- Import smoke first command: `$env:PYTHONPATH = ".deps;."; python -c "from app.api.main import app; print('ok')"`
+  - execution: sandboxed run
+  - exit code: `1`
+  - output: `ImportError: cannot import name 'FastAPI' from 'fastapi'`
+- Import smoke rerun command: `$env:PYTHONPATH = ".deps;."; python -c "from app.api.main import app; print('ok')"`
+  - execution: approved elevated run
+  - exit code: `0`
+  - output: `ok`
+- GitHub CI: `NOT_RUN`
+- Independent pytest rerun: `NOT_RUN`
+- Additional supplement commit/push: `NOT_RUN`
+- Final independent review: `NOT_RUN`
+- Final state: `additional supplement implemented - user review pending`
+- B3/M1-06~08 readiness completion: `pending final PASS`

@@ -11,7 +11,7 @@ from collections.abc import Iterable
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
-from urllib.parse import unquote_plus
+from urllib.parse import unquote_plus, urlsplit
 
 TEXT_EXTENSIONS = {
     ".py",
@@ -48,7 +48,8 @@ ASSIGNMENT_RE = re.compile(
 )
 WINDOWS_ABSOLUTE_PATH_RE = re.compile(r"(?<![A-Za-z])[A-Za-z]:[\\/]")
 UNC_PATH_RE = re.compile(r"(?<!:)//[A-Za-z0-9_.-]+/|\\\\[A-Za-z0-9_.-]+[\\/]")
-POSIX_ABSOLUTE_PATH_RE = re.compile(r"(^|[\s\"'(=])/(root|opt|workspace|home|Users|etc|var|tmp)(/|$)")
+POSIX_ABSOLUTE_PATH_RE = re.compile(r"(^|[\s\"'(=])/(?!health(?:$|[\s`\"')\],.;:]))(?=[A-Za-z0-9._~-])[^\s\"'<>]*")
+ALLOWED_ROUTE_TOKENS = {"/health", "GET /health"}
 
 
 class SecretScanError(RuntimeError):
@@ -148,6 +149,10 @@ def _credential_findings_for_text(text: str, *, relative_path: Path, rel_text: s
         findings = _json_credential_findings(text, rel_text=rel_text)
         if findings is not None:
             return findings
+    return _line_based_credential_findings(text, relative_path=relative_path, rel_text=rel_text)
+
+
+def _line_based_credential_findings(text: str, *, relative_path: Path, rel_text: str) -> list[SecretFinding]:
     findings: list[SecretFinding] = []
     for line_number, line in enumerate(text.splitlines(), start=1):
         rule = _credential_assignment_rule(line, relative_path=relative_path)
@@ -160,7 +165,7 @@ def _python_credential_findings(text: str, *, rel_text: str) -> list[SecretFindi
     try:
         tree = ast.parse(text)
     except SyntaxError:
-        return []
+        return _line_based_credential_findings(text, relative_path=Path(rel_text), rel_text=rel_text)
     findings: list[SecretFinding] = []
     for node in ast.walk(tree):
         if isinstance(node, ast.Assign):
@@ -168,23 +173,57 @@ def _python_credential_findings(text: str, *, rel_text: str) -> list[SecretFindi
                 finding = _python_assignment_finding(target, node.value, node.lineno, rel_text)
                 if finding is not None:
                     findings.append(finding)
+            findings.extend(_python_mapping_findings(node.value, node.lineno, rel_text))
         elif isinstance(node, ast.AnnAssign):
             finding = _python_assignment_finding(node.target, node.value, node.lineno, rel_text)
             if finding is not None:
                 findings.append(finding)
+            findings.extend(_python_mapping_findings(node.value, node.lineno, rel_text))
     return sorted(findings)
 
 
 def _python_assignment_finding(target: ast.expr, value: ast.expr | None, line_number: int, rel_text: str) -> SecretFinding | None:
-    if not isinstance(target, ast.Name) or value is None:
+    target_key = _python_target_key(target)
+    if target_key is None or value is None:
         return None
-    if not _is_credential_key(target.id):
+    if not _is_credential_key(target_key):
         return None
     if not isinstance(value, ast.Constant) or not isinstance(value.value, str) or not value.value.strip():
         return None
     if _is_environment_reference(value.value):
         return None
     return SecretFinding(path=rel_text, line=line_number, rule_id="non_empty_credential_assignment")
+
+
+def _python_target_key(target: ast.expr) -> str | None:
+    if isinstance(target, ast.Name):
+        return target.id
+    if isinstance(target, ast.Attribute):
+        return target.attr
+    return None
+
+
+def _python_mapping_findings(value: ast.expr | None, line_number: int, rel_text: str) -> list[SecretFinding]:
+    if not isinstance(value, ast.Dict):
+        return []
+    findings: list[SecretFinding] = []
+    for key_node, value_node in zip(value.keys, value.values, strict=True):
+        if not isinstance(key_node, ast.Constant) or not isinstance(key_node.value, str):
+            continue
+        if not _is_credential_key(key_node.value):
+            continue
+        if not isinstance(value_node, ast.Constant) or not isinstance(value_node.value, str) or not value_node.value.strip():
+            continue
+        if _is_environment_reference(value_node.value):
+            continue
+        findings.append(
+            SecretFinding(
+                path=rel_text,
+                line=getattr(key_node, "lineno", line_number),
+                rule_id="non_empty_credential_assignment",
+            )
+        )
+    return findings
 
 
 def _json_credential_findings(text: str, *, rel_text: str) -> list[SecretFinding] | None:
@@ -281,6 +320,11 @@ def _is_environment_reference(value: str) -> bool:
 
 
 def _contains_public_absolute_path(line: str) -> bool:
+    stripped = line.strip()
+    if not stripped:
+        return False
+    if stripped in ALLOWED_ROUTE_TOKENS or _is_http_url(stripped):
+        return False
     lowered = line.lower()
     return (
         "file://" in lowered
@@ -288,6 +332,14 @@ def _contains_public_absolute_path(line: str) -> bool:
         or bool(UNC_PATH_RE.search(line))
         or bool(POSIX_ABSOLUTE_PATH_RE.search(line))
     )
+
+
+def _is_http_url(value: str) -> bool:
+    try:
+        parts = urlsplit(value)
+    except ValueError:
+        return False
+    return parts.scheme.lower() in {"http", "https"} and bool(parts.netloc)
 
 
 def normalized_line_hash(line: str) -> str:

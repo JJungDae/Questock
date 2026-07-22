@@ -62,7 +62,7 @@ SECRET_SENTINELS = (
 )
 WINDOWS_ABSOLUTE_PATH_RE = re.compile(r"(?<![A-Za-z])[A-Za-z]:[\\/]")
 UNC_PATH_RE = re.compile(r"(?<!:)//[A-Za-z0-9_.-]+/|\\\\[A-Za-z0-9_.-]+[\\/]")
-POSIX_ABSOLUTE_PATH_RE = re.compile(r"(^|[\s\"'(=])/(?!health(?:$|\s))(?=[A-Za-z0-9._~-])[^\s\"'<>]*")
+POSIX_ABSOLUTE_PATH_RE = re.compile(r"(^|[\s\"'(=])/(?!health(?:$|[\s`\"')\],.;:]))(?=[A-Za-z0-9._~-])[^\s\"'<>]*")
 ALLOWED_ROUTE_TOKENS = {"/health", "GET /health"}
 
 PhaseFetcher = Callable[..., Awaitable[ProviderResult[Any]]]

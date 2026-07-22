@@ -98,6 +98,103 @@ def test_file_aware_scanner_allows_runtime_references_and_empty_placeholders(tmp
     assert secret_scan.scan_paths([path], repo_root=tmp_path) == []
 
 
+@pytest.mark.parametrize(
+    "public_relative_path",
+    [
+        "README.md",
+        ".env.example",
+        "pyproject.toml",
+        "data/public.json",
+        ".github/workflows/ci.yml",
+        ".github/workflows/ci.yaml",
+    ],
+)
+@pytest.mark.parametrize(
+    "unsafe_path",
+    [
+        "/mnt/data/secret",
+        "/srv/app/config",
+        "/usr/local/private",
+        "/app/file",
+        "/media/user/file",
+        "/custom/root/file",
+        "prefix /srv/app/config",
+    ],
+)
+def test_public_path_rule_detects_general_posix_paths_on_public_surfaces(tmp_path, public_relative_path, unsafe_path):
+    path = tmp_path / public_relative_path
+    write(path, f"public text {unsafe_path}\n")
+
+    findings = secret_scan.scan_paths([path], repo_root=tmp_path)
+
+    assert findings == [
+        secret_scan.SecretFinding(
+            path=Path(public_relative_path).as_posix(),
+            line=1,
+            rule_id="public_absolute_path",
+        )
+    ]
+
+
+@pytest.mark.parametrize(
+    "allowed",
+    [
+        "/health",
+        "GET /health",
+        "`GET /health` reports fixture readiness",
+        "http://127.0.0.1:8000/health",
+        "https://example.com/path",
+    ],
+)
+def test_public_path_rule_allows_route_tokens_and_urls(tmp_path, allowed):
+    path = tmp_path / "README.md"
+    write(path, f"{allowed}\n")
+
+    assert secret_scan.scan_paths([path], repo_root=tmp_path) == []
+
+
+def test_python_parse_failure_falls_back_to_line_based_credential_scan(tmp_path):
+    path = tmp_path / "broken.py"
+    write(path, 'api_key = "secret"\n\nif (\n')
+
+    findings = secret_scan.scan_paths([path], repo_root=tmp_path)
+
+    assert findings == [
+        secret_scan.SecretFinding(path="broken.py", line=1, rule_id="non_empty_credential_assignment")
+    ]
+
+
+def test_python_mapping_exact_credential_key_literal_is_detected(tmp_path):
+    path = tmp_path / "settings.py"
+    write(
+        path,
+        "CONFIG = {\n"
+        '    "OPENDART_API_KEY": "secret",\n'
+        '    "NAVER_CLIENT_SECRET": "secret",\n'
+        "}\n",
+    )
+
+    findings = secret_scan.scan_paths([path], repo_root=tmp_path)
+
+    assert findings == [
+        secret_scan.SecretFinding(path="settings.py", line=2, rule_id="non_empty_credential_assignment"),
+        secret_scan.SecretFinding(path="settings.py", line=3, rule_id="non_empty_credential_assignment"),
+    ]
+
+
+def test_python_mapping_environment_reference_value_is_allowed(tmp_path):
+    path = tmp_path / "settings.py"
+    write(
+        path,
+        "import os\n"
+        "CONFIG = {\n"
+        '    "OPENDART_API_KEY": os.getenv("OPENDART_API_KEY"),\n'
+        "}\n",
+    )
+
+    assert secret_scan.scan_paths([path], repo_root=tmp_path) == []
+
+
 def test_scan_sorts_findings_and_uses_relative_paths(tmp_path):
     first = tmp_path / "b.py"
     second = tmp_path / "a.py"
