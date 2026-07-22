@@ -10,6 +10,7 @@ from app.providers.base import (
 )
 from app.providers.fake import FakeProvider
 from app.providers.disclosure import RecordedDisclosureProvider
+from app.providers.market import RecordedMarketSnapshotProvider
 from app.providers.news import RecordedNewsProvider
 
 __all__ = [
@@ -19,6 +20,7 @@ __all__ = [
     "Provider",
     "ProviderResultContractError",
     "RecordedDisclosureProvider",
+    "RecordedMarketSnapshotProvider",
     "RecordedNewsProvider",
     "create_provider_result",
     "fetch_required_providers",

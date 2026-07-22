@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "snapshots": [
+    {
+      "security_id": "KRX:005930",
+      "market": "KRX",
+      "ticker": "005930",
+      "security_name": "\uc0bc\uc131\uc804\uc790",
+      "security_type": "common_stock",
+      "trading_date": "2026-07-20",
+      "observed_at": "2026-07-20T15:30:00+09:00",
+      "price": 70000,
+      "previous_close": 70500,
+      "change": -500,
+      "change_percent": -0.709220,
+      "volume": 950000,
+      "market_session": "closing",
+      "currency": "KRW"
+    },
+    {
+      "security_id": "KRX:005930",
+      "market": "KRX",
+      "ticker": "005930",
+      "security_name": "\uc0bc\uc131\uc804\uc790",
+      "security_type": "common_stock",
+      "trading_date": "2026-07-21",
+      "observed_at": "2026-07-21T15:30:00+09:00",
+      "price": 71000,
+      "previous_close": 70000,
+      "change": 1000,
+      "change_percent": 1.428571,
+      "volume": 1000000,
+      "market_session": "closing",
+      "currency": "KRW"
+    },
+    {
+      "security_id": "KRX:000660",
+      "market": "KRX",
+      "ticker": "000660",
+      "security_name": "SK\ud558\uc774\ub2c9\uc2a4",
+      "security_type": "common_stock",
+      "trading_date": "2026-07-21",
+      "observed_at": "2026-07-21T15:30:00+09:00",
+      "price": 125000,
+      "previous_close": 126000,
+      "change": -1000,
+      "change_percent": -0.793651,
+      "volume": 800000,
+      "market_session": "closing",
+      "currency": "KRW"
+    },
+    {
+      "security_id": "KRX:005380",
+      "market": "KRX",
+      "ticker": "005380",
+      "security_name": "\ud604\ub300\uc790\ub3d9\ucc28",
+      "security_type": "common_stock",
+      "trading_date": "2026-07-21",
+      "observed_at": "2026-07-21T10:00:00+09:00",
+      "price": 250000,
+      "previous_close": 250000,
+      "change": 0,
+      "change_percent": 0,
+      "volume": null,
+      "market_session": "regular",
+      "currency": "KRW"
+    }
+  ]
+}

@@ -10,7 +10,7 @@
 - M1-07A status: `PASS`
 - M1-07B status: `PASS`
 - M1-07B completion commit: `40543c425b8f5c0d6987940536be83a5a7b7a96a`
-- Current status: `M1-08 second supplement implemented - user review pending`
+- Current status: `PASS - complete`
 - Implementation SHA: `fa8831e0e1deca56effb509dd25c9ac755f901e5`
 - Implementation commit: `Implement m1-08`
 - Implementation main push: `complete`
@@ -19,13 +19,19 @@
 - Supplement commit: `m1-08 conditional pass updates`
 - Supplement main push: `complete`
 - Supplement independent review: `CONDITIONAL PASS`
-- Supplement status: `additional required items addressed - user review pending`
-- Remaining items from supplement review: `static POSIX public-path coverage; Python parse fail-open; Python mapping credential coverage`
-- B3/M1-06~08 readiness completion: `pending final independent review`
+- Supplement status: `PASS - complete`
+- Remaining items from supplement review: `resolved by additional supplement`
+- Additional supplement SHA: `519e208fc4abdfc45d69418dc1cc60bb630011d8`
+- Additional supplement commit: `m1-08 conditional pass2 updates`
+- Additional supplement main push: `complete - user pushed to GitHub`
+- Additional supplement independent review: `PASS`
+- Final independent review: `PASS`
+- B3/M1-06~08 readiness completion: `PASS`
 - Dependency changes in Section 6: `APPROVED`
 - README creation: `APPROVED`
 - CLI-only preliminary implementation: `NOT_USED`
-- Commit/push/PR/merge/deploy: `NOT_APPROVED`
+- Commit/push: `complete through user-pushed main updates`
+- PR/merge/deploy: `NOT_RUN`
 - Live API/LLM/retrieval/M2: `OUT_OF_SCOPE`
 
 Adoption of this revised Task Card authorizes the M1-08 implementation, dependency changes, tests, README creation, and previous Task Card status synchronization described below. Commit and push remain separate approval actions.
@@ -1076,7 +1082,7 @@ Record commands, exit codes, passed counts, and smoke output. Record initial env
 - [x] GitHub CI accurately recorded
 - [x] commit/push accurately recorded
 - [x] supplement commit/push accurately recorded
-- [ ] B3/M1-06~08 readiness completion final PASS
+- [x] B3/M1-06~08 readiness completion final PASS
 - [x] completion described as B3/M1-06~08 readiness completion, not entire M1 completion
 
 ## 24. Stop Conditions
@@ -1172,7 +1178,7 @@ Detailed executed commands and results are recorded below.
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
 - Commit/push: `NOT_RUN`
-- B3/M1-06~08 readiness completion: `USER REVIEW PENDING`
+- B3/M1-06~08 readiness completion: `PASS`
 - Full M1 milestone completion: `NOT_CLAIMED - M1-09 MarketSnapshot remains open`
 
 ### 25.2 Conditional Pass Supplement Result Log
@@ -1257,8 +1263,8 @@ Detailed executed commands and results are recorded below.
   - Python mapping credential coverage
 - Final independent review: `NOT_RUN`
 - M1-08 supplement: `CONDITIONAL PASS - additional supplement required`
-- Final state: `additional supplement implemented - user review pending`
-- B3/M1-06~08 readiness completion: `pending final PASS`
+- Final state: `PASS - additional supplement completed and reviewed`
+- B3/M1-06~08 readiness completion: `PASS`
 - Full M1 milestone completion: `NOT_CLAIMED - M1-09 MarketSnapshot remains open`
 
 ### 25.3 Additional Supplement Result Log - M05/M06/M07
@@ -1327,7 +1333,11 @@ Detailed executed commands and results are recorded below.
   - output: `ok`
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
-- Additional supplement commit/push: `NOT_RUN`
-- Final independent review: `NOT_RUN`
-- Final state: `additional supplement implemented - user review pending`
-- B3/M1-06~08 readiness completion: `pending final PASS`
+- Additional supplement SHA: `519e208fc4abdfc45d69418dc1cc60bb630011d8`
+- Additional supplement commit: `m1-08 conditional pass2 updates`
+- Additional supplement main push: `complete - user pushed to GitHub`
+- Additional supplement independent review: `PASS`
+- Additional supplement commit/push: `complete`
+- Final independent review: `PASS`
+- Final state: `PASS - complete`
+- B3/M1-06~08 readiness completion: `PASS`
