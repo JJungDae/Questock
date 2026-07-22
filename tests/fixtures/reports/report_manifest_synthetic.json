@@ -1,0 +1,26 @@
+{
+  "manifest_id": "synthetic-report-001",
+  "security_id": "KRX:005930",
+  "title": "Synthetic Research Report",
+  "publisher": "Synthetic Research Lab",
+  "published_at": "2026-01-15",
+  "source_url": null,
+  "source_asset_id": "synthetic-report-asset-001",
+  "access_note": "Synthetic fixture asset only; no real report source.",
+  "usage_note": "Synthetic unit fixture; not approved for real corpus use.",
+  "usage_review_status": "synthetic",
+  "corpus_ingest_allowed": false,
+  "external_llm_processing_allowed": false,
+  "file_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "hash_scope": "normalized_source_bytes",
+  "hash_verification_status": "synthetic",
+  "documents": [
+    "report:synthetic-report-001:section-1",
+    "report:synthetic-report-001:section-2"
+  ],
+  "ingestion_version": "report-ingest-m1-06-v1",
+  "report_type": "synthetic_unit",
+  "basis_date": "2026-01-14",
+  "language": "en"
+}
+

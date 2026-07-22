@@ -358,9 +358,9 @@ GitHub CI: `NOT_RUN — 별도 확인 전 성공 주장 금지`
 
 ## 21. 승인 상태
 - Task Card 작성 일시: 2026-07-22
-- 계획 상태: 구현 완료, 사용자 검수 대기
+- 계획 상태: 완료
 - 구현 승인: 승인됨, 첨부 지시 기준
-- commit/push 승인: 미승인
+- commit/push: 완료, 사용자 검수 목적
 - Live OpenDART adapter: `PLANNED/NOT_IMPLEMENTED`
 - Live NAVER adapter: `PLANNED/NOT_IMPLEMENTED`
 - M1-06 리서치 리포트 ingest: `NOT_RUN`
@@ -371,7 +371,10 @@ GitHub CI: `NOT_RUN — 별도 확인 전 성공 주장 금지`
 - 최초 구현 SHA: `f20b33d7f77edc04f2c7b4599b2464c5f553d8be`
 - 최초 main push: 완료
 - 사용자 검수: `CONDITIONAL PASS`
-- 보완 SHA: 미생성, 사용자 별도 승인 전 commit/push 미수행
+- 보완 SHA: `8aad027aa9eda6badb15a6a0b2e78674681c4764`
+- 보완 main push: 완료
+- 보완 검수 최종 판정: `PASS`
+- M1-05 상태: 완료
 - 수정 파일:
   - `app/providers/disclosure.py`
   - `app/providers/__init__.py`
@@ -443,15 +446,18 @@ GitHub CI: `NOT_RUN — 별도 확인 전 성공 주장 금지`
 - live OpenDART: `NOT_RUN`
 - live adapter: `PLANNED/NOT_IMPLEMENTED`
 - GitHub CI: `NOT_RUN`
-- commit/push: `NOT_RUN`
-- 최종 상태: 보완 구현 후 사용자 재검수 대기
+- commit/push: 완료, 사용자 검수 목적
+- 최종 상태: 완료
 
 ## 23. CONDITIONAL PASS 보완 결과 기록
 - 기록 일시: 2026-07-22
 - 최초 구현 SHA: `f20b33d7f77edc04f2c7b4599b2464c5f553d8be`
 - 최초 main push: 완료
 - 사용자 검수: `CONDITIONAL PASS`
-- 보완 SHA: 미생성, 사용자 별도 승인 전 commit/push 미수행
+- 보완 SHA: `8aad027aa9eda6badb15a6a0b2e78674681c4764`
+- 보완 main push: 완료
+- 보완 검수 최종 판정: `PASS`
+- M1-05 상태: 완료
 - 보완 범위:
   - OpenDART `rm` 의미 수정
   - `rm="유"`는 유가증권시장 소관으로만 처리하고 후속 정정으로 보지 않음
@@ -480,5 +486,24 @@ GitHub CI: `NOT_RUN — 별도 확인 전 성공 주장 금지`
 - live adapter: `PLANNED/NOT_IMPLEMENTED`
 - M1-06 구현: `NOT_RUN`
 - GitHub CI: `NOT_RUN`
-- commit/push: `NOT_RUN`
-- 최종 상태: 보완 구현 후 사용자 재검수 대기
+- commit/push: 완료, 사용자 검수 목적
+- 최종 상태: 완료
+## M1-05 Final Status Sync For M1-06 Start
+- Sync date: 2026-07-22
+- Implementation base commit: `192207e35c902aded50d43facc3c67393f2eb3b7`
+- Initial implementation SHA: `f20b33d7f77edc04f2c7b4599b2464c5f553d8be`
+- Initial main push: complete
+- Initial independent review: `CONDITIONAL PASS`
+- Supplement SHA: `8aad027aa9eda6badb15a6a0b2e78674681c4764`
+- Supplement main push: complete
+- Final independent review: `PASS`
+- M1-05 status: complete
+- M1-06 entry: possible
+- Kept test records:
+  - targeted: `70 passed in 0.24s`
+  - regression: `221 passed in 0.34s`
+  - smoke: `ok`
+- Live OpenDART validation: `NOT_RUN`
+- corp-code source verification: `NOT_RUN`
+- real disclosure coverage: `NOT_RUN`
+- GitHub CI: `NOT_RUN`

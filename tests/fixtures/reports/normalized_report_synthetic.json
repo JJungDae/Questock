@@ -1,0 +1,42 @@
+{
+  "fixture_version": 1,
+  "fixture_type": "synthetic_unit",
+  "manifest_id": "synthetic-report-001",
+  "documents": [
+    {
+      "manifest_id": "synthetic-report-001",
+      "segment_id": "section-1",
+      "document_id": "report:synthetic-report-001:section-1",
+      "security_id": "KRX:005930",
+      "mentioned_security_ids": [],
+      "subject_scope": "company_specific",
+      "page": 1,
+      "page_basis": "pdf_1_based",
+      "section": "Synthetic Research Report",
+      "text": "Synthetic source excerpt for unit contract testing only.",
+      "text_kind": "source_excerpt",
+      "manual_verification_status": "synthetic",
+      "contains_numeric_claims": false,
+      "numeric_claims_verified": false
+    },
+    {
+      "manifest_id": "synthetic-report-001",
+      "segment_id": "section-2",
+      "document_id": "report:synthetic-report-001:section-2",
+      "security_id": "KRX:005930",
+      "mentioned_security_ids": [
+        "KRX:000660"
+      ],
+      "subject_scope": "company_centered_with_mentions",
+      "page": 2,
+      "page_basis": "source_section_only",
+      "section": "Synthetic Peer Context",
+      "text": "Synthetic manual summary referencing a supported peer without real report text.",
+      "text_kind": "manual_summary",
+      "manual_verification_status": "synthetic",
+      "contains_numeric_claims": true,
+      "numeric_claims_verified": false,
+      "summary_kind": "synthetic_summary"
+    }
+  ]
+}
