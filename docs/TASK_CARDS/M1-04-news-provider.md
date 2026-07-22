@@ -336,7 +336,8 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.providers.news import Reco
 - 최초 구현 SHA: `751274529f0948e489655694ab64c0d642f57078`
 - 최초 구현 main push: 완료, 사용자 검수 목적
 - 사용자 검수 판정: `CONDITIONAL PASS`
-- 보완 SHA: 미생성, 사용자 별도 승인 전 commit/push 미수행
+- 보완 SHA: `192207e35c902aded50d43facc3c67393f2eb3b7`
+- 보완 main push: 완료
 - 구현 범위:
   - `RecordedNewsProvider` only
   - NAVER API HUB News 형식 recorded fixture
@@ -370,15 +371,17 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.providers.news import Reco
 - live NAVER 검증: `NOT_RUN — 승인 범위 제외`
 - GitHub CI: `NOT_RUN`
 - 독립 검수 환경 재실행: `NOT_RUN`
-- 독립 검수 판정: `CONDITIONAL PASS`
-- M1-04 상태: 보완 구현 완료, 사용자 재검수 전
+- 독립 검수 최종 판정: `PASS`
+- M1-04 상태: 완료
+- M1-05 진입: 가능
 
 ## 19. CONDITIONAL PASS 보완 결과 기록
 - 기록 일시: 2026-07-22
 - 최초 구현 SHA: `751274529f0948e489655694ab64c0d642f57078`
 - 최초 구현 main push: 완료, 사용자 검수 목적
 - 사용자 검수 판정: `CONDITIONAL PASS`
-- 보완 SHA: 미생성, 사용자 별도 승인 전 commit/push 미수행
+- 보완 SHA: `192207e35c902aded50d43facc3c67393f2eb3b7`
+- 보완 main push: 완료
 - 보완 범위:
   - description-only 질문 종목 attribution을 primary로 수정
   - description에 질문 종목과 다른 지원 종목이 함께 있을 때 질문 종목 primary, 다른 종목 mentioned 처리
@@ -406,4 +409,7 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.providers.news import Reco
 - 실제 뉴스 coverage 종목별 10건 이상: `NOT_RUN — 승인 범위 제외`
 - GitHub CI: `NOT_RUN`
 - 독립 검수 환경 재실행: `NOT_RUN`
-- M1-05 구현: `NOT_RUN — M1-04 보완 재검수 PASS 전 시작 금지`
+- 독립 검수 최종 판정: `PASS`
+- M1-04 상태: 완료
+- M1-05 진입: 가능
+- M1-05 구현: M1-05 Task Card에서 별도 진행 및 결과 기록

@@ -1,0 +1,75 @@
+{
+  "fixture_version": 1,
+  "fixture_type": "synthetic_unit",
+  "case": "response",
+  "response": {
+    "status": "000",
+    "message": "OK",
+    "page_no": 1,
+    "page_count": 10,
+    "total_count": 5,
+    "total_page": 1,
+    "list": [
+      {
+        "corp_cls": "Y",
+        "corp_name": "Samsung Electronics",
+        "corp_code": "00126380",
+        "stock_code": "005930",
+        "report_nm": "[\uae30\uc7ac\uc815\uc815] Annual disclosure",
+        "rcept_no": "20260721000005",
+        "flr_nm": "Finance Team",
+        "rcept_dt": "20260721",
+        "rm": "\uc720"
+      },
+      {
+        "corp_cls": "Y",
+        "corp_name": "Samsung Electronics",
+        "corp_code": "00126380",
+        "stock_code": "005930",
+        "report_nm": "Annual disclosure",
+        "rcept_no": "20260720000004",
+        "flr_nm": "Finance Team",
+        "rcept_dt": "20260720",
+        "rm": ""
+      },
+      {
+        "corp_cls": "Y",
+        "corp_name": "SK hynix",
+        "corp_code": "00164779",
+        "stock_code": "000660",
+        "report_nm": "HBM disclosure",
+        "rcept_no": "20260719000003",
+        "flr_nm": "IR Team",
+        "rcept_dt": "20260719",
+        "rm": ""
+      },
+      {
+        "corp_cls": "Y",
+        "corp_name": "Hyundai Motor",
+        "corp_code": "00164742",
+        "stock_code": "005380",
+        "report_nm": "EV disclosure",
+        "rcept_no": "20260718000002",
+        "flr_nm": "Disclosure Team",
+        "rcept_dt": "20260718",
+        "rm": "\ucca0"
+      },
+      {
+        "corp_cls": "Y",
+        "corp_name": "Samsung Electronics",
+        "corp_code": "00126380",
+        "stock_code": "005930",
+        "report_nm": "Historical disclosure",
+        "rcept_no": "20260717000001",
+        "flr_nm": "Finance Team",
+        "rcept_dt": "20260717",
+        "rm": ""
+      }
+    ]
+  },
+  "extensions": {
+    "correction_links": {
+      "20260721000005": "20260720000004"
+    }
+  }
+}
