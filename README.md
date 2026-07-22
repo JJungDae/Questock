@@ -13,7 +13,7 @@ Install the approved local dependencies:
 python -m pip install --target .deps "pydantic>=2.7,<3" "fastapi>=0.115,<1" "uvicorn>=0.30,<1" "pytest>=8,<9" "httpx>=0.27,<1"
 ```
 
-Empty environment placeholders are documented in `.env.example`. Keep real values only in a local `.env` file and do not commit or print them.
+Empty environment placeholders are documented in `.env.example`. Keep real values in local environment variables or in an untracked environment file loaded by your shell or process manager. Questock does not automatically load `.env` files in M1-08.
 
 ## Fixture Readiness
 

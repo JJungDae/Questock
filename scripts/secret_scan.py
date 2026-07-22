@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 import re
@@ -9,6 +10,7 @@ import unicodedata
 from collections.abc import Iterable
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Any
 from urllib.parse import unquote_plus
 
 TEXT_EXTENSIONS = {
@@ -107,10 +109,8 @@ def scan_paths(paths: Iterable[Path], *, repo_root: Path) -> list[SecretFinding]
         except (OSError, UnicodeDecodeError):
             raise SecretScanError("secret scan failed") from None
         rel_text = relative.as_posix()
+        findings.extend(_credential_findings_for_text(text, relative_path=relative, rel_text=rel_text))
         for line_number, line in enumerate(text.splitlines(), start=1):
-            credential_rule = _credential_assignment_rule(line)
-            if credential_rule is not None:
-                findings.append(SecretFinding(path=rel_text, line=line_number, rule_id=credential_rule))
             if _is_public_surface(relative) and _contains_public_absolute_path(line):
                 findings.append(SecretFinding(path=rel_text, line=line_number, rule_id="public_absolute_path"))
     return sorted(findings)
@@ -141,7 +141,89 @@ def _is_public_surface(relative: Path) -> bool:
     return False
 
 
-def _credential_assignment_rule(line: str) -> str | None:
+def _credential_findings_for_text(text: str, *, relative_path: Path, rel_text: str) -> list[SecretFinding]:
+    if relative_path.suffix == ".py":
+        return _python_credential_findings(text, rel_text=rel_text)
+    if relative_path.suffix == ".json":
+        findings = _json_credential_findings(text, rel_text=rel_text)
+        if findings is not None:
+            return findings
+    findings: list[SecretFinding] = []
+    for line_number, line in enumerate(text.splitlines(), start=1):
+        rule = _credential_assignment_rule(line, relative_path=relative_path)
+        if rule is not None:
+            findings.append(SecretFinding(path=rel_text, line=line_number, rule_id=rule))
+    return findings
+
+
+def _python_credential_findings(text: str, *, rel_text: str) -> list[SecretFinding]:
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return []
+    findings: list[SecretFinding] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                finding = _python_assignment_finding(target, node.value, node.lineno, rel_text)
+                if finding is not None:
+                    findings.append(finding)
+        elif isinstance(node, ast.AnnAssign):
+            finding = _python_assignment_finding(node.target, node.value, node.lineno, rel_text)
+            if finding is not None:
+                findings.append(finding)
+    return sorted(findings)
+
+
+def _python_assignment_finding(target: ast.expr, value: ast.expr | None, line_number: int, rel_text: str) -> SecretFinding | None:
+    if not isinstance(target, ast.Name) or value is None:
+        return None
+    if not _is_credential_key(target.id):
+        return None
+    if not isinstance(value, ast.Constant) or not isinstance(value.value, str) or not value.value.strip():
+        return None
+    if _is_environment_reference(value.value):
+        return None
+    return SecretFinding(path=rel_text, line=line_number, rule_id="non_empty_credential_assignment")
+
+
+def _json_credential_findings(text: str, *, rel_text: str) -> list[SecretFinding] | None:
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError:
+        return None
+    lines = text.splitlines()
+    findings: list[SecretFinding] = []
+    for key, value in _walk_json_object(parsed):
+        if not _is_credential_key(key):
+            continue
+        if isinstance(value, str) and value.strip() and not _is_environment_reference(value):
+            findings.append(
+                SecretFinding(path=rel_text, line=_line_for_json_key(lines, key), rule_id="non_empty_credential_assignment")
+            )
+    return sorted(findings)
+
+
+def _walk_json_object(value: Any) -> Iterable[tuple[str, Any]]:
+    if isinstance(value, dict):
+        for key, nested in value.items():
+            if isinstance(key, str):
+                yield key, nested
+            yield from _walk_json_object(nested)
+    elif isinstance(value, list):
+        for nested in value:
+            yield from _walk_json_object(nested)
+
+
+def _line_for_json_key(lines: list[str], key: str) -> int:
+    quoted = json.dumps(key, ensure_ascii=False)
+    for index, line in enumerate(lines, start=1):
+        if quoted in line or key in line:
+            return index
+    return 1
+
+
+def _credential_assignment_rule(line: str, *, relative_path: Path) -> str | None:
     match = ASSIGNMENT_RE.match(line)
     if match is None:
         return None
@@ -150,12 +232,16 @@ def _credential_assignment_rule(line: str) -> str | None:
         return None
     if match.group("op") == ":" and re.search(r"\s=\s", match.group("value")):
         return None
-    key = _normalize_key(raw_key)
-    if key not in EXACT_CREDENTIAL_KEYS and key not in GENERIC_CREDENTIAL_KEYS and not _has_credential_suffix(key):
+    if not _is_credential_key(raw_key):
         return None
-    if not _is_non_empty_literal(match.group("value"), raw_key=raw_key):
+    if not _is_non_empty_literal(match.group("value"), raw_key=raw_key, relative_path=relative_path):
         return None
     return "non_empty_credential_assignment"
+
+
+def _is_credential_key(value: str) -> bool:
+    key = _normalize_key(value)
+    return key in EXACT_CREDENTIAL_KEYS or key in GENERIC_CREDENTIAL_KEYS or _has_credential_suffix(key)
 
 
 def _normalize_key(value: str) -> str:
@@ -168,7 +254,7 @@ def _has_credential_suffix(key: str) -> bool:
     return any(key.endswith(suffix) for suffix in GENERIC_CREDENTIAL_KEYS)
 
 
-def _is_non_empty_literal(value: str, *, raw_key: str) -> bool:
+def _is_non_empty_literal(value: str, *, raw_key: str, relative_path: Path) -> bool:
     cleaned = value.strip().rstrip(",").strip()
     if not cleaned:
         return False
@@ -176,17 +262,22 @@ def _is_non_empty_literal(value: str, *, raw_key: str) -> bool:
         cleaned = cleaned.split("#", 1)[0].strip()
     if cleaned in {"''", '""', "null", "None"}:
         return False
-    if cleaned.startswith(("${", "os.getenv", "os.environ")):
+    if _is_environment_reference(cleaned):
         return False
+    if relative_path.suffix == ".py":
+        return cleaned[0] in {"'", '"'}
     if cleaned[0] in {"'", '"'}:
         quote = cleaned[0]
         if len(cleaned) < 2 or quote not in cleaned[1:]:
             return False
         content = cleaned[1 : cleaned.rfind(quote)]
-        return bool(content.strip()) and not content.strip().startswith("${")
-    if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", cleaned) and not raw_key.isupper():
-        return False
+        return bool(content.strip()) and not _is_environment_reference(content)
     return bool(cleaned)
+
+
+def _is_environment_reference(value: str) -> bool:
+    stripped = value.strip()
+    return stripped.startswith(("${", "os.getenv", "os.environ"))
 
 
 def _contains_public_absolute_path(line: str) -> bool:

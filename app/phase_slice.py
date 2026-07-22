@@ -7,6 +7,7 @@ from datetime import date
 from pathlib import Path
 from types import TracebackType
 from typing import Any
+from urllib.parse import urlsplit
 
 from app.config import ConfigValidationError, ProviderConfig
 from app.core.models import DateRange, FinancialDocument, ProviderResult, SecurityIdentifier
@@ -61,7 +62,8 @@ SECRET_SENTINELS = (
 )
 WINDOWS_ABSOLUTE_PATH_RE = re.compile(r"(?<![A-Za-z])[A-Za-z]:[\\/]")
 UNC_PATH_RE = re.compile(r"(?<!:)//[A-Za-z0-9_.-]+/|\\\\[A-Za-z0-9_.-]+[\\/]")
-POSIX_ABSOLUTE_PATH_RE = re.compile(r"(^|[\s\"'(=])/(root|opt|workspace|home|Users|etc|var|tmp)(/|$)")
+POSIX_ABSOLUTE_PATH_RE = re.compile(r"(^|[\s\"'(=])/(?!health(?:$|\s))(?=[A-Za-z0-9._~-])[^\s\"'<>]*")
+ALLOWED_ROUTE_TOKENS = {"/health", "GET /health"}
 
 PhaseFetcher = Callable[..., Awaitable[ProviderResult[Any]]]
 ReportLoader = Callable[[SecurityIdentifier], Sequence[FinancialDocument]]
@@ -527,6 +529,7 @@ def _assert_public_payload_safe(value: Any) -> None:
         for key, nested in value.items():
             if not isinstance(key, str):
                 raise PublicPayloadSafetyError("public payload failed safety check")
+            _assert_public_payload_safe(key)
             _assert_public_payload_safe(nested)
         return
     if isinstance(value, (list, tuple)):
@@ -542,6 +545,14 @@ def _assert_public_payload_safe(value: Any) -> None:
 
 def _looks_unsafe_public_string(value: str) -> bool:
     stripped = value.strip()
+    if not stripped:
+        return False
+    if any(sentinel in value for sentinel in SECRET_SENTINELS):
+        return True
+    if _is_http_url(stripped):
+        return False
+    if stripped in ALLOWED_ROUTE_TOKENS:
+        return False
     lowered = stripped.lower()
     normalized = stripped.replace("\\", "/")
     return (
@@ -549,8 +560,15 @@ def _looks_unsafe_public_string(value: str) -> bool:
         or bool(UNC_PATH_RE.search(stripped))
         or bool(WINDOWS_ABSOLUTE_PATH_RE.search(stripped))
         or bool(POSIX_ABSOLUTE_PATH_RE.search(normalized))
-        or any(sentinel in value for sentinel in SECRET_SENTINELS)
     )
+
+
+def _is_http_url(value: str) -> bool:
+    try:
+        parts = urlsplit(value)
+    except ValueError:
+        return False
+    return parts.scheme.lower() in {"http", "https"} and bool(parts.netloc)
 
 
 __all__ = [

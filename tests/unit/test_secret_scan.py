@@ -56,6 +56,48 @@ def test_scan_detects_generic_prefixed_and_encoded_direct_literal_assignments(tm
     assert findings[0].rule_id == "non_empty_credential_assignment"
 
 
+@pytest.mark.parametrize(
+    ("relative_path", "content"),
+    [
+        (".env", "api_key=secret\n"),
+        ("config.yaml", "client_secret: secret\n"),
+        ("settings.ini", "access_token=tokenvalue\n"),
+        ("module.py", "api_key = " + '"secret"\n'),
+        ("config.json", '{"api_key":"secret","mode":"test"}\n'),
+    ],
+)
+def test_file_aware_scanner_detects_direct_generic_credentials(tmp_path, relative_path, content):
+    path = tmp_path / relative_path
+    write(path, content)
+
+    findings = secret_scan.scan_paths([path], repo_root=tmp_path)
+
+    assert findings == [
+        secret_scan.SecretFinding(
+            path=Path(relative_path).as_posix(),
+            line=1,
+            rule_id="non_empty_credential_assignment",
+        )
+    ]
+
+
+@pytest.mark.parametrize(
+    ("relative_path", "content"),
+    [
+        ("module.py", "api_key = SECRET_FROM_RUNTIME\n"),
+        ("module.py", 'api_key = os.getenv("API_KEY")\n'),
+        ("module.py", 'api_key = os.environ["API_KEY"]\n'),
+        (".env.example", "OPENDART_API_KEY=\n"),
+        ("config.yaml", "client_secret: ${CLIENT_SECRET}\n"),
+    ],
+)
+def test_file_aware_scanner_allows_runtime_references_and_empty_placeholders(tmp_path, relative_path, content):
+    path = tmp_path / relative_path
+    write(path, content)
+
+    assert secret_scan.scan_paths([path], repo_root=tmp_path) == []
+
+
 def test_scan_sorts_findings_and_uses_relative_paths(tmp_path):
     first = tmp_path / "b.py"
     second = tmp_path / "a.py"

@@ -10,7 +10,13 @@
 - M1-07A status: `PASS`
 - M1-07B status: `PASS`
 - M1-07B completion commit: `40543c425b8f5c0d6987940536be83a5a7b7a96a`
-- Current status: `IMPLEMENTED - USER REVIEW PENDING`
+- Current status: `M1-08 supplement implemented - final independent review pending`
+- Implementation SHA: `fa8831e0e1deca56effb509dd25c9ac755f901e5`
+- Implementation commit: `Implement m1-08`
+- Implementation main push: `complete`
+- Initial independent review: `CONDITIONAL PASS`
+- Supplement status: `implemented - final independent review pending`
+- B3/M1-06~08 readiness completion: `pending final independent review`
 - Dependency changes in Section 6: `APPROVED`
 - README creation: `APPROVED`
 - CLI-only preliminary implementation: `NOT_USED`
@@ -1050,19 +1056,22 @@ Record commands, exit codes, passed counts, and smoke output. Record initial env
 - [x] exact dates and exact document counts pass
 - [x] three source samples sanitized and deterministic
 - [x] glossary readiness and representative locator pass
-- [x] top-level/HTTP/CLI statuses pass
-- [x] runtime payload safety passes
-- [x] tracked-file scanner passes with zero findings
+- [x] top-level/HTTP/CLI statuses pass after supplement
+- [x] runtime payload safety passes after supplement
+- [x] tracked-file scanner passes after supplement
 - [x] scanner failure and redaction tests pass
 - [x] M1-07/M1-07B status sync complete
-- [x] targeted tests pass
-- [x] M1 regression passes
+- [x] targeted tests pass after supplement
+- [x] M1 regression passes after supplement
+- [x] CLI unit tests pass after supplement
 - [x] CLI smoke passes
 - [x] API request smoke passes
 - [x] secret scan passes
 - [x] compile passes
 - [x] GitHub CI accurately recorded
 - [x] commit/push accurately recorded
+- [x] supplement commit/push accurately recorded
+- [ ] B3/M1-06~08 readiness completion final PASS
 - [x] completion described as B3/M1-06~08 readiness completion, not entire M1 completion
 
 ## 24. Stop Conditions
@@ -1159,4 +1168,83 @@ Detailed executed commands and results are recorded below.
 - Independent pytest rerun: `NOT_RUN`
 - Commit/push: `NOT_RUN`
 - B3/M1-06~08 readiness completion: `USER REVIEW PENDING`
+- Full M1 milestone completion: `NOT_CLAIMED - M1-09 MarketSnapshot remains open`
+
+### 25.2 Conditional Pass Supplement Result Log
+
+- Supplement trigger:
+  - Initial implementation SHA: `fa8831e0e1deca56effb509dd25c9ac755f901e5`
+  - Initial implementation commit: `Implement m1-08`
+  - Initial implementation main push: `complete`
+  - Initial independent review: `CONDITIONAL PASS`
+  - Required supplement: public payload POSIX path/key safety, file-aware generic credential scan, CLI unit tests, README wording, Task Card status sync.
+- Preflight commands:
+  - `git status --short`
+    - exit code: `0`
+    - output: clean
+  - `git rev-parse HEAD`
+    - exit code: `0`
+    - output: `fa8831e0e1deca56effb509dd25c9ac755f901e5`
+  - `git log -1 --oneline`
+    - exit code: `0`
+    - output: `fa8831e Implement m1-08`
+- Supplement modified files:
+  - `app/phase_slice.py`
+  - `scripts/secret_scan.py`
+  - `tests/unit/test_health_phase_slice.py`
+  - `tests/unit/test_secret_scan.py`
+  - `tests/unit/test_phase_slice_cli.py`
+  - `README.md`
+  - `docs/TASK_CARDS/M1-08-health-config-phase-slice.md`
+- Supplement changes:
+  - Public payload safety now applies string safety to dict keys and values.
+  - Public payload safety allows exact `/health`, `GET /health`, and whole HTTP(S) URLs, while blocking filesystem-shaped POSIX absolute paths including `/mnt`, `/srv`, `/usr`, `/app`, `/media`, custom roots, and embedded path strings.
+  - Secret scanner now passes `relative_path` into credential assignment evaluation and uses file-aware rules.
+  - Python scanner uses AST to report direct string literal credential assignments while allowing runtime variable/env references.
+  - JSON scanner parses valid JSON and reports credential keys structurally.
+  - `.env`, INI/CFG/CONF, YAML, TOML, Markdown, and TXT keep conservative direct-assignment detection without broad test allowlists.
+  - CLI unit tests directly verify ok/degraded/error/exception/arbitrary-argument exit code and sanitized JSON output.
+  - README now states Questock does not automatically load `.env` files in M1-08.
+- Compile pre-test command: `python -m compileall app tests scripts -q`
+  - exit code: `0`
+- Targeted first command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_health_phase_slice.py tests/unit/test_phase_slice_cli.py tests/unit/test_secret_scan.py tests/unit/test_api_health.py -q`
+  - exit code: `1`
+  - output: `No module named pytest.__main__; 'pytest' is a package and cannot be directly executed`
+  - cause: sandboxed run could not use `.deps` pytest environment.
+- Targeted rerun command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_health_phase_slice.py tests/unit/test_phase_slice_cli.py tests/unit/test_secret_scan.py tests/unit/test_api_health.py -q`
+  - execution: approved elevated run
+  - exit code: `0`
+  - passed count: `57 passed`
+  - CLI unit tests included: `5`
+  - warning: FastAPI TestClient emitted Starlette deprecation warning for `httpx`.
+- Regression command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_core_models.py tests/unit/test_status_contracts.py tests/unit/test_security_resolver.py tests/unit/test_provider_base.py tests/unit/test_config.py tests/unit/test_news_provider.py tests/unit/test_disclosure_provider.py tests/unit/test_report_ingest.py tests/unit/test_glossary_ingest.py tests/unit/test_health_phase_slice.py tests/unit/test_phase_slice_cli.py tests/unit/test_secret_scan.py tests/unit/test_api_health.py -q`
+  - execution: approved elevated run
+  - exit code: `0`
+  - passed count: `672 passed`
+  - warning: FastAPI TestClient emitted Starlette deprecation warning for `httpx`.
+- CLI smoke command: `$env:PYTHONPATH = ".deps;."; python scripts/m1_phase_slice.py`
+  - execution: approved elevated run
+  - exit code: `0`
+  - output summary: `status=ok`, `mode=fixture_readiness`, `financial_document_count=4`
+- Secret scan command: `python scripts/secret_scan.py`
+  - exit code: `0`
+  - output: `[]`
+- API smoke command: `$env:PYTHONPATH = ".deps;."; python -c "from fastapi.testclient import TestClient; from app.api.main import app; response=TestClient(app).get('/health'); body=response.json(); print(response.status_code, body['status'], body['mode'])"`
+  - execution: approved elevated run
+  - exit code: `0`
+  - output: `200 ok fixture_readiness`
+  - warning: FastAPI TestClient emitted Starlette deprecation warning for `httpx`.
+- Import smoke command: `$env:PYTHONPATH = ".deps;."; python -c "from app.api.main import app; print('ok')"`
+  - execution: approved elevated run
+  - exit code: `0`
+  - output: `ok`
+- Compile final command: `python -m compileall app tests scripts -q`
+  - exit code: `0`
+- GitHub CI: `NOT_RUN`
+- Independent pytest rerun: `NOT_RUN`
+- Supplement commit/push: `NOT_RUN`
+- Final independent review: `NOT_RUN`
+- M1-08 supplement: `implemented`
+- Final state: `final independent review pending`
+- B3/M1-06~08 readiness completion: `pending final PASS`
 - Full M1 milestone completion: `NOT_CLAIMED - M1-09 MarketSnapshot remains open`

@@ -401,11 +401,33 @@ def test_public_payload_safety_rejects_forbidden_values_without_echoing():
         assert_public_payload_safe({"safe": ["C:/Users/name/secret"]})
     assert "C:/Users" not in str(exc_info.value)
 
-    for unsafe in ["//server/share", "/workspace/secret", "prefix /workspace/secret", "file://secret", SENTINEL]:
+    for unsafe in [
+        "//server/share",
+        "/secret",
+        "/mnt/data/secret",
+        "/srv/app/config",
+        "/usr/local/private",
+        "/app/file",
+        "/media/user/file",
+        "/custom/root/file",
+        "prefix /srv/app/config",
+        "file://secret",
+        SENTINEL,
+    ]:
         with pytest.raises(PublicPayloadSafetyError):
             assert_public_payload_safe({"value": unsafe})
 
+    for unsafe_key_payload in [
+        {"/mnt/data/secret": "value"},
+        {"safe": {"/custom/root/file": "value"}},
+    ]:
+        with pytest.raises(PublicPayloadSafetyError):
+            assert_public_payload_safe(unsafe_key_payload)
+
+    assert_public_payload_safe({"value": "/health"})
+    assert_public_payload_safe({"value": "GET /health"})
     assert_public_payload_safe({"value": "http://127.0.0.1:8000/health"})
+    assert_public_payload_safe({"value": "https://example.com/path"})
 
     with pytest.raises(PublicPayloadSafetyError):
         assert_public_payload_safe({"document_id": "x", "source_type": "news", "provider": "p", "title": "t", "text": "bad"})
