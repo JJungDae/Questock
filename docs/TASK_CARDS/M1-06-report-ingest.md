@@ -319,8 +319,10 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.ingest.reports import load
 
 ## 14.4 Final Type And Publication Supplement
 - Supplement date: 2026-07-22
-- Final type/publication supplement commit/push: `NOT_RUN`
-- Current status: M13, M14, and M16 supplement implemented, user review pending
+- Final type/publication supplement commit SHA: `56b9c607d23dd871f0d5187a5ab7ca5c6340e84b`
+- Current status: complete
+- Final independent review: `PASS`
+- M1-07 implementation entry: allowed
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
 - Supplement scope:
@@ -332,6 +334,15 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.ingest.reports import load
   - Timezone offset basis is validated through Python timezone construction.
   - Coverage skips malformed direct manifest entries and continues with valid entries.
   - M16 manifest document element type checks now run before uniqueness checks, preventing raw `TypeError` for unhashable direct dataclass document IDs.
+
+## 14.5 Final Review Sync
+- Sync date: 2026-07-22
+- Latest SHA: `56b9c607d23dd871f0d5187a5ab7ca5c6340e84b`
+- Local HEAD verification: `56b9c607d23dd871f0d5187a5ab7ca5c6340e84b`
+- Final independent review: `PASS`
+- M1-06 status: complete
+- M1-07 implementation entry: allowed
+- Code/test changes in this sync: none; Task Card status only.
 
 ## 15. Actual Verification Results
 - PYTHONPATH: `.test_deps;.`
@@ -361,7 +372,8 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.ingest.reports import load
 - External LLM processing of report text: `NOT_RUN`
 - Live adapter/API/retrieval/UI: `NOT_RUN`
 - GitHub CI: `NOT_RUN`
-- M1-07/M2/LLM work: `NOT_RUN`
+- M1-07 implementation: allowed, not started in this status sync
+- M2/LLM work: `NOT_RUN`
 
 ## 17. Known Limitations
 - M1-06 validates manually supplied manifest and section documents only.
@@ -371,7 +383,9 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.ingest.reports import load
 - Real corpus mode remains unusable until source files/URLs, permissions, source bytes, and asset resolution are supplied.
 
 ## 18. Review Status
-- User implementation approval: pending review.
-- Independent review: `NOT_RUN`
+- User implementation approval: `PASS`
+- Independent review: `PASS`
 - GitHub CI: `NOT_RUN`
-- Final M1-06 status: M13, M14, and M16 supplement implemented, user review pending.
+- Final M1-06 status: complete.
+- Completion SHA: `56b9c607d23dd871f0d5187a5ab7ca5c6340e84b`
+- M1-07 implementation entry: allowed.
