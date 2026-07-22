@@ -1,6 +1,8 @@
 import copy
 import hashlib
 import json
+import traceback
+from dataclasses import replace
 from datetime import UTC, date, datetime
 from pathlib import Path
 
@@ -294,6 +296,9 @@ def test_source_url_is_canonicalized_without_dropping_path_or_query():
         "folder\\report",
         "asset id",
         "file://asset",
+        ".",
+        "..",
+        "---",
         "",
     ],
 )
@@ -504,6 +509,91 @@ def test_corpus_build_requires_approved_permissions_hash_source_bytes_and_verifi
         build_manual_research_documents(manifest(), load_normalized_report_documents(DOCUMENTS_PATH), mode="corpus", as_of_date=date(2026, 7, 22))
 
 
+@pytest.mark.parametrize("fixture_type", ["synthetic_unit", "corpus", "anything"])
+def test_corpus_build_rejects_all_bundle_inputs(fixture_type):
+    source_bytes = b"approved report bytes"
+    approved = corpus_manifest(source_bytes=source_bytes)
+    bundle = NormalizedReportDocumentBundle(
+        manifest_id=approved.manifest_id,
+        fixture_type=fixture_type,
+        documents=corpus_documents(),
+    )
+
+    with pytest.raises(ReportBundleValidationError):
+        build_manual_research_documents(
+            approved,
+            bundle,
+            mode="corpus",
+            as_of_date=date(2026, 7, 22),
+            source_bytes=source_bytes,
+        )
+
+
+def test_corpus_build_accepts_plain_list_and_tuple_when_other_gates_pass():
+    source_bytes = b"approved report bytes"
+    approved = corpus_manifest(source_bytes=source_bytes)
+
+    list_result = build_manual_research_documents(
+        approved,
+        list(corpus_documents()),
+        mode="corpus",
+        as_of_date=date(2026, 7, 22),
+        source_bytes=source_bytes,
+    )
+    tuple_result = build_manual_research_documents(
+        approved,
+        corpus_documents(),
+        mode="corpus",
+        as_of_date=date(2026, 7, 22),
+        source_bytes=source_bytes,
+    )
+
+    assert len(list_result) == 2
+    assert len(tuple_result) == 2
+
+
+@pytest.mark.parametrize(
+    "bad_documents",
+    [
+        "not documents",
+        b"bytes",
+        bytearray(b"bytes"),
+        {"document": "..."},
+        [],
+        (),
+        (doc for doc in []),
+        [object()],
+    ],
+)
+def test_corpus_build_rejects_bad_plain_sequence_types(bad_documents):
+    source_bytes = b"approved report bytes"
+    approved = corpus_manifest(source_bytes=source_bytes)
+
+    with pytest.raises(ReportBundleValidationError):
+        build_manual_research_documents(
+            approved,
+            bad_documents,
+            mode="corpus",
+            as_of_date=date(2026, 7, 22),
+            source_bytes=source_bytes,
+        )
+
+
+def test_corpus_build_rejects_mixed_plain_sequence():
+    source_bytes = b"approved report bytes"
+    approved = corpus_manifest(source_bytes=source_bytes)
+    valid_document = corpus_documents()[0]
+
+    with pytest.raises(ReportBundleValidationError):
+        build_manual_research_documents(
+            approved,
+            [valid_document, object()],
+            mode="corpus",
+            as_of_date=date(2026, 7, 22),
+            source_bytes=source_bytes,
+        )
+
+
 def test_corpus_source_asset_only_must_be_resolvable():
     source_bytes = b"asset only report"
     approved = corpus_manifest(
@@ -571,9 +661,22 @@ def test_calculate_report_coverage_counts_distinct_real_eligible_manifests_only(
         {manifest().manifest_id: load_normalized_report_documents(DOCUMENTS_PATH)},
         as_of_date=date(2026, 7, 22),
     )
+    bundle_coverage = calculate_report_coverage(
+        [approved],
+        {
+            approved.manifest_id: NormalizedReportDocumentBundle(
+                manifest_id=approved.manifest_id,
+                fixture_type="corpus",
+                documents=corpus_documents(),
+            )
+        },
+        as_of_date=date(2026, 7, 22),
+        source_bytes_by_manifest={approved.manifest_id: source_bytes},
+    )
 
     assert coverage[SAMSUNG] == 1
     assert synthetic_coverage[SAMSUNG] == 0
+    assert bundle_coverage[SAMSUNG] == 0
     assert coverage[SK_HYNIX] == 0
     assert coverage[HYUNDAI] == 0
 
@@ -608,15 +711,22 @@ def test_json_loaders_reject_non_object_json(tmp_path):
 def test_loaders_normalize_io_and_unicode_errors_without_paths(tmp_path):
     missing_file = tmp_path / "missing.json"
     invalid_unicode = tmp_path / "invalid_unicode.json"
+    malformed_json = tmp_path / "malformed.json"
     invalid_unicode.write_bytes(b"\xff")
+    malformed_json.write_text('{"secret": "SECRET_SENTINEL"', encoding="utf-8")
 
-    for path in (missing_file, invalid_unicode):
+    for path in (missing_file, invalid_unicode, malformed_json):
         with pytest.raises(ReportIngestValidationError) as exc:
             load_report_manifest(path)
         message = str(exc.value)
+        formatted = "".join(traceback.format_exception(exc.type, exc.value, exc.tb))
         assert str(tmp_path) not in message
-        assert "missing.json" not in message
-        assert "invalid_unicode.json" not in message
+        assert str(tmp_path) not in formatted
+        assert path.name not in message
+        assert path.name not in formatted
+        assert "SECRET_SENTINEL" not in message
+        assert "SECRET_SENTINEL" not in formatted
+        assert exc.value.__cause__ is None
 
 
 def test_error_messages_do_not_include_raw_secret_or_local_path():
@@ -628,3 +738,98 @@ def test_error_messages_do_not_include_raw_secret_or_local_path():
     message = str(exc.value)
     assert "SECRET_SENTINEL" not in message
     assert "api_key=SECRET_SENTINEL" not in message
+
+
+@pytest.mark.parametrize(
+    "bad_manifest",
+    [
+        lambda m: replace(m, source_url="https://example.com/report.pdf?api_key=secret", source_asset_id=None),
+        lambda m: replace(m, source_url=None, source_asset_id="."),
+        lambda m: replace(m, usage_review_status="pending", corpus_ingest_allowed=True),
+        lambda m: replace(m, published_at=datetime(2026, 1, 15, 0, 0)),
+        lambda m: replace(m, published_local_date=date(2026, 1, 16)),
+        lambda m: replace(m, documents=("report:synthetic-report-001:bad/section",)),
+        lambda m: replace(m, file_hash="A" * 64),
+        lambda m: replace(m, security_id="KRX:123456"),
+    ],
+)
+def test_direct_created_invalid_manifest_fails_public_build_boundaries(bad_manifest):
+    bad = bad_manifest(manifest())
+
+    with pytest.raises(ReportIngestValidationError):
+        build_manual_research_documents(bad, load_normalized_report_documents(DOCUMENTS_PATH), mode="synthetic_unit", as_of_date=date(2026, 7, 22))
+    with pytest.raises(ReportIngestValidationError):
+        normalize_manual_research_report(bad, load_normalized_report_documents(DOCUMENTS_PATH).documents[0], mode="synthetic_unit", as_of_date=date(2026, 7, 22))
+
+
+@pytest.mark.parametrize(
+    "bad_document",
+    [
+        lambda d: replace(d, subject_scope="multi_company"),
+        lambda d: replace(d, page=-1),
+        lambda d: replace(d, page=1, page_basis="source_section_only"),
+        lambda d: replace(d, page=None, page_basis="pdf_1_based"),
+        lambda d: replace(d, mentioned_security_ids=(SK_HYNIX, SK_HYNIX)),
+        lambda d: replace(d, mentioned_security_ids=("KRX:123456",)),
+        lambda d: replace(d, mentioned_security_ids=(SAMSUNG,)),
+        lambda d: replace(d, contains_numeric_claims=False, numeric_claims_verified=True),
+        lambda d: replace(d, contains_numeric_claims="false"),
+        lambda d: replace(d, document_id="report:synthetic-report-001:bad"),
+        lambda d: replace(d, text="  "),
+    ],
+)
+def test_direct_created_invalid_document_fails_public_boundaries(bad_document):
+    bad = bad_document(load_normalized_report_documents(DOCUMENTS_PATH).documents[0])
+
+    with pytest.raises(ReportIngestValidationError):
+        normalize_manual_research_report(manifest(), bad, mode="synthetic_unit", as_of_date=date(2026, 7, 22))
+
+
+def test_direct_created_invalid_bundle_fails_synthetic_build():
+    valid_documents = load_normalized_report_documents(DOCUMENTS_PATH).documents
+    bad_fixture = NormalizedReportDocumentBundle("synthetic-report-001", "bad", valid_documents)
+    bad_manifest = NormalizedReportDocumentBundle("other-manifest", "synthetic_unit", valid_documents)
+    duplicate = NormalizedReportDocumentBundle("synthetic-report-001", "synthetic_unit", (valid_documents[0], valid_documents[0]))
+    invalid_child = NormalizedReportDocumentBundle(
+        "synthetic-report-001",
+        "synthetic_unit",
+        (replace(valid_documents[0], text="  "), valid_documents[1]),
+    )
+
+    for bundle in (bad_fixture, bad_manifest, duplicate, invalid_child):
+        with pytest.raises(ReportBundleValidationError):
+            build_manual_research_documents(manifest(), bundle, mode="synthetic_unit", as_of_date=date(2026, 7, 22))
+
+
+def test_single_synthetic_helper_contract_rejects_mismatches_and_non_synthetic_gates():
+    valid_doc = load_normalized_report_documents(DOCUMENTS_PATH).documents[0]
+
+    normalize_manual_research_report(manifest(), valid_doc, mode="synthetic_unit", as_of_date=date(2026, 7, 22))
+    with pytest.raises(ReportBundleValidationError):
+        normalize_manual_research_report(
+            manifest(),
+            replace(valid_doc, document_id="report:synthetic-report-001:not-listed", segment_id="not-listed"),
+            mode="synthetic_unit",
+            as_of_date=date(2026, 7, 22),
+        )
+    with pytest.raises(ReportBundleValidationError):
+        normalize_manual_research_report(
+            manifest(),
+            replace(valid_doc, manifest_id="other-manifest", document_id="report:other-manifest:section-1"),
+            mode="synthetic_unit",
+            as_of_date=date(2026, 7, 22),
+        )
+    with pytest.raises(ReportBundleValidationError):
+        normalize_manual_research_report(
+            manifest(),
+            replace(valid_doc, security_id=HYUNDAI),
+            mode="synthetic_unit",
+            as_of_date=date(2026, 7, 22),
+        )
+    with pytest.raises(ReportBundleValidationError):
+        normalize_manual_research_report(
+            corpus_manifest(external_llm_processing_allowed=False),
+            replace(valid_doc, manual_verification_status="verified_against_source"),
+            mode="synthetic_unit",
+            as_of_date=date(2026, 7, 22),
+        )

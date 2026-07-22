@@ -119,23 +119,26 @@ Rules:
 - `company_specific` requires no mentions.
 - `company_centered_with_mentions` requires at least one mention.
 - `multi_company` is rejected in P0.
-- `page` is a positive integer; bool is rejected.
-- `page_basis`: `pdf_1_based`, `printed_page`, `source_section_only`.
-- `pdf_1_based` and `printed_page` require positive integer `page`.
-- `source_section_only` requires `page: null`.
+- `page` is either a positive integer or null depending on `page_basis`.
+- `pdf_1_based`: positive integer.
+- `printed_page`: positive integer.
+- `source_section_only`: null.
 - `text_kind`: `source_excerpt`, `manual_summary`.
 - `manual_verification_status`: `synthetic`, `pending`, `verified_against_source`.
 - Numeric metadata is boolean only.
 - If `contains_numeric_claims` is false, `numeric_claims_verified` must be false.
 
 ## 6. Synthetic And Corpus Separation
-Synthetic unit build requires:
+Bulk synthetic fixture build requires:
 - Manifest `usage_review_status == "synthetic"`.
 - Manifest `corpus_ingest_allowed is False`.
 - Manifest `external_llm_processing_allowed is False`.
 - Manifest `hash_verification_status == "synthetic"`.
 - All documents `manual_verification_status == "synthetic"`.
 - Synthetic wrapper fixture_type `synthetic_unit`.
+- Plain list/tuple input is rejected for bulk synthetic build.
+
+`normalize_manual_research_report()` is a documented single-document convenience exception and may operate without a wrapper after full manifest/document validation.
 
 Corpus build requires:
 - Manifest `usage_review_status == "approved"`.
@@ -144,7 +147,7 @@ Corpus build requires:
 - All documents `manual_verification_status == "verified_against_source"`.
 - Valid source URL or resolvable `source_asset_id`.
 - `source_bytes` supplied and SHA-256 hash verified.
-- `synthetic_unit` wrapper is rejected in corpus mode.
+- All `NormalizedReportDocumentBundle` inputs are rejected in corpus mode.
 - Corpus mode currently accepts a plain validated document sequence; a future corpus bundle requires separate approval.
 
 Synthetic fixture output is unit-test evidence only. It is not recorded as real corpus coverage, permission approval, source hash verification, or asset availability.
@@ -154,8 +157,10 @@ Synthetic fixture output is unit-test evidence only. It is not recorded as real 
 - Credential-like query keys include case, separator, and percent-encoded variants of token, access token, auth token, bearer token, client secret, API key, x-api-key, authorization, credential, signature, and X-Amz-Signature.
 - URL scheme and hostname are normalized to lowercase; default ports are removed.
 - Local paths, `file://`, Windows absolute paths, POSIX absolute paths, UNC paths, and invalid ports are rejected.
-- `source_asset_id` is an opaque stable ID with only letters, digits, dot, hyphen, underscore.
-- `source_asset_id` must not be a filename, path, drive path, slash/backslash path, file URI, or time-derived value.
+- `source_asset_id` must be a registry-issued opaque ID and must not contain path semantics.
+- `source_asset_id` uses only letters, digits, dot, hyphen, and underscore.
+- `source_asset_id` must include at least one letter or digit.
+- `"."`, `".."`, slash, backslash, drive path, whitespace, file URI, local absolute path, and temporary execution path semantics are rejected.
 - Corpus mode with asset-only source requires `source_asset_id` to appear in `available_asset_ids`.
 - FinancialDocument locator contains only:
   - `manifest_id`
@@ -283,8 +288,11 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.ingest.reports import load
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
 
-## 14.2 CONDITIONAL PASS Supplement
+## 14.2 First CONDITIONAL PASS Supplement
 - Supplement date: 2026-07-22
+- Supplement SHA: `14d1013753db3de7407cf4365695fec1c7aee603`
+- Supplement main push: complete
+- Supplement independent review: `CONDITIONAL PASS`
 - Supplement scope:
   - Corpus mode rejects `synthetic_unit` wrappers.
   - Corpus unit tests now use plain validated document sequences.
@@ -302,16 +310,33 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.ingest.reports import load
 - Supplement commit/push: `NOT_RUN`
 - M1-06 status after supplement: implementation complete, user review pending
 
+## 14.3 Final Mandatory Supplement
+- Supplement date: 2026-07-22
+- Final supplement commit/push: `NOT_RUN`
+- Current status: final mandatory supplement implemented, user review pending
+- GitHub CI: `NOT_RUN`
+- Independent pytest rerun: `NOT_RUN`
+- Supplement scope:
+  - Corpus mode rejects every `NormalizedReportDocumentBundle` regardless of fixture type.
+  - Bulk synthetic build accepts only `synthetic_unit` bundle input.
+  - Corpus bulk build accepts only list/tuple of deep-validated `NormalizedReportDocument` instances.
+  - Public build boundaries deep-validate direct dataclass instances.
+  - `normalize_manual_research_report()` single synthetic helper contract is documented and tested.
+  - File I/O exceptions suppress causes and do not expose paths, filenames, malformed JSON, or sentinel secrets.
+  - `source_asset_id` contract is aligned with registry-issued opaque ID semantics.
+  - Page contract wording is aligned with implementation.
+
 ## 15. Actual Verification Results
 - PYTHONPATH: `.test_deps;.`
 - targeted command: `python -m pytest tests/unit/test_report_ingest.py -q`
 - targeted exit code: `0`
-- targeted passed count: `126`
+- targeted passed count: `163`
 - regression command: `python -m pytest tests/unit/test_core_models.py tests/unit/test_status_contracts.py tests/unit/test_security_resolver.py tests/unit/test_provider_base.py tests/unit/test_config.py tests/unit/test_news_provider.py tests/unit/test_disclosure_provider.py tests/unit/test_report_ingest.py -q`
 - regression exit code: `0`
-- regression passed count: `347`
+- regression passed count: `384`
 - smoke command: `python -c "from app.ingest.reports import load_report_manifest, normalize_manual_research_report, build_manual_research_documents; print('ok')"`
 - smoke exit code: `0`
+- smoke output: `ok`
 - smoke passed count: `N/A`
 
 ## 16. NOT_RUN / BLOCKED
@@ -336,4 +361,4 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.ingest.reports import load
 - User implementation approval: pending review.
 - Independent review: `NOT_RUN`
 - GitHub CI: `NOT_RUN`
-- Final M1-06 status: implementation complete, user review pending.
+- Final M1-06 status: final mandatory supplement implemented, user review pending.

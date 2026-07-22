@@ -386,10 +386,13 @@ def validate_normalized_report_document(raw_document: Mapping[str, Any]) -> Norm
 def validate_report_bundle(
     manifest: ReportManifest,
     documents: NormalizedReportDocumentBundle | Sequence[NormalizedReportDocument],
+    *,
+    mode: str | None = None,
 ) -> tuple[NormalizedReportDocument, ...]:
+    manifest = _validate_manifest_instance(manifest)
+    normalized_documents = _document_tuple(documents, mode=mode)
     if isinstance(documents, NormalizedReportDocumentBundle) and documents.manifest_id != manifest.manifest_id:
         raise ReportBundleValidationError("report bundle manifest_id mismatch")
-    normalized_documents = _document_tuple(documents)
     if not normalized_documents:
         raise ReportBundleValidationError("report bundle must include documents")
     if len({document.document_id for document in normalized_documents}) != len(normalized_documents):
@@ -407,6 +410,7 @@ def validate_report_bundle(
 
 
 def verify_manifest_source_hash(manifest: ReportManifest, source_bytes: bytes | None) -> bool:
+    _validate_manifest_instance(manifest)
     if type(source_bytes) is not bytes:
         raise ReportManifestValidationError("source bytes are required for hash verification")
     return hashlib.sha256(source_bytes).hexdigest() == manifest.file_hash
@@ -422,6 +426,8 @@ def normalize_manual_research_report(
     available_asset_ids: set[str] | None = None,
 ) -> FinancialDocument:
     _validate_build_mode_and_date(mode, as_of_date)
+    manifest = _validate_manifest_instance(manifest)
+    document = _validate_document_instance(document)
     _validate_single_report_document(manifest, document)
     if manifest.published_local_date > as_of_date:
         raise ReportIngestValidationError("published_at must not be in the future")
@@ -448,7 +454,8 @@ def build_manual_research_documents(
     available_asset_ids: set[str] | None = None,
 ) -> list[FinancialDocument]:
     _validate_build_mode_and_date(mode, as_of_date)
-    ordered_documents = validate_report_bundle(manifest, documents)
+    ordered_documents = validate_report_bundle(manifest, documents, mode=mode)
+    manifest = _validate_manifest_instance(manifest)
     if manifest.published_local_date > as_of_date:
         raise ReportIngestValidationError("published_at must not be in the future")
     if mode == "synthetic_unit":
@@ -478,6 +485,10 @@ def calculate_report_coverage(
     coverage = {security_id: 0 for security_id in sorted(SUPPORTED_SECURITY_IDS)}
     seen_manifest_ids: set[str] = set()
     for manifest in manifests:
+        try:
+            manifest = _validate_manifest_instance(manifest)
+        except ReportIngestValidationError:
+            continue
         if manifest.manifest_id in seen_manifest_ids:
             continue
         seen_manifest_ids.add(manifest.manifest_id)
@@ -503,8 +514,8 @@ def calculate_report_coverage(
 def _load_json_object(path: str | Path) -> dict[str, Any]:
     try:
         data = json.loads(Path(path).read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise ReportIngestValidationError("report ingest JSON is malformed") from exc
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        raise ReportIngestValidationError("report ingest JSON is malformed") from None
     if not isinstance(data, dict):
         raise ReportIngestValidationError("report ingest JSON must be an object")
     return data
@@ -679,7 +690,12 @@ def _optional_source_asset_id(value: Any, error_type: type[ReportIngestValidatio
     if not isinstance(value, str) or not value.strip():
         raise error_type("source_asset_id must be a stable opaque id or null")
     source_asset_id = value.strip()
-    if not _SOURCE_ASSET_ID_RE.fullmatch(source_asset_id) or _looks_like_local_absolute_path(source_asset_id):
+    if (
+        source_asset_id in {".", ".."}
+        or not any(character.isalnum() for character in source_asset_id)
+        or not _SOURCE_ASSET_ID_RE.fullmatch(source_asset_id)
+        or _looks_like_local_absolute_path(source_asset_id)
+    ):
         raise error_type("source_asset_id must be a stable opaque id")
     return source_asset_id
 
@@ -728,6 +744,150 @@ def _normalize_query_key(value: str) -> str:
     return re.sub(r"[^a-z0-9]", "", value.casefold())
 
 
+def _validate_manifest_instance(manifest: ReportManifest) -> ReportManifest:
+    if not isinstance(manifest, ReportManifest):
+        raise ReportManifestValidationError("report manifest must be a validated instance")
+    if not _MANIFEST_ID_RE.fullmatch(manifest.manifest_id):
+        raise ReportManifestValidationError("report manifest_id must be a stable opaque id")
+    _supported_security_id(manifest.security_id, ReportManifestValidationError)
+    _validate_nonblank_string(manifest.title, "title", ReportManifestValidationError)
+    _validate_nonblank_string(manifest.publisher, "publisher", ReportManifestValidationError)
+    _validate_nonblank_string(manifest.access_note, "access_note", ReportManifestValidationError)
+    _validate_nonblank_string(manifest.usage_note, "usage_note", ReportManifestValidationError)
+    if manifest.ingestion_version != REPORT_INGESTION_VERSION:
+        raise ReportManifestValidationError("report manifest ingestion_version is unsupported")
+    _enum_value(manifest.usage_review_status, _USAGE_REVIEW_STATUSES, "usage_review_status", ReportManifestValidationError)
+    if type(manifest.corpus_ingest_allowed) is not bool or type(manifest.external_llm_processing_allowed) is not bool:
+        raise ReportManifestValidationError("report manifest permission flags must be booleans")
+    _validate_permission_gate(
+        usage_review_status=manifest.usage_review_status,
+        corpus_ingest_allowed=manifest.corpus_ingest_allowed,
+        external_llm_processing_allowed=manifest.external_llm_processing_allowed,
+    )
+    canonical_url = _optional_url(manifest.source_url, ReportManifestValidationError)
+    if canonical_url != manifest.source_url:
+        raise ReportManifestValidationError("source_url must be canonical")
+    source_asset_id = _optional_source_asset_id(manifest.source_asset_id, ReportManifestValidationError)
+    if source_asset_id != manifest.source_asset_id:
+        raise ReportManifestValidationError("source_asset_id must be canonical")
+    if manifest.source_url is None and manifest.source_asset_id is None:
+        raise ReportManifestValidationError("source_url or source_asset_id is required")
+    if not isinstance(manifest.documents, tuple) or not manifest.documents:
+        raise ReportManifestValidationError("manifest documents must be a non-empty tuple")
+    if len(set(manifest.documents)) != len(manifest.documents):
+        raise ReportManifestValidationError("manifest documents must not contain duplicates")
+    for document_id in manifest.documents:
+        if not isinstance(document_id, str):
+            raise ReportManifestValidationError("manifest document ids must be strings")
+        _validate_report_document_id(document_id, manifest.manifest_id, ReportManifestValidationError)
+    if not isinstance(manifest.file_hash, str) or not _SHA256_RE.fullmatch(manifest.file_hash):
+        raise ReportManifestValidationError("file_hash must be lowercase SHA-256")
+    _enum_value(manifest.hash_scope, _HASH_SCOPES, "hash_scope", ReportManifestValidationError)
+    _enum_value(
+        manifest.hash_verification_status,
+        _HASH_VERIFICATION_STATUSES,
+        "hash_verification_status",
+        ReportManifestValidationError,
+    )
+    if not isinstance(manifest.published_at, datetime):
+        raise ReportManifestValidationError("published_at must be a datetime")
+    if manifest.published_at.tzinfo is None or manifest.published_at.utcoffset() is None:
+        raise ReportManifestValidationError("published_at must be timezone-aware")
+    if manifest.published_at.utcoffset() != timedelta(0):
+        raise ReportManifestValidationError("published_at must be normalized to UTC")
+    if manifest.published_local_date != manifest.published_at.astimezone(SEOUL_TZ).date():
+        raise ReportManifestValidationError("published_local_date must match published_at")
+    if manifest.published_at_precision not in {"date", "datetime"}:
+        raise ReportManifestValidationError("published_at precision is unsupported")
+    if manifest.published_at_timezone_basis != "Asia/Seoul" and not (
+        manifest.published_at_timezone_basis == "UTC"
+        or re.fullmatch(r"[+-]\d{2}:\d{2}", manifest.published_at_timezone_basis or "")
+    ):
+        raise ReportManifestValidationError("published_at timezone basis is unsupported")
+    if manifest.basis_date is not None and (not isinstance(manifest.basis_date, date) or isinstance(manifest.basis_date, datetime)):
+        raise ReportManifestValidationError("basis_date must be a date or None")
+    for value in (manifest.analyst, manifest.report_type, manifest.language):
+        if value is not None:
+            _validate_nonblank_string(value, "optional manifest field", ReportManifestValidationError)
+    return manifest
+
+
+def _validate_document_instance(document: NormalizedReportDocument) -> NormalizedReportDocument:
+    if not isinstance(document, NormalizedReportDocument):
+        raise ReportDocumentValidationError("normalized report document must be a validated instance")
+    if not _MANIFEST_ID_RE.fullmatch(document.manifest_id):
+        raise ReportDocumentValidationError("document manifest_id must be a stable opaque id")
+    if not _SEGMENT_ID_RE.fullmatch(document.segment_id):
+        raise ReportDocumentValidationError("segment_id must be a stable opaque id")
+    if document.document_id != f"report:{document.manifest_id}:{document.segment_id}":
+        raise ReportDocumentValidationError("document_id must be deterministic")
+    _supported_security_id(document.security_id, ReportDocumentValidationError)
+    if not isinstance(document.mentioned_security_ids, tuple):
+        raise ReportDocumentValidationError("mentioned_security_ids must be a tuple")
+    mentioned_ids = tuple(_supported_security_id(value, ReportDocumentValidationError) for value in document.mentioned_security_ids)
+    if len(set(mentioned_ids)) != len(mentioned_ids):
+        raise ReportDocumentValidationError("mentioned_security_ids must not contain duplicates")
+    if document.security_id in mentioned_ids:
+        raise ReportDocumentValidationError("primary security_id must not appear in mentioned_security_ids")
+    _enum_value(document.subject_scope, _SUBJECT_SCOPES, "subject_scope", ReportDocumentValidationError)
+    if document.subject_scope == "multi_company":
+        raise ReportDocumentValidationError("multi_company report sections are excluded in P0")
+    if document.subject_scope == "company_specific" and mentioned_ids:
+        raise ReportDocumentValidationError("company_specific report sections must not have mentions")
+    if document.subject_scope == "company_centered_with_mentions" and not mentioned_ids:
+        raise ReportDocumentValidationError("company_centered_with_mentions sections require mentions")
+    _enum_value(document.page_basis, _PAGE_BASES, "page_basis", ReportDocumentValidationError)
+    _page_for_basis(document.page, document.page_basis)
+    _validate_nonblank_string(document.section, "section", ReportDocumentValidationError)
+    _validate_nonblank_string(document.text, "text", ReportDocumentValidationError)
+    _enum_value(document.text_kind, _TEXT_KINDS, "text_kind", ReportDocumentValidationError)
+    _enum_value(
+        document.manual_verification_status,
+        _MANUAL_VERIFICATION_STATUSES,
+        "manual_verification_status",
+        ReportDocumentValidationError,
+    )
+    if type(document.contains_numeric_claims) is not bool or type(document.numeric_claims_verified) is not bool:
+        raise ReportDocumentValidationError("numeric claim fields must be booleans")
+    if not document.contains_numeric_claims and document.numeric_claims_verified:
+        raise ReportDocumentValidationError("numeric_claims_verified requires numeric claims")
+    if document.summary_kind is not None:
+        _validate_nonblank_string(document.summary_kind, "summary_kind", ReportDocumentValidationError)
+    return document
+
+
+def _validate_bundle_instance(bundle: NormalizedReportDocumentBundle) -> NormalizedReportDocumentBundle:
+    if not isinstance(bundle, NormalizedReportDocumentBundle):
+        raise ReportBundleValidationError("report bundle must be a validated instance")
+    if not _MANIFEST_ID_RE.fullmatch(bundle.manifest_id):
+        raise ReportBundleValidationError("report bundle manifest_id must be a stable opaque id")
+    if bundle.fixture_type != "synthetic_unit":
+        raise ReportBundleValidationError("report bundle fixture_type is unsupported")
+    if not isinstance(bundle.documents, tuple) or not bundle.documents:
+        raise ReportBundleValidationError("report bundle documents must be a non-empty tuple")
+    try:
+        documents = tuple(_validate_document_instance(document) for document in bundle.documents)
+    except ReportDocumentValidationError:
+        raise ReportBundleValidationError("report bundle document is invalid") from None
+    if len({document.document_id for document in documents}) != len(documents):
+        raise ReportBundleValidationError("report bundle document ids must be unique")
+    if any(document.manifest_id != bundle.manifest_id for document in documents):
+        raise ReportBundleValidationError("report bundle document manifest_id mismatch")
+    return bundle
+
+
+def _validate_nonblank_string(
+    value: Any,
+    field: str,
+    error_type: type[ReportIngestValidationError],
+) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise error_type(f"{field} must be a nonblank string")
+    if _looks_like_local_absolute_path(value.strip()):
+        raise error_type(f"{field} must not expose a local absolute path")
+    return value.strip()
+
+
 def _validate_permission_gate(
     *,
     usage_review_status: str,
@@ -743,10 +903,32 @@ def _validate_permission_gate(
 
 def _document_tuple(
     documents: NormalizedReportDocumentBundle | Sequence[NormalizedReportDocument],
+    *,
+    mode: str | None,
 ) -> tuple[NormalizedReportDocument, ...]:
+    if mode == "synthetic_unit":
+        bundle = _validate_bundle_instance(documents)
+        return bundle.documents
+    if mode == "corpus":
+        if isinstance(documents, NormalizedReportDocumentBundle):
+            raise ReportBundleValidationError("corpus build requires a plain document sequence")
+        if isinstance(documents, (str, bytes, bytearray, Mapping)) or not isinstance(documents, (list, tuple)):
+            raise ReportBundleValidationError("corpus build requires a plain document sequence")
+        if not documents:
+            raise ReportBundleValidationError("report bundle must include documents")
+        try:
+            return tuple(_validate_document_instance(document) for document in documents)
+        except ReportDocumentValidationError:
+            raise ReportBundleValidationError("corpus build document sequence is invalid") from None
     if isinstance(documents, NormalizedReportDocumentBundle):
-        return documents.documents
-    return tuple(documents)
+        bundle = _validate_bundle_instance(documents)
+        return bundle.documents
+    if isinstance(documents, (str, bytes, bytearray, Mapping)) or not isinstance(documents, (list, tuple)):
+        raise ReportBundleValidationError("report bundle requires documents")
+    try:
+        return tuple(_validate_document_instance(document) for document in documents)
+    except ReportDocumentValidationError:
+        raise ReportBundleValidationError("report document sequence is invalid") from None
 
 
 def _validate_synthetic_build(
