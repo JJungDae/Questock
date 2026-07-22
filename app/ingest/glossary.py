@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import unicodedata
@@ -34,6 +35,7 @@ _EXPECTED_ACTUAL_GLOSSARY_ENTRY_IDS = frozenset(
         "glossary:separate_financial_statements",
     }
 )
+_APPROVED_ACTUAL_GLOSSARY_SNAPSHOT_SHA256 = "7b72bd66084b36d2bf5bebd10aadeb3a3386a68ee3967190207edb6a2452d099"
 
 _WRAPPER_REQUIRED_FIELDS = frozenset({"schema_version", "corpus_type", "corpus_id", "language", "entries"})
 _ENTRY_REQUIRED_FIELDS = frozenset(
@@ -334,8 +336,11 @@ def calculate_glossary_coverage(raw_or_bundle: Any) -> GlossaryCoverage:
 
 def evaluate_actual_glossary_coverage(path: str | Path) -> GlossaryCoverage:
     path = _validate_actual_glossary_path(path)
-    bundle = load_glossary_entries(path)
-    entries = validate_glossary_corpus(bundle, mode="corpus")
+    try:
+        bundle = load_glossary_entries(path)
+        entries = validate_glossary_corpus(bundle, mode="corpus")
+    except GlossaryIngestValidationError:
+        raise GlossaryCorpusValidationError("actual glossary corpus identity is invalid") from None
     entry_ids = {entry.entry_id for entry in entries}
     if (
         bundle.schema_version != 1
@@ -358,6 +363,9 @@ def evaluate_actual_glossary_coverage(path: str | Path) -> GlossaryCoverage:
         )
     ):
         raise GlossaryCorpusValidationError("actual glossary corpus identity is invalid")
+    actual_fingerprint = _calculate_approved_glossary_snapshot_sha256(entries)
+    if actual_fingerprint != _APPROVED_ACTUAL_GLOSSARY_SNAPSHOT_SHA256:
+        raise GlossaryCorpusValidationError("actual glossary corpus approved snapshot fingerprint mismatch")
     return GlossaryCoverage(
         total_entries=len(entries),
         approved_actual_entries=len(entries),
@@ -377,6 +385,38 @@ def _validate_actual_glossary_path(path: str | Path) -> Path:
     if path.is_absolute() or path != _ACTUAL_GLOSSARY_PATH:
         raise GlossaryCorpusValidationError("actual glossary coverage requires data/glossary.json")
     return path
+
+
+def _calculate_approved_glossary_snapshot_sha256(entries: tuple[GlossaryEntry, ...]) -> str:
+    snapshot = []
+    for entry in sorted(entries, key=lambda item: item.entry_id):
+        snapshot.append(
+            {
+                "entry_id": entry.entry_id,
+                "version": entry.version,
+                "canonical_term": entry.canonical_term,
+                "aliases": sorted(entry.aliases, key=lambda value: (_normalize_lookup(value), value)),
+                "category": entry.category,
+                "definition": entry.definition,
+                "why_it_matters": entry.why_it_matters,
+                "caution": entry.caution,
+                "formula": entry.formula,
+                "example": entry.example,
+                "related_entry_ids": sorted(entry.related_entry_ids),
+                "language": entry.language,
+                "usage_review_status": entry.usage_review_status,
+                "corpus_ingest_allowed": entry.corpus_ingest_allowed,
+                "external_llm_processing_allowed": entry.external_llm_processing_allowed,
+                "content_origin": entry.content_origin,
+                "source_note": entry.source_note,
+                "permission_note": entry.permission_note,
+                "ingestion_version": entry.ingestion_version,
+                "source_url": entry.source_url,
+                "source_asset_id": entry.source_asset_id,
+            }
+        )
+    serialized = json.dumps(snapshot, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 
 def _validate_bundle(raw_or_bundle: Any, *, mode: str) -> GlossaryCorpusBundle:

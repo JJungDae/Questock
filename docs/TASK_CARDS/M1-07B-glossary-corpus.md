@@ -108,12 +108,12 @@ user_authored
 
 ### `source_note`
 ```text
-Questock 프로젝트가 금융감독·거래소·회계기준 등 공식 자료와 확립된 사전의 개념을 사실 확인에 참고한 뒤 독립적으로 작성한 설명입니다. 외부 원문의 문장을 복사·번역하거나 근접 변형하지 않았습니다.
+Questock 프로젝트가 M1-07B Task Card의 항목별 fact-check matrix에 기록된 공식 자료로 사실·용어·주의점을 확인한 뒤 외부 문장을 복사·번역·근접 변형하지 않고 독립적으로 작성한 설명입니다.
 ```
 
 ### `permission_note`
 ```text
-Human Owner가 이 Questock 작성 문구의 glossary corpus 적재와 외부 LLM을 통한 설명 재구성 처리를 승인했습니다.
+Human Owner가 Questock 작성 문구의 glossary corpus 적재와 외부 LLM을 통한 설명 재구성 처리를 승인했습니다.
 ```
 
 ### Source locator fields
@@ -261,7 +261,7 @@ Implementation may make only grammar or JSON-escaping corrections. A financial-m
 
 ### 9.11 `glossary:convertible_bond` — 전환사채
 - `definition`: 전환사채는 정해진 조건에 따라 채권을 발행회사의 주식으로 전환할 수 있는 권리가 붙은 회사채입니다.
-- `why_it_matters`: 기업에는 자금조달 수단이고 투자자에게는 이자와 주식 전환 가능성을 함께 제공할 수 있습니다.
+- `why_it_matters`: 기업에는 자금조달 수단이 되고, 투자자에게는 이자 조건과 주식 전환 가능성을 함께 제공할 수 있습니다.
 - `caution`: 전환이 이루어지면 발행주식수가 늘어 기존 주주의 지분과 주당 지표가 희석될 수 있습니다. 전환가액, 조정 조건, 만기, 이자, 조기상환권과 매도청구권 조건을 확인해야 합니다.
 - `formula`: `null`
 - `example`: 전환가액이 10,000원인 전환사채의 전환권을 행사하면 전환 대상 금액을 기준으로 주식 수가 계산되어 채권이 주식으로 바뀔 수 있습니다.
@@ -340,7 +340,12 @@ Required behavior:
 4. Validate through `validate_glossary_corpus(bundle, mode="corpus")`.
 5. Require exact wrapper identity and exact Section 8 entry ID equality.
 6. Require exactly 15 entries.
-7. Return:
+7. Calculate the approved corpus snapshot fingerprint over all approved entry fields.
+8. Require the calculated fingerprint to equal:
+   ```text
+   7b72bd66084b36d2bf5bebd10aadeb3a3386a68ee3967190207edb6a2452d099
+   ```
+9. Return:
    - `total_entries == 15`
    - `approved_actual_entries == 15`
    - `synthetic_entries == 0`
@@ -353,6 +358,25 @@ Required behavior:
 The helper must not mark a temporary file, synthetic fixture, review corpus, arbitrary approved in-memory object, differently identified corpus, missing-entry corpus, or extra-entry corpus as actual coverage.
 
 The expected entry IDs may be stored as a private immutable constant. Do not expose them as user-editable runtime configuration in M1-07B.
+
+### Approved Snapshot Fingerprint
+Private constant:
+
+```python
+_APPROVED_ACTUAL_GLOSSARY_SNAPSHOT_SHA256 = "7b72bd66084b36d2bf5bebd10aadeb3a3386a68ee3967190207edb6a2452d099"
+```
+
+Fingerprint canonicalization:
+- Sort entries by `entry_id`.
+- Include every approved entry field: `entry_id`, `version`, `canonical_term`, `aliases`, `category`, `definition`, `why_it_matters`, `caution`, `formula`, `example`, `related_entry_ids`, `language`, `usage_review_status`, `corpus_ingest_allowed`, `external_llm_processing_allowed`, `content_origin`, `source_note`, `permission_note`, `ingestion_version`, `source_url`, and `source_asset_id`.
+- Sort aliases with `key=lambda value: (_normalize_lookup(value), value)`.
+- Sort related entry IDs lexicographically.
+- Serialize with `json.dumps(snapshot, ensure_ascii=False, sort_keys=True, separators=(",", ":"))`.
+- Apply SHA-256 to UTF-8 bytes and store a lowercase 64-character hex digest.
+
+The approved corpus snapshot fingerprint detects accidental or unreviewed drift in approved fields.
+
+It is a review guard, not a cryptographic authorization system. Changing both the corpus and the expected fingerprint still requires Human Owner review and a Task Card approval record.
 
 ## 12. Full Validation Plan
 ### Corpus identity
@@ -419,6 +443,15 @@ Negative actual-evaluation tests:
 - extra entry
 - fewer than 15 entries
 - wrong permission state
+- approved field drift: canonical term, alias add/remove/text change, category, definition, why_it_matters, caution, formula, example, related IDs, source note, permission note, external LLM permission, ingestion version, source URL, and source asset ID
+
+Snapshot fingerprint tests:
+- calculated digest equals `_APPROVED_ACTUAL_GLOSSARY_SNAPSHOT_SHA256`
+- digest is lowercase 64-character hex
+- entry array order does not change the fingerprint
+- JSON indentation and object key order do not change the fingerprint
+- alias order alone does not change the fingerprint
+- related entry ID order alone does not change the fingerprint
 
 ### Determinism and immutability
 - repeated JSON loads produce identical lookup results
@@ -444,28 +477,49 @@ Negative actual-evaluation tests:
 
 ### Implementation Fact-Check References
 - KRX KIND value-up investment indicator screen: `https://kind.krx.co.kr/valueup/invstindicsectors.do?method=valueupInvstIndicRankIndMain`
-- KRX KIND value-up index screen: `https://kind.krx.co.kr/valueup/idx.do?method=valueupIdxMain`
+- KRX KIND value-up per-stock investment indicator screen: `https://kind.krx.co.kr/valueup/invstindicstocks.do?method=valueupInvstIndicRankIsuMain`
 - DART disclosure guide, major report / rights offering / convertible-bond submission guidance: `https://dart.fss.or.kr/info/main.do?menu=220`
 - DART disclosure guide, periodic disclosure purpose and reporting scope: `https://dart.fss.or.kr/info/main.do?menu=210`
-- KASB accounting standards list / K-IFRS access: `https://www.kasb.or.kr/fe/accstd/NR_list.do?divCd=01&sortCd=K-IFRS`
+- KASB current accounting standards list / K-IFRS access: `https://www.kasb.or.kr/front/board/ingAccountingList.do`
 - KASB enactment and amendment status: `https://www.kasb.or.kr/front/board/List2006.do`
+- KASB K-IFRS revenue question summary: `https://www.kasb.or.kr/front/board/View016001.do?seq=40655&siteCd=002000000000000`
+- KRX-hosted public disclosure mentioning Smart Consensus as earnings-estimate data: `https://kind.krx.co.kr/external/2026/03/09/000918/20260309002435/11011.htm`
 
 These references were used only for factual review of terms, formulas, and cautions. `data/glossary.json` remains Questock user-authored content and does not copy, translate, or closely paraphrase external wording.
+
+### Per-entry Fact-check Matrix
+| Entry ID | 확인한 내용 | 공식 문서·화면 | URL | 위치·검색 기준 | 반영한 핵심 사실 |
+|---|---|---|---|---|---|
+| `glossary:per` | 정의, 계산 기준, 해석 주의 | KRX KIND > 투자지표 > 종목별 투자지표 추이 | `https://kind.krx.co.kr/valueup/invstindicstocks.do?method=valueupInvstIndicRankIsuMain` | 화면명 `종목별 투자지표 추이`; 항목명 `PER`; 유의사항 `투자참고자료`, `산출방식` | PER은 주가와 주당순이익을 연결한 투자지표이며, 결산기·공시시점·음수/자료없음 등 산출 제한이 있어 단독 판단을 제한했습니다. |
+| `glossary:pbr` | 정의, 계산 기준, 해석 주의 | KRX KIND > 투자지표 > 종목별 투자지표 추이 | `https://kind.krx.co.kr/valueup/invstindicstocks.do?method=valueupInvstIndicRankIsuMain` | 화면명 `종목별 투자지표 추이`; 항목명 `PBR`; 유의사항 `투자참고자료`, `산출방식` | PBR은 주가와 순자산을 비교하는 투자지표이며, 회계상 장부가와 업종별 자산 구조 차이에 관한 caution을 유지했습니다. |
+| `glossary:roe` | 정의, 계산 기준, 해석 주의 | KRX KIND > 투자지표 > 업종별 투자지표 순위 / 종목별 투자지표 추이 | `https://kind.krx.co.kr/valueup/invstindicsectors.do?method=valueupInvstIndicRankIndMain` | 화면명 `업종별 투자지표 순위`; 항목명 `ROE`; 단위 `%`; 유의사항 `산출불가`, `투자참고 사항` | ROE는 자기자본 대비 이익률 성격의 투자지표이며, 평균/기말 자기자본 기준과 일회성 요인에 따른 왜곡 caution을 유지했습니다. |
+| `glossary:eps` | 정의, 가중평균 유통보통주식수 기준, 희석/기본 구분 | KASB > 회계기준 > 한국채택국제회계기준(K-IFRS) | `https://www.kasb.or.kr/front/board/ingAccountingList.do` | 기준서 검색어 `제1033호 주당이익`; 확인 범위 `기본주당이익`, `가중평균유통보통주식수` | EPS 정의와 formula를 `가중평균 유통보통주식수` 기준으로 복구했고, 전환사채·유상증자 등 주식 수 변동 caution을 유지했습니다. |
+| `glossary:market_cap` | 정의, 계산 기준, 시세 지연 주의 | KRX KIND > 투자지표 > 업종별 투자지표 순위 | `https://kind.krx.co.kr/valueup/invstindicsectors.do?method=valueupInvstIndicRankIndMain` | 화면명 `업종별 투자지표 순위`; 항목명 `시가총액`; 단위 `백만원`; 유의사항 `20분 지연정보` | 시가총액은 주가와 상장주식수 기반 시장 규모 지표이며, 주가 변동 및 기업가치와의 구분 caution을 유지했습니다. |
+| `glossary:revenue` | 정의, 수익 인식 기준, 회계정책 주의 | KASB K-IFRS 신속처리질의 / K-IFRS 기준서 목록 | `https://www.kasb.or.kr/front/board/View016001.do?seq=40655&siteCd=002000000000000` | 관련기준서 `제1115호 고객과의 계약에서 생기는 수익`; 검색어 `거래가격`, `수익`, `변동대가` | 매출액은 고객에게 재화·용역을 이전하고 받을 권리와 연결되는 수익 항목이며, 인식 시점과 총액/순액 표시 caution을 유지했습니다. |
+| `glossary:operating_profit` | 영업성과 지표와 비용 분류 주의 | KASB > 회계기준 > 한국채택국제회계기준(K-IFRS) | `https://www.kasb.or.kr/front/board/ingAccountingList.do` | 기준서 검색어 `제1001호 재무제표 표시`, `제1118호 재무제표 표시와 공시`; 확인 범위 `손익 표시`, `중간합계` | 영업이익은 매출과 영업 관련 비용 분류에 의존하므로 비용 분류·회계정책 caution을 유지했습니다. |
+| `glossary:net_income` | 최종 손익, 연결/별도 범위 구분 | KASB > 회계기준 > 한국채택국제회계기준(K-IFRS) | `https://www.kasb.or.kr/front/board/ingAccountingList.do` | 기준서 검색어 `제1001호 재무제표 표시`, `제1110호 연결재무제표`, `제1027호 별도재무제표` | 당기순이익은 전체 수익·비용과 법인세 등을 반영한 손익이며, 연결 기준과 별도 기준을 구분해야 한다는 caution을 유지했습니다. |
+| `glossary:operating_margin` | 계산 기준, 업종 비교 주의 | KRX KIND > 투자지표 > 종목별 투자지표 추이 / KASB 수익 기준 | `https://kind.krx.co.kr/valueup/invstindicstocks.do?method=valueupInvstIndicRankIsuMain` | 화면명 `종목별 투자지표 추이`; 비교 항목 `정기보고서 재무실적`; KASB 검색어 `제1115호 수익` | 영업이익률은 매출액 대비 영업이익 비율이며, 업종별 원가 구조와 회계 분류 차이에 관한 caution을 유지했습니다. |
+| `glossary:rights_offering` | 정의, 공시 범위, 희석 위험 | DART 기업공시 길라잡이 > 공시 실무자 > 주요사항보고서 | `https://dart.fss.or.kr/info/main.do?menu=220` | 화면명 `주요사항보고서`; 항목명 `Ⅳ 유상증자결정`; 검색어 `유상증자 결정`, `제3자배정` | 유상증자는 자금조달 목적의 신주 발행이며 주요사항보고 대상이 될 수 있고, 기존 주주 지분 희석 caution을 유지했습니다. |
+| `glossary:convertible_bond` | 정의, 공시 범위, 전환·희석 위험 | DART 기업공시 길라잡이 > 공시 실무자 > 주요사항보고서 | `https://dart.fss.or.kr/info/main.do?menu=220` | 화면명 `주요사항보고서`; 검색어 `전환사채, 신주인수권부사채, 교환사채의 발행 결정` | 전환사채 발행 결정은 주요사항보고 항목으로 안내되며, 이자 조건과 주식 전환 가능성을 제공할 수 있다는 가능형 문구와 희석 caution을 유지했습니다. |
+| `glossary:corporate_disclosure` | 정기공시·주요사항보고 범위, 정정 확인 | DART 소개 > 보고서정보 / 기업공시 길라잡이 > 정기보고서·주요사항보고서 | `https://dart2.fss.or.kr/introduction/content2.do` | 메뉴명 `DART 소개 > 보고서정보`; 구분 `정기공시`, `발행공시`, `주요사항보고`; 정정 관련 검색어 `정정보고` | 기업공시는 정기·발행·주요사항 보고 등 투자판단 자료이며, 정정 여부와 최신 유효 문서 확인 caution을 유지했습니다. |
+| `glossary:consensus` | 정의 범위, 실적 전망 데이터, 보장 금지 | KRX-hosted public disclosure / KIND external disclosure | `https://kind.krx.co.kr/external/2026/03/09/000918/20260309002435/11011.htm` | 공시 내 검색어 `스마트 컨센서스`, `실적치 예측 데이터`, `연구분석 결과` | 컨센서스는 회계기준 용어가 아니라 실적 전망 데이터 범위로 확인했으며, 조사기관·기준일별 차이와 실제 실적 보장 금지 caution을 유지했습니다. |
+| `glossary:consolidated_financial_statements` | 정의, 지배기업·종속기업 범위, 내부거래 제거 주의 | KASB > 회계기준 > 한국채택국제회계기준(K-IFRS) | `https://www.kasb.or.kr/front/board/ingAccountingList.do` | 기준서 검색어 `제1110호 연결재무제표`; 확인 범위 `지배기업`, `종속기업`, `연결재무제표` | 연결재무제표는 지배기업과 종속기업을 하나의 경제적 실체로 보는 기준이며, 별도재무제표와 직접 섞지 않는 caution을 유지했습니다. |
+| `glossary:separate_financial_statements` | 정의, 지배기업 자체 기준, 연결과 구분 | KASB > 회계기준 > 한국채택국제회계기준(K-IFRS) | `https://www.kasb.or.kr/front/board/ingAccountingList.do` | 기준서 검색어 `제1027호 별도재무제표`; 확인 범위 `별도재무제표`, `종속기업 투자` | 별도재무제표는 지배기업 자체 중심의 재무제표이며, 그룹 전체 상황은 연결재무제표와 함께 보아야 한다는 caution을 유지했습니다. |
 
 ## 14. Verification Commands
 ### Targeted
 ```powershell
-$env:PYTHONPATH = ".test_deps;."; python -m pytest tests/unit/test_glossary_ingest.py -q
+$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_glossary_ingest.py -q
 ```
 
 ### Regression
 ```powershell
-$env:PYTHONPATH = ".test_deps;."; python -m pytest tests/unit/test_core_models.py tests/unit/test_status_contracts.py tests/unit/test_security_resolver.py tests/unit/test_provider_base.py tests/unit/test_config.py tests/unit/test_news_provider.py tests/unit/test_disclosure_provider.py tests/unit/test_report_ingest.py tests/unit/test_glossary_ingest.py -q
+$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_core_models.py tests/unit/test_status_contracts.py tests/unit/test_security_resolver.py tests/unit/test_provider_base.py tests/unit/test_config.py tests/unit/test_news_provider.py tests/unit/test_disclosure_provider.py tests/unit/test_report_ingest.py tests/unit/test_glossary_ingest.py -q
 ```
 
 ### Smoke
 ```powershell
-$env:PYTHONPATH = ".test_deps;."; python -c "from pathlib import Path; from app.ingest.glossary import load_glossary_entries, build_glossary_index, lookup_glossary_entry, evaluate_actual_glossary_coverage; bundle=load_glossary_entries(Path('data/glossary.json')); index=build_glossary_index(bundle, mode='corpus'); result=lookup_glossary_entry(index, 'PER'); coverage=evaluate_actual_glossary_coverage(Path('data/glossary.json')); print(result.status, coverage.meets_minimum)"
+$env:PYTHONPATH = ".deps;."; python -c "from pathlib import Path; from app.ingest.glossary import load_glossary_entries, build_glossary_index, lookup_glossary_entry, evaluate_actual_glossary_coverage; bundle=load_glossary_entries(Path('data/glossary.json')); index=build_glossary_index(bundle, mode='corpus'); result=lookup_glossary_entry(index, 'PER'); coverage=evaluate_actual_glossary_coverage(Path('data/glossary.json')); print(result.status, coverage.meets_minimum)"
 ```
 
 Expected smoke output:
@@ -481,9 +535,17 @@ Record exact commands, exit codes, passed counts, and smoke output. If an enviro
 - [x] Exact 15-entry ID set matches Section 8.
 - [x] Canonical terms and aliases match Section 8.
 - [x] Content meaning matches Section 9.
+- [x] CB why_it_matters uses the approved possible-form sentence.
+- [x] EPS definition and formula preserve the weighted-average outstanding common-share basis.
 - [x] Every entry is approved, corpus-enabled, external-LLM-enabled, and user-authored.
-- [x] Source and permission notes are nonblank.
+- [x] Source notes use the common matrix-reference wording.
+- [x] Permission notes are nonblank and preserve external LLM approval.
 - [x] No copied, translated, or closely paraphrased external wording is present.
+- [x] Per-entry fact-check matrix covers all 15 entries.
+- [x] Approved snapshot fingerprint is recorded in code and this Task Card.
+- [x] Runtime actual coverage verifies the approved snapshot fingerprint.
+- [x] Approved field drift tests pass.
+- [x] Entry, alias, related-ID ordering and JSON formatting independence tests pass.
 - [x] Full canonical and alias lookup passes.
 - [x] Required and optional locator tests pass.
 - [x] Related-entry integrity passes.
@@ -530,6 +592,10 @@ Commit and push require separate explicit Human Owner approval after review of t
 - Task Card created: `2026-07-22`
 - Decision sync: `2026-07-22`
 - Planning base commit: `2aa991c6674d9947548432aa520b6c03f9b6065d`
+- Initial implementation SHA: `efe8a9a9e30565f8938bd88cac59375fd6a3d670`
+- Initial implementation commit: `Implement m1-07b`
+- Initial implementation main push: `complete`
+- Initial independent review: `CONDITIONAL PASS`
 - Human Owner term-set approval: `APPROVED`
 - Human Owner canonical/alias approval: `APPROVED`
 - Human Owner content policy approval: `APPROVED`
@@ -538,37 +604,37 @@ Commit and push require separate explicit Human Owner approval after review of t
 - Human Owner formula/example strategy approval: `APPROVED`
 - Entry content approval: effective when this exact revised Task Card is adopted into the project
 - M1-07B implementation approval: `APPROVED`
-- M1-07B status: `IMPLEMENTED - USER REVIEW PENDING`
+- Current status: `approved snapshot/content/fact-check supplement implemented, user review pending`
+- M1-07B final status: `pending final independent review`
+- Approved snapshot SHA-256: `7b72bd66084b36d2bf5bebd10aadeb3a3386a68ee3967190207edb6a2452d099`
 - Actual glossary corpus: `PASS`
 - Actual coverage 15+: `PASS`
-- Targeted tests: `PASS - 163 passed`
-- Regression tests: `PASS - 594 passed`
+- Targeted tests: `PASS - 184 passed`
+- Regression tests: `PASS - 615 passed`
 - Import/actual-corpus smoke: `PASS - found True`
+- Compile: `PASS`
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
-- Commit/push: `NOT_RUN`
+- Final supplement commit/push: `NOT_RUN`
+- Final independent review: `NOT_RUN`
 
-### 18.1 Implementation Result Log
-- Initial targeted command: `python -m pytest tests/unit/test_glossary_ingest.py -q`
+### 18.1 Final Supplement Result Log
+- Targeted first command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_glossary_ingest.py -q`
   - exit code: `1`
-  - output: `No module named pytest`
-- `.test_deps` targeted command: `$env:PYTHONPATH = ".test_deps;."; python -m pytest tests/unit/test_glossary_ingest.py -q`
+  - output: `1 failed, 183 passed in 0.41s`
+  - cause: EPS caution in `data/glossary.json` still used `사건이 있으면` instead of Section 9 `사건이 발생하면`.
+- Targeted second command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_glossary_ingest.py -q`
   - exit code: `1`
-  - output: `No module named pytest.__main__; 'pytest' is a package and cannot be directly executed`
-- `.venv` targeted command: `.venv\Scripts\python.exe -m pytest tests/unit/test_glossary_ingest.py -q`
-  - exit code: `1`
-  - output: `No module named pytest`
-- `.deps` targeted first command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_glossary_ingest.py -q`
-  - exit code: `1`
-  - output: `PermissionError: [Errno 13] Permission denied: 'C:\\Users\\USER\\Questock\\.deps\\pytest\\__init__.py'`
-- `.deps` targeted rerun command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_glossary_ingest.py -q`
+  - output: `1 failed, 183 passed in 0.36s`
+  - cause: convertible-bond caution in `data/glossary.json` still used `전환이 이뤄지면 발행주식 수가` instead of Section 9 `전환이 이루어지면 발행주식수가`.
+- Targeted final command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_glossary_ingest.py -q`
   - exit code: `0`
-  - passed count: `163 passed`
-  - output: `163 passed in 0.29s`
+  - passed count: `184 passed`
+  - output: `184 passed in 0.32s`
 - Regression command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_core_models.py tests/unit/test_status_contracts.py tests/unit/test_security_resolver.py tests/unit/test_provider_base.py tests/unit/test_config.py tests/unit/test_news_provider.py tests/unit/test_disclosure_provider.py tests/unit/test_report_ingest.py tests/unit/test_glossary_ingest.py -q`
   - exit code: `0`
-  - passed count: `594 passed`
-  - output: `594 passed in 0.76s`
+  - passed count: `615 passed`
+  - output: `615 passed in 0.86s`
 - Smoke command: `$env:PYTHONPATH = ".deps;."; python -c "from pathlib import Path; from app.ingest.glossary import load_glossary_entries, build_glossary_index, lookup_glossary_entry, evaluate_actual_glossary_coverage; bundle=load_glossary_entries(Path('data/glossary.json')); index=build_glossary_index(bundle, mode='corpus'); result=lookup_glossary_entry(index, 'PER'); coverage=evaluate_actual_glossary_coverage(Path('data/glossary.json')); print(result.status, coverage.meets_minimum)"`
   - exit code: `0`
   - output: `found True`
@@ -576,4 +642,5 @@ Commit and push require separate explicit Human Owner approval after review of t
   - exit code: `0`
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
-- Commit/push: `NOT_RUN`
+- Final supplement commit/push: `NOT_RUN`
+- Final independent review: `NOT_RUN`

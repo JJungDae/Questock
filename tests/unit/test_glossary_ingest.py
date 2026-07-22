@@ -1,5 +1,6 @@
 import copy
 import json
+import re
 import traceback
 from dataclasses import replace
 from pathlib import Path
@@ -29,6 +30,11 @@ from app.ingest.glossary import (
 
 FIXTURE_PATH = Path("tests/fixtures/glossary/glossary_synthetic.json")
 DATA_PATH = Path("data/glossary.json")
+COMMON_SOURCE_NOTE = (
+    "Questock 프로젝트가 M1-07B Task Card의 항목별 fact-check matrix에 기록된 공식 자료로 "
+    "사실·용어·주의점을 확인한 뒤 외부 문장을 복사·번역·근접 변형하지 않고 독립적으로 작성한 설명입니다."
+)
+COMMON_PERMISSION_NOTE = "Human Owner가 Questock 작성 문구의 glossary corpus 적재와 외부 LLM을 통한 설명 재구성 처리를 승인했습니다."
 EXPECTED_ACTUAL_ENTRY_IDS = {
     "glossary:per",
     "glossary:pbr",
@@ -45,6 +51,178 @@ EXPECTED_ACTUAL_ENTRY_IDS = {
     "glossary:consensus",
     "glossary:consolidated_financial_statements",
     "glossary:separate_financial_statements",
+}
+EXPECTED_ACTUAL_ENTRY_CONTENT = {
+    "glossary:per": {
+        "canonical_term": "주가수익비율",
+        "aliases": ("PER", "주가 수익 비율", "주가이익비율", "주가 이익 비율"),
+        "category": "valuation",
+        "definition": "주가수익비율은 현재 주가가 주당순이익의 몇 배 수준인지 나타내는 주가평가 지표입니다.",
+        "why_it_matters": "기업의 주가 수준을 이익과 비교하고 비슷한 업종이나 기업 사이의 상대적인 평가 수준을 살펴볼 때 사용합니다.",
+        "caution": "사용한 이익의 기간과 예상치 여부에 따라 값이 달라질 수 있으며, PER이 낮거나 높다는 사실만으로 저평가나 고평가를 단정할 수 없습니다. 적자 기업에서는 해석이 어렵습니다.",
+        "formula": "주가 ÷ 주당순이익(EPS)",
+        "example": None,
+        "related_entry_ids": ("glossary:eps",),
+    },
+    "glossary:pbr": {
+        "canonical_term": "주가순자산비율",
+        "aliases": ("PBR", "주가 순자산 비율"),
+        "category": "valuation",
+        "definition": "주가순자산비율은 현재 주가가 주당순자산의 몇 배 수준인지 나타내는 주가평가 지표입니다.",
+        "why_it_matters": "시장에서 평가받는 주가와 회계상 순자산을 비교해 기업의 상대적인 평가 수준을 살펴볼 때 사용합니다.",
+        "caution": "장부에 반영되지 않은 경쟁력이나 무형자산이 있을 수 있고 업종별 자산 구조도 다르므로, PBR만으로 기업가치를 판단하면 안 됩니다.",
+        "formula": "주가 ÷ 주당순자산(BPS)",
+        "example": None,
+        "related_entry_ids": ("glossary:roe",),
+    },
+    "glossary:roe": {
+        "canonical_term": "자기자본이익률",
+        "aliases": ("ROE", "자기자본 이익률", "자기자본수익률", "자기자본 수익률"),
+        "category": "profitability",
+        "definition": "자기자본이익률은 기업이 자기자본을 이용해 어느 정도의 이익을 냈는지 비율로 나타낸 지표입니다.",
+        "why_it_matters": "주주가 제공한 자본을 기업이 얼마나 효율적으로 활용했는지 살펴보는 데 도움이 됩니다.",
+        "caution": "평균 자기자본과 기말 자기자본 중 무엇을 사용했는지에 따라 값이 달라질 수 있습니다. 일회성 이익이나 자기자본 감소, 높은 부채로 ROE가 일시적으로 높아질 수도 있습니다.",
+        "formula": "당기순이익 ÷ 평균 자기자본 × 100",
+        "example": None,
+        "related_entry_ids": ("glossary:net_income",),
+    },
+    "glossary:eps": {
+        "canonical_term": "주당순이익",
+        "aliases": ("EPS", "주당 순이익"),
+        "category": "profitability",
+        "definition": "주당순이익은 일정 기간의 보통주 귀속 이익을 가중평균 유통보통주식수로 나누어 주식 한 주당 이익을 나타낸 값입니다.",
+        "why_it_matters": "기업의 이익을 주식 수 기준으로 비교하며 PER 계산과 주당 수익성 확인에 활용합니다.",
+        "caution": "기본 EPS와 희석 EPS는 계산 범위가 다릅니다. 유상증자, 전환사채 전환, 주식분할처럼 주식 수에 영향을 주는 사건이 발생하면 EPS도 달라질 수 있습니다.",
+        "formula": "보통주 귀속 당기순이익 ÷ 가중평균 유통보통주식수",
+        "example": None,
+        "related_entry_ids": ("glossary:net_income", "glossary:rights_offering", "glossary:convertible_bond"),
+    },
+    "glossary:market_cap": {
+        "canonical_term": "시가총액",
+        "aliases": ("시총",),
+        "category": "market_value",
+        "definition": "시가총액은 현재 주가에 상장주식수를 곱해 계산한 주식시장에서의 회사 규모 지표입니다.",
+        "why_it_matters": "상장기업의 시장 규모를 비교하거나 지수에서 차지하는 비중을 이해할 때 활용합니다.",
+        "caution": "주가가 움직이면 시가총액도 변합니다. 시가총액은 현금과 부채까지 반영한 기업가치와 같은 개념이 아닙니다.",
+        "formula": "현재 주가 × 상장주식수",
+        "example": None,
+        "related_entry_ids": ("glossary:rights_offering",),
+    },
+    "glossary:revenue": {
+        "canonical_term": "매출액",
+        "aliases": ("매출",),
+        "category": "performance",
+        "definition": "매출액은 기업이 주된 영업활동에서 상품이나 서비스를 제공해 얻은 대가를 일정 기간 동안 합산한 금액입니다.",
+        "why_it_matters": "기업의 사업 규모와 성장 흐름을 파악하고 영업이익이나 영업이익률을 계산하는 출발점으로 사용합니다.",
+        "caution": "업종과 거래 구조에 따라 매출을 인식하는 시점과 총액·순액 표시 방식이 다를 수 있으므로 회계정책을 함께 확인해야 합니다.",
+        "formula": None,
+        "example": None,
+        "related_entry_ids": ("glossary:operating_profit", "glossary:operating_margin"),
+    },
+    "glossary:operating_profit": {
+        "canonical_term": "영업이익",
+        "aliases": ("영업 이익",),
+        "category": "performance",
+        "definition": "영업이익은 매출액에서 매출원가와 판매비와관리비 등 주된 영업활동에 관련된 비용을 반영한 뒤 남은 이익입니다.",
+        "why_it_matters": "금융손익이나 법인세 등 영업 외 요인의 영향을 분리해 본업의 수익성을 살펴볼 때 사용합니다.",
+        "caution": "비용 분류와 회계정책에 따라 기업 간 비교가 달라질 수 있으며, 일시적인 비용 절감이나 비용 인식 시점도 함께 확인해야 합니다.",
+        "formula": None,
+        "example": None,
+        "related_entry_ids": ("glossary:revenue", "glossary:operating_margin"),
+    },
+    "glossary:net_income": {
+        "canonical_term": "당기순이익",
+        "aliases": ("순이익", "당기 순이익"),
+        "category": "performance",
+        "definition": "당기순이익은 일정 기간의 모든 수익과 비용, 금융손익, 영업외손익, 법인세 등을 반영한 뒤 남은 최종적인 회계상 이익입니다.",
+        "why_it_matters": "기업이 해당 기간에 전체적으로 얼마의 이익을 남겼는지 확인하고 EPS나 ROE 같은 지표를 계산할 때 활용합니다.",
+        "caution": "연결재무제표와 별도재무제표의 당기순이익은 범위가 다릅니다. 연결 기준에서는 전체 당기순이익과 지배기업 소유주에게 귀속되는 순이익도 구분해야 합니다.",
+        "formula": None,
+        "example": None,
+        "related_entry_ids": (
+            "glossary:eps",
+            "glossary:roe",
+            "glossary:consolidated_financial_statements",
+            "glossary:separate_financial_statements",
+        ),
+    },
+    "glossary:operating_margin": {
+        "canonical_term": "영업이익률",
+        "aliases": ("영업 이익률", "영업마진", "영업 마진"),
+        "category": "profitability",
+        "definition": "영업이익률은 매출액 가운데 영업이익이 차지하는 비율을 나타내는 수익성 지표입니다.",
+        "why_it_matters": "기업이 매출을 본업의 이익으로 전환하는 정도를 파악하고 기간별 또는 유사업체 간 수익성을 비교할 때 사용합니다.",
+        "caution": "업종별 원가 구조가 다르고 일회성 비용이나 회계 분류가 영향을 줄 수 있으므로, 절대 수치만으로 기업의 우열을 판단하면 안 됩니다.",
+        "formula": "영업이익 ÷ 매출액 × 100",
+        "example": None,
+        "related_entry_ids": ("glossary:revenue", "glossary:operating_profit"),
+    },
+    "glossary:rights_offering": {
+        "canonical_term": "유상증자",
+        "aliases": ("유상 증자", "유증"),
+        "category": "financing",
+        "definition": "유상증자는 기업이 자금을 조달하기 위해 새 주식을 발행하고 투자자로부터 그 대가를 받는 방식입니다.",
+        "why_it_matters": "조달 목적과 발행 방식, 발행 규모는 기업의 재무구조와 기존 주주의 지분에 영향을 줄 수 있습니다.",
+        "caution": "기존 주주가 새 주식 배정에 참여하지 않으면 지분율이나 주당 가치가 희석될 수 있습니다. 자금 사용 목적, 발행가액, 배정 방식과 일정도 함께 확인해야 합니다.",
+        "formula": None,
+        "example": "기존 주식이 100주인 회사가 새 주식 20주를 발행하면 총 주식 수가 늘어납니다. 기존 주주가 추가 취득하지 않으면 같은 보유 주식 수의 지분율은 낮아질 수 있습니다.",
+        "related_entry_ids": ("glossary:eps", "glossary:market_cap"),
+    },
+    "glossary:convertible_bond": {
+        "canonical_term": "전환사채",
+        "aliases": ("CB", "전환 사채"),
+        "category": "financing",
+        "definition": "전환사채는 정해진 조건에 따라 채권을 발행회사의 주식으로 전환할 수 있는 권리가 붙은 회사채입니다.",
+        "why_it_matters": "기업에는 자금조달 수단이 되고, 투자자에게는 이자 조건과 주식 전환 가능성을 함께 제공할 수 있습니다.",
+        "caution": "전환이 이루어지면 발행주식수가 늘어 기존 주주의 지분과 주당 지표가 희석될 수 있습니다. 전환가액, 조정 조건, 만기, 이자, 조기상환권과 매도청구권 조건을 확인해야 합니다.",
+        "formula": None,
+        "example": "전환가액이 10,000원인 전환사채의 전환권을 행사하면 전환 대상 금액을 기준으로 주식 수가 계산되어 채권이 주식으로 바뀔 수 있습니다.",
+        "related_entry_ids": ("glossary:eps", "glossary:corporate_disclosure"),
+    },
+    "glossary:corporate_disclosure": {
+        "canonical_term": "기업공시",
+        "aliases": ("공시", "기업 공시"),
+        "category": "disclosure",
+        "definition": "기업공시는 투자 판단에 중요한 회사 정보를 정해진 절차와 시스템을 통해 시장에 공개하는 것입니다.",
+        "why_it_matters": "정기보고서, 주요 경영사항, 자금조달과 같은 사실을 확인해 기업 상황을 근거 중심으로 파악하는 데 사용합니다.",
+        "caution": "최초 공시 뒤 정정이나 철회가 이어질 수 있으므로 접수일, 보고 기간, 정정 여부와 최신 유효 문서를 확인해야 합니다. 공시됐다는 사실이 투자 결과를 보장하지는 않습니다.",
+        "formula": None,
+        "example": "회사가 대규모 계약, 유상증자 결정 또는 분기보고서를 제출하면 투자자는 공시시스템에서 해당 문서와 정정 이력을 확인할 수 있습니다.",
+        "related_entry_ids": ("glossary:rights_offering", "glossary:convertible_bond"),
+    },
+    "glossary:consensus": {
+        "canonical_term": "시장 컨센서스",
+        "aliases": ("컨센서스", "증권사 컨센서스", "시장예상치", "시장 예상치"),
+        "category": "forecast",
+        "definition": "시장 컨센서스는 여러 분석기관이나 애널리스트가 제시한 실적 전망치를 모아 산출한 대표적인 예상 수준입니다.",
+        "why_it_matters": "실제 실적이 시장의 사전 기대와 비교해 어느 정도 차이가 있는지 살펴보는 기준으로 활용합니다.",
+        "caution": "조사기관, 참여자 수, 집계 방식과 기준일에 따라 값이 달라지며 실제 실적을 보장하지 않습니다. 오래된 전망치와 최신 전망치를 섞어 비교하면 해석이 왜곡될 수 있습니다.",
+        "formula": None,
+        "example": "여러 증권사가 한 기업의 다음 분기 영업이익을 각각 전망했다면, 그 전망치의 평균이나 중앙값이 시장 컨센서스로 제시될 수 있습니다.",
+        "related_entry_ids": ("glossary:revenue", "glossary:operating_profit", "glossary:net_income"),
+    },
+    "glossary:consolidated_financial_statements": {
+        "canonical_term": "연결재무제표",
+        "aliases": ("연결 재무제표", "연결재무"),
+        "category": "financial_statements",
+        "definition": "연결재무제표는 지배기업과 종속기업을 하나의 경제적 실체로 보아 작성한 재무제표입니다.",
+        "why_it_matters": "모회사뿐 아니라 지배하는 자회사까지 포함한 그룹 전체의 재무상태와 경영성과를 파악하는 데 사용합니다.",
+        "caution": "그룹 내부 거래와 채권·채무는 연결 과정에서 제거될 수 있습니다. 별도재무제표 수치와 범위가 다르므로 두 기준의 수치를 직접 섞어 비교하면 안 됩니다.",
+        "formula": None,
+        "example": "모회사가 자회사를 지배한다면 연결재무제표에는 두 회사의 자산과 실적이 포함되고, 두 회사 사이의 내부 거래는 연결 조정 과정에서 제거될 수 있습니다.",
+        "related_entry_ids": ("glossary:separate_financial_statements", "glossary:net_income"),
+    },
+    "glossary:separate_financial_statements": {
+        "canonical_term": "별도재무제표",
+        "aliases": ("별도 재무제표", "별도재무"),
+        "category": "financial_statements",
+        "definition": "별도재무제표는 지배기업이 종속기업의 자산과 실적을 항목별로 합치지 않고 자기 회사 자체를 중심으로 작성한 재무제표입니다.",
+        "why_it_matters": "모회사 자체의 재무상태와 배당 재원, 자회사 투자 관계 등을 별도로 살펴보는 데 도움이 됩니다.",
+        "caution": "자회사의 매출과 이익이 모회사 실적에 직접 합산되지 않으므로 그룹 전체 상황을 보려면 연결재무제표도 함께 확인해야 합니다.",
+        "formula": None,
+        "example": "모회사의 별도재무제표에서는 자회사 자체의 매출과 비용 대신 자회사에 대한 투자자산과 배당수익 등이 모회사 기준으로 표시될 수 있습니다.",
+        "related_entry_ids": ("glossary:consolidated_financial_statements", "glossary:net_income"),
+    },
 }
 
 
@@ -227,6 +405,7 @@ def test_approved_corpus_contract_builds_index_but_is_not_actual_coverage_comple
 def test_actual_glossary_corpus_identity_and_coverage():
     bundle = load_glossary_entries(DATA_PATH)
     entries = validate_glossary_corpus(bundle, mode="corpus")
+    entries_by_id = {entry.entry_id: entry for entry in entries}
     candidate_coverage = calculate_glossary_coverage(bundle)
     actual_coverage = evaluate_actual_glossary_coverage(DATA_PATH)
 
@@ -240,7 +419,21 @@ def test_actual_glossary_corpus_identity_and_coverage():
     assert all(entry.corpus_ingest_allowed for entry in entries)
     assert all(entry.external_llm_processing_allowed for entry in entries)
     assert all(entry.content_origin == "user_authored" for entry in entries)
+    assert all(entry.source_note == COMMON_SOURCE_NOTE for entry in entries)
+    assert all(entry.permission_note == COMMON_PERMISSION_NOTE for entry in entries)
     assert all(entry.source_url is None and entry.source_asset_id is None for entry in entries)
+    for entry_id, expected in EXPECTED_ACTUAL_ENTRY_CONTENT.items():
+        entry = entries_by_id[entry_id]
+        for field, expected_value in expected.items():
+            assert getattr(entry, field) == expected_value
+    assert (
+        entries_by_id["glossary:convertible_bond"].why_it_matters
+        == "기업에는 자금조달 수단이 되고, 투자자에게는 이자 조건과 주식 전환 가능성을 함께 제공할 수 있습니다."
+    )
+    assert (
+        entries_by_id["glossary:eps"].definition
+        == "주당순이익은 일정 기간의 보통주 귀속 이익을 가중평균 유통보통주식수로 나누어 주식 한 주당 이익을 나타낸 값입니다."
+    )
     assert candidate_coverage.approved_actual_entries == 15
     assert candidate_coverage.actual_coverage_evaluated is False
     assert candidate_coverage.meets_minimum is False
@@ -252,6 +445,14 @@ def test_actual_glossary_corpus_identity_and_coverage():
     assert actual_coverage.minimum_required == 15
     assert actual_coverage.actual_coverage_evaluated is True
     assert actual_coverage.meets_minimum is True
+
+
+def test_actual_glossary_snapshot_fingerprint_matches_approved_digest():
+    bundle = load_glossary_entries(DATA_PATH)
+    calculated = glossary_module._calculate_approved_glossary_snapshot_sha256(bundle.entries)
+
+    assert re.fullmatch(r"[0-9a-f]{64}", glossary_module._APPROVED_ACTUAL_GLOSSARY_SNAPSHOT_SHA256)
+    assert calculated == glossary_module._APPROVED_ACTUAL_GLOSSARY_SNAPSHOT_SHA256
 
 
 def test_actual_glossary_full_lookup_and_required_locators():
@@ -353,6 +554,85 @@ def test_actual_glossary_coverage_rejects_identity_or_entry_drift(monkeypatch, m
 
     with pytest.raises(GlossaryCorpusValidationError):
         evaluate_actual_glossary_coverage(DATA_PATH)
+
+
+def drift_actual_entry(entry_id, **updates):
+    bundle = load_glossary_entries(DATA_PATH)
+    entries = tuple(replace(entry, **updates) if entry.entry_id == entry_id else entry for entry in bundle.entries)
+    return replace(bundle, entries=entries)
+
+
+@pytest.mark.parametrize(
+    "drifted_bundle",
+    [
+        lambda: drift_actual_entry("glossary:per", canonical_term="주가이익비율"),
+        lambda: drift_actual_entry("glossary:per", aliases=("PER", "주가 수익 비율", "주가이익비율", "주가 이익 비율", "피이알")),
+        lambda: drift_actual_entry("glossary:per", aliases=("PER", "주가 수익 비율", "주가이익비율")),
+        lambda: drift_actual_entry("glossary:per", aliases=("PER", "주가 수익 비율", "주가이익비율", "주가 이익비율")),
+        lambda: drift_actual_entry("glossary:per", category="profitability"),
+        lambda: drift_actual_entry("glossary:per", definition="주가수익비율 정의가 변경되었습니다."),
+        lambda: drift_actual_entry("glossary:per", why_it_matters="주가수익비율 활용 문구가 변경되었습니다."),
+        lambda: drift_actual_entry("glossary:per", caution="주가수익비율 주의 문구가 변경되었습니다."),
+        lambda: drift_actual_entry("glossary:per", formula="주가 / 주당순이익(EPS)"),
+        lambda: drift_actual_entry("glossary:rights_offering", example="유상증자 예시가 변경되었습니다."),
+        lambda: drift_actual_entry("glossary:per", related_entry_ids=("glossary:eps", "glossary:pbr")),
+        lambda: drift_actual_entry("glossary:per", related_entry_ids=()),
+        lambda: drift_actual_entry("glossary:per", related_entry_ids=("glossary:pbr",)),
+        lambda: drift_actual_entry("glossary:per", source_note="Source note drift."),
+        lambda: drift_actual_entry("glossary:per", permission_note="Human Owner가 corpus 적재만 승인했습니다."),
+        lambda: drift_actual_entry("glossary:per", external_llm_processing_allowed=False),
+        lambda: drift_actual_entry("glossary:per", ingestion_version="glossary-ingest-m1-07-v2"),
+        lambda: drift_actual_entry("glossary:per", source_url="https://example.com/glossary"),
+        lambda: drift_actual_entry("glossary:per", source_asset_id="asset001"),
+    ],
+)
+def test_actual_glossary_coverage_rejects_approved_field_drift(monkeypatch, drifted_bundle):
+    monkeypatch.setattr(glossary_module, "load_glossary_entries", lambda path: drifted_bundle())
+
+    with pytest.raises(GlossaryCorpusValidationError):
+        evaluate_actual_glossary_coverage(DATA_PATH)
+
+
+def test_approved_snapshot_fingerprint_is_order_and_format_independent(tmp_path):
+    bundle = load_glossary_entries(DATA_PATH)
+    base = glossary_module._calculate_approved_glossary_snapshot_sha256(bundle.entries)
+    per = next(entry for entry in bundle.entries if entry.entry_id == "glossary:per")
+    net_income = next(entry for entry in bundle.entries if entry.entry_id == "glossary:net_income")
+    reordered_entries = tuple(reversed(bundle.entries))
+    alias_reordered_entries = tuple(
+        replace(entry, aliases=tuple(reversed(entry.aliases))) if entry.entry_id == per.entry_id else entry
+        for entry in bundle.entries
+    )
+    related_reordered_entries = tuple(
+        replace(entry, related_entry_ids=tuple(reversed(entry.related_entry_ids)))
+        if entry.entry_id == net_income.entry_id
+        else entry
+        for entry in bundle.entries
+    )
+    raw = json.loads(DATA_PATH.read_text(encoding="utf-8"))
+    compact_path = tmp_path / "compact.json"
+    pretty_path = tmp_path / "pretty.json"
+    compact_path.write_text(json.dumps(raw, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    pretty_path.write_text(
+        json.dumps(
+            {
+                "entries": raw["entries"],
+                "language": raw["language"],
+                "corpus_id": raw["corpus_id"],
+                "corpus_type": raw["corpus_type"],
+                "schema_version": raw["schema_version"],
+            },
+            ensure_ascii=False,
+            indent=4,
+        ),
+        encoding="utf-8",
+    )
+
+    assert glossary_module._calculate_approved_glossary_snapshot_sha256(reordered_entries) == base
+    assert glossary_module._calculate_approved_glossary_snapshot_sha256(alias_reordered_entries) == base
+    assert glossary_module._calculate_approved_glossary_snapshot_sha256(related_reordered_entries) == base
+    assert glossary_module._calculate_approved_glossary_snapshot_sha256(load_glossary_entries(compact_path).entries) == base
+    assert glossary_module._calculate_approved_glossary_snapshot_sha256(load_glossary_entries(pretty_path).entries) == base
 
 
 @pytest.mark.parametrize(
