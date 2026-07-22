@@ -307,36 +307,48 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.ingest.reports import load
   - RFC3339 datetime validation is stricter and preserves input offset basis.
   - Manifest document ID suffix is validated against segment ID rules.
   - Title separator is centralized as ` - `.
-- Supplement commit/push: `NOT_RUN`
-- M1-06 status after supplement: implementation complete, user review pending
+- First supplement commit/push: complete
 
-## 14.3 Final Mandatory Supplement
+## 14.3 Second CONDITIONAL PASS Supplement
 - Supplement date: 2026-07-22
-- Final supplement commit/push: `NOT_RUN`
-- Current status: final mandatory supplement implemented, user review pending
+- Supplement SHA: `05846bd1e8bbeef36ef7fa1fa08df378b89f13b8`
+- Supplement main push: complete
+- Supplement independent review: `CONDITIONAL PASS`
+- Second supplement commit/push: complete
+- M1-06 status after second supplement: final mandatory supplement pending
+
+## 14.4 Final Type And Publication Supplement
+- Supplement date: 2026-07-22
+- Final type/publication supplement commit/push: `NOT_RUN`
+- Current status: M13 and M14 supplement implemented, user review pending
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
 - Supplement scope:
-  - Corpus mode rejects every `NormalizedReportDocumentBundle` regardless of fixture type.
-  - Bulk synthetic build accepts only `synthetic_unit` bundle input.
-  - Corpus bulk build accepts only list/tuple of deep-validated `NormalizedReportDocument` instances.
-  - Public build boundaries deep-validate direct dataclass instances.
-  - `normalize_manual_research_report()` single synthetic helper contract is documented and tested.
-  - File I/O exceptions suppress causes and do not expose paths, filenames, malformed JSON, or sentinel secrets.
-  - `source_asset_id` contract is aligned with registry-issued opaque ID semantics.
-  - Page contract wording is aligned with implementation.
+  - Manifest direct dataclass malformed types are guarded before regex, enum, URL, and comparison checks.
+  - Document direct dataclass malformed types are guarded before regex and enum checks.
+  - Bundle direct dataclass malformed types are normalized to `ReportBundleValidationError`.
+  - Public boundaries keep malformed direct instances as typed M1-06 validation errors.
+  - Date precision and timezone basis combinations are validated for internal consistency.
+  - Timezone offset basis is validated through Python timezone construction.
+  - Coverage skips malformed direct manifest entries and continues with valid entries.
 
 ## 15. Actual Verification Results
 - PYTHONPATH: `.test_deps;.`
-- targeted command: `python -m pytest tests/unit/test_report_ingest.py -q`
-- targeted exit code: `0`
-- targeted passed count: `163`
+- targeted first command: `python -m pytest tests/unit/test_report_ingest.py -q`
+- targeted first exit code: `1`
+- targeted first output: `No module named pytest.__main__; 'pytest' is a package and cannot be directly executed`
+- targeted rerun command: `python -m pytest tests/unit/test_report_ingest.py -q`
+- targeted rerun exit code: `0`
+- targeted rerun passed count: `207`
 - regression command: `python -m pytest tests/unit/test_core_models.py tests/unit/test_status_contracts.py tests/unit/test_security_resolver.py tests/unit/test_provider_base.py tests/unit/test_config.py tests/unit/test_news_provider.py tests/unit/test_disclosure_provider.py tests/unit/test_report_ingest.py -q`
 - regression exit code: `0`
-- regression passed count: `384`
-- smoke command: `python -c "from app.ingest.reports import load_report_manifest, normalize_manual_research_report, build_manual_research_documents; print('ok')"`
-- smoke exit code: `0`
-- smoke output: `ok`
+- regression passed count: `428`
+- smoke first command: `python -c "from app.ingest.reports import load_report_manifest, normalize_manual_research_report, build_manual_research_documents; print('ok')"`
+- smoke first exit code: `1`
+- smoke first output: `ImportError: cannot import name 'BaseModel' from 'pydantic' (unknown location)`
+- smoke rerun command: `python -c "from app.ingest.reports import load_report_manifest, normalize_manual_research_report, build_manual_research_documents; print('ok')"`
+- smoke rerun exit code: `0`
+- smoke rerun output: `ok`
 - smoke passed count: `N/A`
 
 ## 16. NOT_RUN / BLOCKED
@@ -361,4 +373,4 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.ingest.reports import load
 - User implementation approval: pending review.
 - Independent review: `NOT_RUN`
 - GitHub CI: `NOT_RUN`
-- Final M1-06 status: final mandatory supplement implemented, user review pending.
+- Final M1-06 status: M13 and M14 supplement implemented, user review pending.

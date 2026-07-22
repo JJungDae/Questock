@@ -3,7 +3,7 @@ import hashlib
 import json
 import traceback
 from dataclasses import replace
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -13,10 +13,12 @@ from app.ingest.reports import (
     REPORT_INGESTION_VERSION,
     REPORT_SOURCE_TYPE,
     NormalizedReportDocumentBundle,
+    NormalizedReportDocument,
     ReportBundleValidationError,
     ReportDocumentValidationError,
     ReportIngestValidationError,
     ReportManifestValidationError,
+    ReportManifest,
     build_manual_research_documents,
     calculate_report_coverage,
     load_normalized_report_documents,
@@ -833,3 +835,154 @@ def test_single_synthetic_helper_contract_rejects_mismatches_and_non_synthetic_g
             mode="synthetic_unit",
             as_of_date=date(2026, 7, 22),
         )
+
+
+def assert_manifest_fails_public_boundaries(bad_manifest):
+    valid_doc = load_normalized_report_documents(DOCUMENTS_PATH).documents[0]
+    valid_bundle = load_normalized_report_documents(DOCUMENTS_PATH)
+
+    with pytest.raises(ReportIngestValidationError):
+        build_manual_research_documents(bad_manifest, valid_bundle, mode="synthetic_unit", as_of_date=date(2026, 7, 22))
+    with pytest.raises(ReportIngestValidationError):
+        normalize_manual_research_report(bad_manifest, valid_doc, mode="synthetic_unit", as_of_date=date(2026, 7, 22))
+    with pytest.raises(ReportIngestValidationError):
+        verify_manifest_source_hash(bad_manifest, b"source")
+
+
+@pytest.mark.parametrize(
+    "patch",
+    [
+        {"manifest_id": 123},
+        {"security_id": 123},
+        {"published_at_precision": 1},
+        {"published_at_timezone_basis": 9},
+        {"usage_review_status": 1},
+        {"file_hash": 123},
+        {"hash_scope": 123},
+        {"hash_verification_status": 123},
+        {"documents": ["report:synthetic-report-001:section-1"]},
+        {"documents": ("report:synthetic-report-001:section-1", 123)},
+        {"source_url": 123},
+        {"source_asset_id": 123},
+    ],
+)
+def test_direct_manifest_malformed_types_are_typed_public_boundary_errors(patch):
+    assert_manifest_fails_public_boundaries(replace(manifest(), **patch))
+
+
+def assert_document_fails_public_boundaries(bad_document):
+    with pytest.raises(ReportIngestValidationError):
+        normalize_manual_research_report(manifest(), bad_document, mode="synthetic_unit", as_of_date=date(2026, 7, 22))
+    with pytest.raises(ReportIngestValidationError):
+        build_manual_research_documents(
+            manifest(),
+            NormalizedReportDocumentBundle("synthetic-report-001", "synthetic_unit", (bad_document,)),
+            mode="synthetic_unit",
+            as_of_date=date(2026, 7, 22),
+        )
+
+
+@pytest.mark.parametrize(
+    "patch",
+    [
+        {"manifest_id": 123},
+        {"segment_id": 123},
+        {"document_id": 123},
+        {"security_id": 123},
+        {"subject_scope": 123},
+        {"page_basis": 123},
+        {"text_kind": 123},
+        {"manual_verification_status": 123},
+        {"mentioned_security_ids": []},
+        {"mentioned_security_ids": "KRX:000660"},
+        {"summary_kind": 123},
+    ],
+)
+def test_direct_document_malformed_types_are_typed_public_boundary_errors(patch):
+    assert_document_fails_public_boundaries(replace(load_normalized_report_documents(DOCUMENTS_PATH).documents[0], **patch))
+
+
+@pytest.mark.parametrize(
+    "bad_bundle",
+    [
+        lambda docs: NormalizedReportDocumentBundle(123, "synthetic_unit", docs),
+        lambda docs: NormalizedReportDocumentBundle("synthetic-report-001", 123, docs),
+        lambda docs: NormalizedReportDocumentBundle("synthetic-report-001", "synthetic_unit", []),
+        lambda docs: NormalizedReportDocumentBundle("synthetic-report-001", "synthetic_unit", list(docs)),
+        lambda docs: NormalizedReportDocumentBundle("synthetic-report-001", "synthetic_unit", (object(),)),
+    ],
+)
+def test_direct_bundle_malformed_types_are_bundle_errors(bad_bundle):
+    docs = load_normalized_report_documents(DOCUMENTS_PATH).documents
+
+    with pytest.raises(ReportBundleValidationError):
+        build_manual_research_documents(manifest(), bad_bundle(docs), mode="synthetic_unit", as_of_date=date(2026, 7, 22))
+
+
+@pytest.mark.parametrize(
+    "bad_manifest",
+    [
+        lambda m: replace(m, published_at_timezone_basis="+09:00"),
+        lambda m: replace(m, published_at_timezone_basis="UTC"),
+        lambda m: replace(m, published_at=m.published_at + timedelta(seconds=1)),
+    ],
+)
+def test_date_precision_metadata_must_be_internally_consistent(bad_manifest):
+    assert_manifest_fails_public_boundaries(bad_manifest(manifest()))
+
+
+@pytest.mark.parametrize(
+    "bad_manifest",
+    [
+        lambda m: replace(m, published_at_timezone_basis="Asia/Seoul"),
+        lambda m: replace(m, published_at_timezone_basis="+99:99"),
+        lambda m: replace(m, published_at_timezone_basis="+24:00"),
+        lambda m: replace(m, published_at_timezone_basis="-25:00"),
+        lambda m: replace(m, published_local_date=m.published_local_date + timedelta(days=1)),
+        lambda m: replace(m, published_at_precision=1),
+        lambda m: replace(m, published_at_timezone_basis=9),
+        lambda m: replace(m, published_at_timezone_basis=None),
+    ],
+)
+def test_datetime_precision_metadata_must_be_internally_consistent(bad_manifest):
+    base = manifest(published_at="2026-01-15T09:30:00+09:00")
+
+    assert_manifest_fails_public_boundaries(bad_manifest(base))
+
+
+@pytest.mark.parametrize(
+    "published_at",
+    [
+        "2026-01-15",
+        "2026-01-15T00:30:00Z",
+        "2026-01-15T09:30:00+09:00",
+        "2026-01-14T19:00:00-05:30",
+    ],
+)
+def test_valid_publication_metadata_combinations_still_build(published_at):
+    selected_manifest = manifest(published_at=published_at)
+    selected_document = load_normalized_report_documents(DOCUMENTS_PATH).documents[0]
+
+    doc = normalize_manual_research_report(
+        selected_manifest,
+        selected_document,
+        mode="synthetic_unit",
+        as_of_date=date(2026, 7, 22),
+    )
+
+    assert doc.document_id == selected_document.document_id
+
+
+def test_calculate_report_coverage_skips_malformed_direct_manifest_and_keeps_valid_entry():
+    source_bytes = b"approved report bytes"
+    approved = corpus_manifest(source_bytes=source_bytes)
+    invalid = replace(approved, manifest_id=123)
+
+    coverage = calculate_report_coverage(
+        [invalid, approved],
+        {approved.manifest_id: corpus_documents()},
+        as_of_date=date(2026, 7, 22),
+        source_bytes_by_manifest={approved.manifest_id: source_bytes},
+    )
+
+    assert coverage[SAMSUNG] == 1

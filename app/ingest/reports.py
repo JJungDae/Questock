@@ -747,20 +747,36 @@ def _normalize_query_key(value: str) -> str:
 def _validate_manifest_instance(manifest: ReportManifest) -> ReportManifest:
     if not isinstance(manifest, ReportManifest):
         raise ReportManifestValidationError("report manifest must be a validated instance")
-    if not _MANIFEST_ID_RE.fullmatch(manifest.manifest_id):
+    manifest_id = _validate_nonblank_string(manifest.manifest_id, "manifest_id", ReportManifestValidationError)
+    security_id = _validate_nonblank_string(manifest.security_id, "security_id", ReportManifestValidationError)
+    usage_review_status = _validate_nonblank_string(
+        manifest.usage_review_status, "usage_review_status", ReportManifestValidationError
+    )
+    hash_scope = _validate_nonblank_string(manifest.hash_scope, "hash_scope", ReportManifestValidationError)
+    hash_verification_status = _validate_nonblank_string(
+        manifest.hash_verification_status, "hash_verification_status", ReportManifestValidationError
+    )
+    ingestion_version = _validate_nonblank_string(manifest.ingestion_version, "ingestion_version", ReportManifestValidationError)
+    published_at_precision = _validate_nonblank_string(
+        manifest.published_at_precision, "published_at_precision", ReportManifestValidationError
+    )
+    published_at_timezone_basis = _validate_nonblank_string(
+        manifest.published_at_timezone_basis, "published_at_timezone_basis", ReportManifestValidationError
+    )
+    if not _MANIFEST_ID_RE.fullmatch(manifest_id):
         raise ReportManifestValidationError("report manifest_id must be a stable opaque id")
-    _supported_security_id(manifest.security_id, ReportManifestValidationError)
+    _supported_security_id(security_id, ReportManifestValidationError)
     _validate_nonblank_string(manifest.title, "title", ReportManifestValidationError)
     _validate_nonblank_string(manifest.publisher, "publisher", ReportManifestValidationError)
     _validate_nonblank_string(manifest.access_note, "access_note", ReportManifestValidationError)
     _validate_nonblank_string(manifest.usage_note, "usage_note", ReportManifestValidationError)
-    if manifest.ingestion_version != REPORT_INGESTION_VERSION:
+    if ingestion_version != REPORT_INGESTION_VERSION:
         raise ReportManifestValidationError("report manifest ingestion_version is unsupported")
-    _enum_value(manifest.usage_review_status, _USAGE_REVIEW_STATUSES, "usage_review_status", ReportManifestValidationError)
+    _enum_value(usage_review_status, _USAGE_REVIEW_STATUSES, "usage_review_status", ReportManifestValidationError)
     if type(manifest.corpus_ingest_allowed) is not bool or type(manifest.external_llm_processing_allowed) is not bool:
         raise ReportManifestValidationError("report manifest permission flags must be booleans")
     _validate_permission_gate(
-        usage_review_status=manifest.usage_review_status,
+        usage_review_status=usage_review_status,
         corpus_ingest_allowed=manifest.corpus_ingest_allowed,
         external_llm_processing_allowed=manifest.external_llm_processing_allowed,
     )
@@ -779,12 +795,13 @@ def _validate_manifest_instance(manifest: ReportManifest) -> ReportManifest:
     for document_id in manifest.documents:
         if not isinstance(document_id, str):
             raise ReportManifestValidationError("manifest document ids must be strings")
-        _validate_report_document_id(document_id, manifest.manifest_id, ReportManifestValidationError)
-    if not isinstance(manifest.file_hash, str) or not _SHA256_RE.fullmatch(manifest.file_hash):
+        _validate_report_document_id(document_id, manifest_id, ReportManifestValidationError)
+    file_hash = _validate_nonblank_string(manifest.file_hash, "file_hash", ReportManifestValidationError)
+    if not _SHA256_RE.fullmatch(file_hash):
         raise ReportManifestValidationError("file_hash must be lowercase SHA-256")
-    _enum_value(manifest.hash_scope, _HASH_SCOPES, "hash_scope", ReportManifestValidationError)
+    _enum_value(hash_scope, _HASH_SCOPES, "hash_scope", ReportManifestValidationError)
     _enum_value(
-        manifest.hash_verification_status,
+        hash_verification_status,
         _HASH_VERIFICATION_STATUSES,
         "hash_verification_status",
         ReportManifestValidationError,
@@ -797,13 +814,14 @@ def _validate_manifest_instance(manifest: ReportManifest) -> ReportManifest:
         raise ReportManifestValidationError("published_at must be normalized to UTC")
     if manifest.published_local_date != manifest.published_at.astimezone(SEOUL_TZ).date():
         raise ReportManifestValidationError("published_local_date must match published_at")
-    if manifest.published_at_precision not in {"date", "datetime"}:
+    if published_at_precision not in {"date", "datetime"}:
         raise ReportManifestValidationError("published_at precision is unsupported")
-    if manifest.published_at_timezone_basis != "Asia/Seoul" and not (
-        manifest.published_at_timezone_basis == "UTC"
-        or re.fullmatch(r"[+-]\d{2}:\d{2}", manifest.published_at_timezone_basis or "")
-    ):
-        raise ReportManifestValidationError("published_at timezone basis is unsupported")
+    _validate_publication_metadata_consistency(
+        precision=published_at_precision,
+        timezone_basis=published_at_timezone_basis,
+        published_at=manifest.published_at,
+        published_local_date=manifest.published_local_date,
+    )
     if manifest.basis_date is not None and (not isinstance(manifest.basis_date, date) or isinstance(manifest.basis_date, datetime)):
         raise ReportManifestValidationError("basis_date must be a date or None")
     for value in (manifest.analyst, manifest.report_type, manifest.language):
@@ -815,34 +833,46 @@ def _validate_manifest_instance(manifest: ReportManifest) -> ReportManifest:
 def _validate_document_instance(document: NormalizedReportDocument) -> NormalizedReportDocument:
     if not isinstance(document, NormalizedReportDocument):
         raise ReportDocumentValidationError("normalized report document must be a validated instance")
-    if not _MANIFEST_ID_RE.fullmatch(document.manifest_id):
+    manifest_id = _validate_nonblank_string(document.manifest_id, "manifest_id", ReportDocumentValidationError)
+    segment_id = _validate_nonblank_string(document.segment_id, "segment_id", ReportDocumentValidationError)
+    document_id = _validate_nonblank_string(document.document_id, "document_id", ReportDocumentValidationError)
+    security_id = _validate_nonblank_string(document.security_id, "security_id", ReportDocumentValidationError)
+    subject_scope = _validate_nonblank_string(document.subject_scope, "subject_scope", ReportDocumentValidationError)
+    page_basis = _validate_nonblank_string(document.page_basis, "page_basis", ReportDocumentValidationError)
+    text_kind = _validate_nonblank_string(document.text_kind, "text_kind", ReportDocumentValidationError)
+    manual_verification_status = _validate_nonblank_string(
+        document.manual_verification_status,
+        "manual_verification_status",
+        ReportDocumentValidationError,
+    )
+    if not _MANIFEST_ID_RE.fullmatch(manifest_id):
         raise ReportDocumentValidationError("document manifest_id must be a stable opaque id")
-    if not _SEGMENT_ID_RE.fullmatch(document.segment_id):
+    if not _SEGMENT_ID_RE.fullmatch(segment_id):
         raise ReportDocumentValidationError("segment_id must be a stable opaque id")
-    if document.document_id != f"report:{document.manifest_id}:{document.segment_id}":
+    if document_id != f"report:{manifest_id}:{segment_id}":
         raise ReportDocumentValidationError("document_id must be deterministic")
-    _supported_security_id(document.security_id, ReportDocumentValidationError)
+    _supported_security_id(security_id, ReportDocumentValidationError)
     if not isinstance(document.mentioned_security_ids, tuple):
         raise ReportDocumentValidationError("mentioned_security_ids must be a tuple")
     mentioned_ids = tuple(_supported_security_id(value, ReportDocumentValidationError) for value in document.mentioned_security_ids)
     if len(set(mentioned_ids)) != len(mentioned_ids):
         raise ReportDocumentValidationError("mentioned_security_ids must not contain duplicates")
-    if document.security_id in mentioned_ids:
+    if security_id in mentioned_ids:
         raise ReportDocumentValidationError("primary security_id must not appear in mentioned_security_ids")
-    _enum_value(document.subject_scope, _SUBJECT_SCOPES, "subject_scope", ReportDocumentValidationError)
-    if document.subject_scope == "multi_company":
+    _enum_value(subject_scope, _SUBJECT_SCOPES, "subject_scope", ReportDocumentValidationError)
+    if subject_scope == "multi_company":
         raise ReportDocumentValidationError("multi_company report sections are excluded in P0")
-    if document.subject_scope == "company_specific" and mentioned_ids:
+    if subject_scope == "company_specific" and mentioned_ids:
         raise ReportDocumentValidationError("company_specific report sections must not have mentions")
-    if document.subject_scope == "company_centered_with_mentions" and not mentioned_ids:
+    if subject_scope == "company_centered_with_mentions" and not mentioned_ids:
         raise ReportDocumentValidationError("company_centered_with_mentions sections require mentions")
-    _enum_value(document.page_basis, _PAGE_BASES, "page_basis", ReportDocumentValidationError)
-    _page_for_basis(document.page, document.page_basis)
+    _enum_value(page_basis, _PAGE_BASES, "page_basis", ReportDocumentValidationError)
+    _page_for_basis(document.page, page_basis)
     _validate_nonblank_string(document.section, "section", ReportDocumentValidationError)
     _validate_nonblank_string(document.text, "text", ReportDocumentValidationError)
-    _enum_value(document.text_kind, _TEXT_KINDS, "text_kind", ReportDocumentValidationError)
+    _enum_value(text_kind, _TEXT_KINDS, "text_kind", ReportDocumentValidationError)
     _enum_value(
-        document.manual_verification_status,
+        manual_verification_status,
         _MANUAL_VERIFICATION_STATUSES,
         "manual_verification_status",
         ReportDocumentValidationError,
@@ -859,9 +889,11 @@ def _validate_document_instance(document: NormalizedReportDocument) -> Normalize
 def _validate_bundle_instance(bundle: NormalizedReportDocumentBundle) -> NormalizedReportDocumentBundle:
     if not isinstance(bundle, NormalizedReportDocumentBundle):
         raise ReportBundleValidationError("report bundle must be a validated instance")
-    if not _MANIFEST_ID_RE.fullmatch(bundle.manifest_id):
+    manifest_id = _validate_nonblank_string(bundle.manifest_id, "manifest_id", ReportBundleValidationError)
+    fixture_type = _validate_nonblank_string(bundle.fixture_type, "fixture_type", ReportBundleValidationError)
+    if not _MANIFEST_ID_RE.fullmatch(manifest_id):
         raise ReportBundleValidationError("report bundle manifest_id must be a stable opaque id")
-    if bundle.fixture_type != "synthetic_unit":
+    if fixture_type != "synthetic_unit":
         raise ReportBundleValidationError("report bundle fixture_type is unsupported")
     if not isinstance(bundle.documents, tuple) or not bundle.documents:
         raise ReportBundleValidationError("report bundle documents must be a non-empty tuple")
@@ -871,7 +903,7 @@ def _validate_bundle_instance(bundle: NormalizedReportDocumentBundle) -> Normali
         raise ReportBundleValidationError("report bundle document is invalid") from None
     if len({document.document_id for document in documents}) != len(documents):
         raise ReportBundleValidationError("report bundle document ids must be unique")
-    if any(document.manifest_id != bundle.manifest_id for document in documents):
+    if any(document.manifest_id != manifest_id for document in documents):
         raise ReportBundleValidationError("report bundle document manifest_id mismatch")
     return bundle
 
@@ -886,6 +918,48 @@ def _validate_nonblank_string(
     if _looks_like_local_absolute_path(value.strip()):
         raise error_type(f"{field} must not expose a local absolute path")
     return value.strip()
+
+
+def _validate_publication_metadata_consistency(
+    *,
+    precision: str,
+    timezone_basis: str,
+    published_at: datetime,
+    published_local_date: date,
+) -> None:
+    if precision == "date":
+        if timezone_basis != "Asia/Seoul":
+            raise ReportManifestValidationError("published_at timezone basis is unsupported")
+        expected = datetime.combine(published_local_date, time.min, tzinfo=SEOUL_TZ).astimezone(UTC)
+        if published_at != expected:
+            raise ReportManifestValidationError("published_at date precision metadata is inconsistent")
+        return
+    if precision == "datetime":
+        if timezone_basis == "Asia/Seoul":
+            raise ReportManifestValidationError("published_at timezone basis is unsupported")
+        if timezone_basis != "UTC":
+            _validate_timezone_offset_basis(timezone_basis)
+        if published_local_date != published_at.astimezone(SEOUL_TZ).date():
+            raise ReportManifestValidationError("published_local_date must match published_at")
+        return
+    raise ReportManifestValidationError("published_at precision is unsupported")
+
+
+def _validate_timezone_offset_basis(value: str) -> None:
+    match = re.fullmatch(r"([+-])(\d{2}):(\d{2})", value)
+    if match is None:
+        raise ReportManifestValidationError("published_at timezone basis is unsupported")
+    hours = int(match.group(2))
+    minutes = int(match.group(3))
+    if hours > 23 or minutes > 59:
+        raise ReportManifestValidationError("published_at timezone basis is unsupported")
+    total_minutes = hours * 60 + minutes
+    if match.group(1) == "-":
+        total_minutes *= -1
+    try:
+        timezone(timedelta(minutes=total_minutes))
+    except ValueError:
+        raise ReportManifestValidationError("published_at timezone basis is unsupported") from None
 
 
 def _validate_permission_gate(
