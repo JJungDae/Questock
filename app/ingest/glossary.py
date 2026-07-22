@@ -13,6 +13,27 @@ GLOSSARY_SOURCE_TYPE = "glossary"
 MANUAL_GLOSSARY_PROVIDER = "manual_glossary"
 GLOSSARY_INGESTION_VERSION = "glossary-ingest-m1-07-v1"
 MINIMUM_GLOSSARY_ENTRIES = 15
+_ACTUAL_GLOSSARY_PATH = Path("data/glossary.json")
+_ACTUAL_GLOSSARY_CORPUS_ID = "glossary-approved-v1"
+_EXPECTED_ACTUAL_GLOSSARY_ENTRY_IDS = frozenset(
+    {
+        "glossary:per",
+        "glossary:pbr",
+        "glossary:roe",
+        "glossary:eps",
+        "glossary:market_cap",
+        "glossary:revenue",
+        "glossary:operating_profit",
+        "glossary:net_income",
+        "glossary:operating_margin",
+        "glossary:rights_offering",
+        "glossary:convertible_bond",
+        "glossary:corporate_disclosure",
+        "glossary:consensus",
+        "glossary:consolidated_financial_statements",
+        "glossary:separate_financial_statements",
+    }
+)
 
 _WRAPPER_REQUIRED_FIELDS = frozenset({"schema_version", "corpus_type", "corpus_id", "language", "entries"})
 _ENTRY_REQUIRED_FIELDS = frozenset(
@@ -309,6 +330,53 @@ def calculate_glossary_coverage(raw_or_bundle: Any) -> GlossaryCoverage:
         meets_minimum=actual_coverage_evaluated and approved_actual_entries >= MINIMUM_GLOSSARY_ENTRIES,
         actual_coverage_evaluated=actual_coverage_evaluated,
     )
+
+
+def evaluate_actual_glossary_coverage(path: str | Path) -> GlossaryCoverage:
+    path = _validate_actual_glossary_path(path)
+    bundle = load_glossary_entries(path)
+    entries = validate_glossary_corpus(bundle, mode="corpus")
+    entry_ids = {entry.entry_id for entry in entries}
+    if (
+        bundle.schema_version != 1
+        or bundle.corpus_id != _ACTUAL_GLOSSARY_CORPUS_ID
+        or bundle.corpus_type != "approved_corpus"
+        or bundle.language != "ko"
+        or len(entries) != MINIMUM_GLOSSARY_ENTRIES
+        or entry_ids != _EXPECTED_ACTUAL_GLOSSARY_ENTRY_IDS
+        or any(
+            entry.version != 1
+            or entry.language != "ko"
+            or entry.usage_review_status != "approved"
+            or not entry.corpus_ingest_allowed
+            or not entry.external_llm_processing_allowed
+            or entry.content_origin != "user_authored"
+            or entry.ingestion_version != GLOSSARY_INGESTION_VERSION
+            or entry.source_url is not None
+            or entry.source_asset_id is not None
+            for entry in entries
+        )
+    ):
+        raise GlossaryCorpusValidationError("actual glossary corpus identity is invalid")
+    return GlossaryCoverage(
+        total_entries=len(entries),
+        approved_actual_entries=len(entries),
+        synthetic_entries=0,
+        pending_entries=0,
+        rejected_entries=0,
+        minimum_required=MINIMUM_GLOSSARY_ENTRIES,
+        meets_minimum=True,
+        actual_coverage_evaluated=True,
+    )
+
+
+def _validate_actual_glossary_path(path: str | Path) -> Path:
+    if not isinstance(path, (str, Path)):
+        raise GlossaryCorpusValidationError("actual glossary corpus path is invalid")
+    path = Path(path)
+    if path.is_absolute() or path != _ACTUAL_GLOSSARY_PATH:
+        raise GlossaryCorpusValidationError("actual glossary coverage requires data/glossary.json")
+    return path
 
 
 def _validate_bundle(raw_or_bundle: Any, *, mode: str) -> GlossaryCorpusBundle:

@@ -20,6 +20,7 @@ from app.ingest.glossary import (
     build_glossary_index,
     build_glossary_locator,
     calculate_glossary_coverage,
+    evaluate_actual_glossary_coverage,
     load_glossary_entries,
     lookup_glossary_entry,
     validate_glossary_corpus,
@@ -27,6 +28,24 @@ from app.ingest.glossary import (
 )
 
 FIXTURE_PATH = Path("tests/fixtures/glossary/glossary_synthetic.json")
+DATA_PATH = Path("data/glossary.json")
+EXPECTED_ACTUAL_ENTRY_IDS = {
+    "glossary:per",
+    "glossary:pbr",
+    "glossary:roe",
+    "glossary:eps",
+    "glossary:market_cap",
+    "glossary:revenue",
+    "glossary:operating_profit",
+    "glossary:net_income",
+    "glossary:operating_margin",
+    "glossary:rights_offering",
+    "glossary:convertible_bond",
+    "glossary:corporate_disclosure",
+    "glossary:consensus",
+    "glossary:consolidated_financial_statements",
+    "glossary:separate_financial_statements",
+}
 
 
 def corpus_data(**updates):
@@ -203,6 +222,137 @@ def test_approved_corpus_contract_builds_index_but_is_not_actual_coverage_comple
     assert coverage.approved_actual_entries == 15
     assert coverage.actual_coverage_evaluated is False
     assert coverage.meets_minimum is False
+
+
+def test_actual_glossary_corpus_identity_and_coverage():
+    bundle = load_glossary_entries(DATA_PATH)
+    entries = validate_glossary_corpus(bundle, mode="corpus")
+    candidate_coverage = calculate_glossary_coverage(bundle)
+    actual_coverage = evaluate_actual_glossary_coverage(DATA_PATH)
+
+    assert bundle.schema_version == 1
+    assert bundle.corpus_type == "approved_corpus"
+    assert bundle.corpus_id == "glossary-approved-v1"
+    assert bundle.language == "ko"
+    assert len(entries) == 15
+    assert {entry.entry_id for entry in entries} == EXPECTED_ACTUAL_ENTRY_IDS
+    assert all(entry.usage_review_status == "approved" for entry in entries)
+    assert all(entry.corpus_ingest_allowed for entry in entries)
+    assert all(entry.external_llm_processing_allowed for entry in entries)
+    assert all(entry.content_origin == "user_authored" for entry in entries)
+    assert all(entry.source_url is None and entry.source_asset_id is None for entry in entries)
+    assert candidate_coverage.approved_actual_entries == 15
+    assert candidate_coverage.actual_coverage_evaluated is False
+    assert candidate_coverage.meets_minimum is False
+    assert actual_coverage.total_entries == 15
+    assert actual_coverage.approved_actual_entries == 15
+    assert actual_coverage.synthetic_entries == 0
+    assert actual_coverage.pending_entries == 0
+    assert actual_coverage.rejected_entries == 0
+    assert actual_coverage.minimum_required == 15
+    assert actual_coverage.actual_coverage_evaluated is True
+    assert actual_coverage.meets_minimum is True
+
+
+def test_actual_glossary_full_lookup_and_required_locators():
+    bundle = load_glossary_entries(DATA_PATH)
+    index = build_glossary_index(bundle, mode="corpus")
+
+    for entry in bundle.entries:
+        canonical = lookup_glossary_entry(index, entry.canonical_term)
+        assert canonical.status == "found"
+        assert canonical.matched_by == "canonical"
+        assert canonical.entry == entry
+        for alias in entry.aliases:
+            alias_result = lookup_glossary_entry(index, alias)
+            assert alias_result.status == "found"
+            assert alias_result.matched_by == "alias"
+            assert alias_result.entry == entry
+        for section in ("definition", "why_it_matters", "caution"):
+            locator = build_glossary_locator(bundle, entry, section)
+            assert locator.corpus_id == "glossary-approved-v1"
+            assert locator.entry_id == entry.entry_id
+            assert locator.source_type == GLOSSARY_SOURCE_TYPE
+            assert locator.provider == MANUAL_GLOSSARY_PROVIDER
+            assert locator.source_url is None
+            assert locator.source_asset_id is None
+        for section in ("formula", "example"):
+            if getattr(entry, section) is None:
+                with pytest.raises(GlossaryCorpusValidationError):
+                    build_glossary_locator(bundle, entry, section)
+            else:
+                assert build_glossary_locator(bundle, entry, section).section == section
+
+
+def test_actual_glossary_repeated_loads_are_deterministic():
+    first_bundle = load_glossary_entries(DATA_PATH)
+    second_bundle = load_glossary_entries(DATA_PATH)
+    first_index = build_glossary_index(first_bundle, mode="corpus")
+    second_index = build_glossary_index(second_bundle, mode="corpus")
+
+    assert first_bundle == second_bundle
+    assert evaluate_actual_glossary_coverage(DATA_PATH) == evaluate_actual_glossary_coverage(DATA_PATH)
+    for query in ("PER", "영업 이익률", "별도재무"):
+        first = lookup_glossary_entry(first_index, query)
+        second = lookup_glossary_entry(second_index, query)
+        assert first.status == second.status == "found"
+        assert first.entry == second.entry
+        assert first.matched_term == second.matched_term
+
+
+def test_actual_glossary_coverage_rejects_synthetic_fixture_and_temp_approved_copy(tmp_path):
+    temp_copy = tmp_path / "glossary.json"
+    temp_copy.write_text(DATA_PATH.read_text(encoding="utf-8"), encoding="utf-8")
+
+    with pytest.raises(GlossaryCorpusValidationError):
+        evaluate_actual_glossary_coverage(FIXTURE_PATH)
+    with pytest.raises(GlossaryCorpusValidationError):
+        evaluate_actual_glossary_coverage(temp_copy)
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda bundle: replace(bundle, corpus_id="glossary-approved-v2"),
+        lambda bundle: replace(bundle, corpus_type="review_corpus"),
+        lambda bundle: replace(bundle, language="en"),
+        lambda bundle: replace(bundle, entries=bundle.entries[:-1]),
+        lambda bundle: replace(
+            bundle,
+            entries=bundle.entries
+            + (
+                replace(
+                    bundle.entries[0],
+                    entry_id="glossary:extra",
+                    canonical_term="추가 용어",
+                    aliases=("extra actual alias",),
+                    related_entry_ids=(),
+                ),
+            ),
+        ),
+        lambda bundle: replace(
+            bundle,
+            entries=(
+                replace(
+                    bundle.entries[0],
+                    corpus_ingest_allowed=False,
+                    external_llm_processing_allowed=False,
+                ),
+            )
+            + bundle.entries[1:],
+        ),
+        lambda bundle: replace(
+            bundle,
+            entries=(replace(bundle.entries[0], external_llm_processing_allowed=False),) + bundle.entries[1:],
+        ),
+    ],
+)
+def test_actual_glossary_coverage_rejects_identity_or_entry_drift(monkeypatch, mutate):
+    drifted = mutate(load_glossary_entries(DATA_PATH))
+    monkeypatch.setattr(glossary_module, "load_glossary_entries", lambda path: drifted)
+
+    with pytest.raises(GlossaryCorpusValidationError):
+        evaluate_actual_glossary_coverage(DATA_PATH)
 
 
 @pytest.mark.parametrize(

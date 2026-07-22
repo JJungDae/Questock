@@ -390,9 +390,14 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.ingest.glossary import loa
   - `docs/TASK_CARDS/M1-07-glossary-ingest.md`
   - `app/ingest/glossary.py`
   - `tests/unit/test_glossary_ingest.py`
-- Final permission/index/URL/coverage supplement commit/push: `NOT_RUN`
-- Current status: M01-M04 final supplement implemented, user review pending
-- Final independent review: `NOT_RUN`
+- Final permission/index/URL/coverage supplement SHA: `2aa991c6674d9947548432aa520b6c03f9b6065d`
+- Final permission/index/URL/coverage supplement commit: `Implement m1-07a`
+- Final permission/index/URL/coverage supplement main push: complete
+- User final review: `PASS`
+- Final independent review: `PASS`
+- Current status: M1-07A complete
+- M1-07B planning entry: allowed
+- M1-07A PASS status sync commit/push: `NOT_RUN`
 - Targeted tests - initial implementation:
   - first command: `$env:PYTHONPATH = ".test_deps;."; python -m pytest tests/unit/test_glossary_ingest.py -q`
   - first exit code: `1`
@@ -423,7 +428,8 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.ingest.glossary import loa
 - Retrieval/Evidence/LLM integration: `NOT_RUN`
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
-- Final supplement commit/push: `NOT_RUN`
+- Final supplement commit/push: complete
+- M1-07B implementation: `NOT_RUN`
 
 ## 20. Git Boundary
-Commit, push, PR, merge, live API calls, actual glossary corpus creation, M2 work, and LLM work require separate user approval.
+M1-07A is complete. M1-07B implementation, commit, push, PR, merge, live API calls, M2 work, and LLM work require separate user approval.
