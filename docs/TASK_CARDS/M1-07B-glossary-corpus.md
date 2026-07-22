@@ -604,8 +604,8 @@ Commit and push require separate explicit Human Owner approval after review of t
 - Human Owner formula/example strategy approval: `APPROVED`
 - Entry content approval: effective when this exact revised Task Card is adopted into the project
 - M1-07B implementation approval: `APPROVED`
-- Current status: `approved snapshot/content/fact-check supplement implemented, user review pending`
-- M1-07B final status: `pending final independent review`
+- Current status: `PASS - Human Owner review complete`
+- M1-07B final status: `complete`
 - Approved snapshot SHA-256: `7b72bd66084b36d2bf5bebd10aadeb3a3386a68ee3967190207edb6a2452d099`
 - Actual glossary corpus: `PASS`
 - Actual coverage 15+: `PASS`
@@ -615,8 +615,9 @@ Commit and push require separate explicit Human Owner approval after review of t
 - Compile: `PASS`
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
-- Final supplement commit/push: `NOT_RUN`
-- Final independent review: `NOT_RUN`
+- Final supplement commit/push: `complete`
+- Final supplement SHA: `40543c425b8f5c0d6987940536be83a5a7b7a96a`
+- Final independent review: `PASS`
 
 ### 18.1 Final Supplement Result Log
 - Targeted first command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_glossary_ingest.py -q`
@@ -642,5 +643,6 @@ Commit and push require separate explicit Human Owner approval after review of t
   - exit code: `0`
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
-- Final supplement commit/push: `NOT_RUN`
-- Final independent review: `NOT_RUN`
+- Final supplement commit/push: `complete`
+- Final supplement SHA: `40543c425b8f5c0d6987940536be83a5a7b7a96a`
+- Final independent review: `PASS`

@@ -396,7 +396,10 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.ingest.glossary import loa
 - User final review: `PASS`
 - Final independent review: `PASS`
 - Current status: M1-07A complete
-- M1-07B planning entry: allowed
+- M1-07B final supplement SHA: `40543c425b8f5c0d6987940536be83a5a7b7a96a`
+- M1-07B final supplement main push: `complete`
+- M1-07B final independent review: `PASS`
+- M1-07B status: `complete`
 - M1-07A PASS status sync commit/push: `NOT_RUN`
 - Targeted tests - initial implementation:
   - first command: `$env:PYTHONPATH = ".test_deps;."; python -m pytest tests/unit/test_glossary_ingest.py -q`
@@ -422,14 +425,14 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.ingest.glossary import loa
   - command: `$env:PYTHONPATH = ".test_deps;."; python -c "from app.ingest.glossary import load_glossary_entries, build_glossary_index, lookup_glossary_entry, build_glossary_locator; print('ok')"`
   - exit code: `0`
   - output: `ok`
-- Actual glossary corpus: `NOT_RUN`
+- Actual glossary corpus: `PASS`
 - Actual permission approval: `NOT_RUN`
-- Actual coverage 15+: `NOT_RUN`
+- Actual coverage 15+: `PASS`
 - Retrieval/Evidence/LLM integration: `NOT_RUN`
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
 - Final supplement commit/push: complete
-- M1-07B implementation: `NOT_RUN`
+- M1-07B implementation: `complete`
 
 ## 20. Git Boundary
-M1-07A is complete. M1-07B implementation, commit, push, PR, merge, live API calls, M2 work, and LLM work require separate user approval.
+M1-07A and M1-07B are complete. Commit, push, PR, merge, live API calls, M2 work, and LLM work require separate user approval.
