@@ -201,6 +201,10 @@ Allowed `content_origin` values:
 
 Rules:
 - `synthetic` requires `usage_review_status == "synthetic"`, `corpus_ingest_allowed is False`, and `external_llm_processing_allowed is False`.
+- `pending` and `rejected` entries require `corpus_ingest_allowed is False` and `external_llm_processing_allowed is False`.
+- `external_llm_processing_allowed=True` requires `usage_review_status == "approved"` and `corpus_ingest_allowed is True`.
+- `approved + corpus_ingest_allowed=False + external_llm_processing_allowed=False` is allowed as a review-corpus approved candidate only.
+- `approved_corpus` still requires every entry to be approved and corpus-ingest enabled.
 - Non-synthetic entries cannot use `usage_review_status == "synthetic"`.
 - `external_source` requires source note, permission note, and either `source_url` or `source_asset_id`.
 - `public_domain` requires source note, permission note, and either `source_url` or `source_asset_id`.
@@ -213,7 +217,7 @@ Rules:
 - `None` or HTTP(S) URL.
 - Scheme and hostname normalized to lowercase.
 - Default ports removed.
-- Userinfo, fragment, invalid port, local path, and `file://` are rejected.
+- Userinfo, including empty userinfo forms such as `https://@example.com/path`, fragment, invalid port, local path, and `file://` are rejected.
 - Credential-like query keys are rejected across case, underscore, hyphen, dot, and percent-encoded separator variants.
 
 Credential key targets:
@@ -246,6 +250,10 @@ Lookup result rules:
 - `not_found`: blank query or unknown query.
 - Non-string query raises `GlossaryLookupValidationError`.
 - Internal mapping first-match behavior is forbidden because collisions are blocked at corpus validation.
+- Direct-created `GlossaryIndex` instances are not trusted.
+- Public lookup revalidates `corpus_id`, `corpus_type`, `language`, mapping shape, key normalization, matched tuple semantics, full canonical/alias key completeness, global entry integrity, related IDs, and corpus type versus entry status.
+- `review_corpus` is not a valid lookup index corpus type.
+- After validation, lookup uses a newly rebuilt immutable sanitized index rather than caller-provided mapping.
 
 ## 12. Locator
 Allowed sections:
@@ -288,8 +296,8 @@ Rules:
 - Counts are based on distinct entry IDs after validation.
 - Minimum required is 15.
 - Synthetic entries are not counted as actual coverage.
-- Review corpus is not actual coverage completion.
-- Approved corpus is only a future actual coverage candidate in M1-07A.
+- Review corpus is not actual coverage completion, and approved candidates inside review corpus do not increase `approved_actual_entries`.
+- Approved corpus is only a future actual coverage candidate in M1-07A; eligible approved entries are counted only when wrapper `corpus_type == "approved_corpus"`.
 - Since no real corpus is provided in M1-07A, `actual_coverage_evaluated` remains false and actual coverage is `NOT_RUN`.
 - Synthetic fixture and in-memory approved-like tests must not be recorded as actual corpus completion.
 
@@ -362,15 +370,30 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.ingest.glossary import loa
 ## 19. Status
 - Task Card created: 2026-07-22
 - Implementation base commit: `56b9c607d23dd871f0d5187a5ab7ca5c6340e84b`
-- Modified files:
+- Initial implementation SHA: `4de02271d41f2b2753a69c9d64194b9e411eaf0e`
+- Initial implementation commit: `Implement m1-07`
+- Initial main push: complete
+- Initial independent review: `CONDITIONAL PASS`
+- Initial implementation modified files:
   - `docs/TASK_CARDS/M1-07-glossary-ingest.md`
   - `app/ingest/glossary.py`
   - `tests/unit/test_glossary_ingest.py`
   - `tests/fixtures/glossary/glossary_synthetic.json`
 - M1-07A schema: complete
 - Synthetic fixture: complete
-- Implementation status: complete, awaiting user review
-- Targeted tests:
+- Final supplement scope:
+  - M01 pending/rejected and external LLM permission gate.
+  - M02 direct-created `GlossaryIndex` semantic deep validation.
+  - M03 empty userinfo URL blocking.
+  - M04 review corpus and actual coverage count separation.
+- Final supplement modified files:
+  - `docs/TASK_CARDS/M1-07-glossary-ingest.md`
+  - `app/ingest/glossary.py`
+  - `tests/unit/test_glossary_ingest.py`
+- Final permission/index/URL/coverage supplement commit/push: `NOT_RUN`
+- Current status: M01-M04 final supplement implemented, user review pending
+- Final independent review: `NOT_RUN`
+- Targeted tests - initial implementation:
   - first command: `$env:PYTHONPATH = ".test_deps;."; python -m pytest tests/unit/test_glossary_ingest.py -q`
   - first exit code: `1`
   - first output: `No module named pytest.__main__; 'pytest' is a package and cannot be directly executed`
@@ -378,11 +401,19 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.ingest.glossary import loa
   - rerun command: `$env:PYTHONPATH = ".test_deps;."; python -m pytest tests/unit/test_glossary_ingest.py -q`
   - rerun exit code: `0`
   - rerun passed count: `102`
-- Regression tests:
+- Targeted tests - final supplement:
+  - first command: `$env:PYTHONPATH = ".test_deps;."; python -m pytest tests/unit/test_glossary_ingest.py -q`
+  - first exit code: `1`
+  - first output: `1 failed, 151 passed`
+  - fix: direct index sanitized-copy test now includes all related synthetic entries
+  - rerun command: `$env:PYTHONPATH = ".test_deps;."; python -m pytest tests/unit/test_glossary_ingest.py -q`
+  - rerun exit code: `0`
+  - rerun passed count: `152`
+- Regression tests - final supplement:
   - command: `$env:PYTHONPATH = ".test_deps;."; python -m pytest tests/unit/test_core_models.py tests/unit/test_status_contracts.py tests/unit/test_security_resolver.py tests/unit/test_provider_base.py tests/unit/test_config.py tests/unit/test_news_provider.py tests/unit/test_disclosure_provider.py tests/unit/test_report_ingest.py tests/unit/test_glossary_ingest.py -q`
   - exit code: `0`
-  - passed count: `533`
-- Import smoke:
+  - passed count: `583`
+- Import smoke - final supplement:
   - command: `$env:PYTHONPATH = ".test_deps;."; python -c "from app.ingest.glossary import load_glossary_entries, build_glossary_index, lookup_glossary_entry, build_glossary_locator; print('ok')"`
   - exit code: `0`
   - output: `ok`
@@ -392,7 +423,7 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.ingest.glossary import loa
 - Retrieval/Evidence/LLM integration: `NOT_RUN`
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
-- Commit/push: `NOT_RUN`
+- Final supplement commit/push: `NOT_RUN`
 
 ## 20. Git Boundary
 Commit, push, PR, merge, live API calls, actual glossary corpus creation, M2 work, and LLM work require separate user approval.

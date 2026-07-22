@@ -290,13 +290,14 @@ def calculate_glossary_coverage(raw_or_bundle: Any) -> GlossaryCoverage:
     synthetic_entries = sum(1 for entry in bundle.entries if entry.usage_review_status == "synthetic")
     pending_entries = sum(1 for entry in bundle.entries if entry.usage_review_status == "pending")
     rejected_entries = sum(1 for entry in bundle.entries if entry.usage_review_status == "rejected")
-    approved_actual_entries = sum(
+    eligible_approved_count = sum(
         1
         for entry in bundle.entries
         if entry.usage_review_status == "approved"
         and entry.corpus_ingest_allowed
         and entry.content_origin != "synthetic"
     )
+    approved_actual_entries = eligible_approved_count if bundle.corpus_type == "approved_corpus" else 0
     actual_coverage_evaluated = False
     return GlossaryCoverage(
         total_entries=len(bundle.entries),
@@ -542,11 +543,15 @@ def _validate_origin_contract(
     source_url: str | None,
     source_asset_id: str | None,
 ) -> None:
+    if usage_review_status in {"synthetic", "pending", "rejected"}:
+        if corpus_ingest_allowed or external_llm_processing_allowed:
+            raise GlossaryEntryValidationError("unapproved glossary permissions must be closed")
+    if external_llm_processing_allowed and (usage_review_status != "approved" or not corpus_ingest_allowed):
+        raise GlossaryEntryValidationError("external LLM processing requires approved corpus ingest")
+
     if content_origin == "synthetic":
         if usage_review_status != "synthetic":
             raise GlossaryEntryValidationError("synthetic origin requires synthetic review status")
-        if corpus_ingest_allowed or external_llm_processing_allowed:
-            raise GlossaryEntryValidationError("synthetic glossary entries must not be corpus or LLM enabled")
     elif usage_review_status == "synthetic":
         raise GlossaryEntryValidationError("synthetic review status requires synthetic content origin")
 
@@ -555,22 +560,102 @@ def _validate_origin_contract(
 
 
 def _validate_index(index: Any) -> GlossaryIndex:
-    if not isinstance(index, GlossaryIndex):
-        raise GlossaryLookupValidationError("glossary index is invalid")
-    if not isinstance(index.lookup_map, Mapping):
-        raise GlossaryLookupValidationError("glossary index mapping is invalid")
-    for key, value in index.lookup_map.items():
-        if not isinstance(key, str):
-            raise GlossaryLookupValidationError("glossary index key is invalid")
-        if not isinstance(value, tuple) or len(value) != 3:
-            raise GlossaryLookupValidationError("glossary index value is invalid")
-        entry, matched_by, matched_term = value
-        validate_glossary_entry(entry)
-        if matched_by not in {"canonical", "alias"}:
-            raise GlossaryLookupValidationError("glossary index matched_by is invalid")
-        if not isinstance(matched_term, str) or not matched_term.strip():
-            raise GlossaryLookupValidationError("glossary index matched_term is invalid")
-    return index
+    try:
+        if not isinstance(index, GlossaryIndex):
+            raise GlossaryLookupValidationError("glossary index is invalid")
+        corpus_id = _index_required_text(index.corpus_id, "corpus_id")
+        if not _OPAQUE_ID_RE.fullmatch(corpus_id):
+            raise GlossaryLookupValidationError("glossary index corpus_id is invalid")
+        if index.corpus_type not in {"synthetic_unit", "approved_corpus"}:
+            raise GlossaryLookupValidationError("glossary index corpus_type is unsupported")
+        if index.language != "ko":
+            raise GlossaryLookupValidationError("glossary index language is unsupported")
+        if not isinstance(index.lookup_map, Mapping) or not index.lookup_map:
+            raise GlossaryLookupValidationError("glossary index mapping is invalid")
+
+        actual_lookup: dict[str, tuple[GlossaryEntry, str, str]] = {}
+        unique_entries_by_id: dict[str, GlossaryEntry] = {}
+        for key, value in index.lookup_map.items():
+            if not isinstance(key, str) or not key.strip():
+                raise GlossaryLookupValidationError("glossary index key is invalid")
+            if _normalize_lookup(key) != key:
+                raise GlossaryLookupValidationError("glossary index key must be normalized")
+            if not isinstance(value, tuple) or len(value) != 3:
+                raise GlossaryLookupValidationError("glossary index value is invalid")
+            raw_entry, matched_by, matched_term = value
+            entry = validate_glossary_entry(raw_entry)
+            if matched_by not in {"canonical", "alias"}:
+                raise GlossaryLookupValidationError("glossary index matched_by is invalid")
+            if not isinstance(matched_term, str) or not matched_term.strip():
+                raise GlossaryLookupValidationError("glossary index matched_term is invalid")
+            if matched_by == "canonical":
+                if matched_term != entry.canonical_term:
+                    raise GlossaryLookupValidationError("glossary index canonical term is invalid")
+                if key != _normalize_lookup(entry.canonical_term):
+                    raise GlossaryLookupValidationError("glossary index canonical key is invalid")
+            else:
+                if matched_term not in entry.aliases:
+                    raise GlossaryLookupValidationError("glossary index alias term is invalid")
+                if key != _normalize_lookup(matched_term):
+                    raise GlossaryLookupValidationError("glossary index alias key is invalid")
+
+            existing_entry = unique_entries_by_id.get(entry.entry_id)
+            if existing_entry is not None and existing_entry != entry:
+                raise GlossaryLookupValidationError("glossary index entry content conflicts")
+            unique_entries_by_id[entry.entry_id] = entry
+            actual_lookup[key] = (entry, matched_by, matched_term)
+
+        entries = tuple(unique_entries_by_id.values())
+        if any(entry.language != index.language for entry in entries):
+            raise GlossaryLookupValidationError("glossary index entry language mismatch")
+        bundle = GlossaryCorpusBundle(
+            schema_version=1,
+            corpus_type=index.corpus_type,
+            corpus_id=corpus_id,
+            language=index.language,
+            entries=entries,
+        )
+        try:
+            _validate_global_integrity(bundle.entries)
+            _validate_corpus_type_rules(bundle)
+        except GlossaryIngestValidationError:
+            raise GlossaryLookupValidationError("glossary index corpus integrity is invalid") from None
+
+        expected_lookup = _expected_lookup_for_entries(entries)
+        if actual_lookup != expected_lookup:
+            raise GlossaryLookupValidationError("glossary index mapping is incomplete or forged")
+        return GlossaryIndex(
+            corpus_id=corpus_id,
+            corpus_type=index.corpus_type,
+            language=index.language,
+            _lookup=MappingProxyType(dict(expected_lookup)),
+        )
+    except GlossaryLookupValidationError:
+        raise
+    except GlossaryIngestValidationError:
+        raise GlossaryLookupValidationError("glossary index is invalid") from None
+    except (AttributeError, KeyError, TypeError, ValueError, re.error):
+        raise GlossaryLookupValidationError("glossary index is invalid") from None
+
+
+def _expected_lookup_for_entries(entries: tuple[GlossaryEntry, ...]) -> dict[str, tuple[GlossaryEntry, str, str]]:
+    expected_lookup: dict[str, tuple[GlossaryEntry, str, str]] = {}
+    for entry in entries:
+        expected_lookup[_normalize_lookup(entry.canonical_term)] = (entry, "canonical", entry.canonical_term)
+        for alias in entry.aliases:
+            expected_lookup[_normalize_lookup(alias)] = (entry, "alias", alias)
+    return expected_lookup
+
+
+def _index_required_text(value: Any, field: str) -> str:
+    if not isinstance(value, str):
+        raise GlossaryLookupValidationError(f"glossary index {field} must be a string")
+    value = value.strip()
+    if not value:
+        raise GlossaryLookupValidationError(f"glossary index {field} must not be blank")
+    if _looks_like_local_absolute_path(value):
+        raise GlossaryLookupValidationError(f"glossary index {field} must not expose a local absolute path")
+    return value
 
 
 def _required_text(raw: Mapping[str, Any], field: str, error_type: type[GlossaryIngestValidationError]) -> str:
@@ -671,7 +756,7 @@ def _optional_url(value: Any, error_type: type[GlossaryIngestValidationError]) -
         raise error_type("source_url must be HTTP(S)")
     if not parts.hostname:
         raise error_type("source_url requires a host")
-    if parts.username or parts.password:
+    if parts.username is not None or parts.password is not None:
         raise error_type("source_url must not include userinfo")
     if parts.fragment:
         raise error_type("source_url must not include a fragment")

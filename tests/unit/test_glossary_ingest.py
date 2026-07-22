@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+import app.ingest.glossary as glossary_module
 from app.ingest.glossary import (
     GLOSSARY_INGESTION_VERSION,
     GLOSSARY_SOURCE_TYPE,
@@ -13,6 +14,7 @@ from app.ingest.glossary import (
     GlossaryCorpusBundle,
     GlossaryCorpusValidationError,
     GlossaryEntryValidationError,
+    GlossaryIndex,
     GlossaryIngestValidationError,
     GlossaryLookupValidationError,
     build_glossary_index,
@@ -54,6 +56,16 @@ def approved_entry(number=1, **updates):
         source_url=None,
         source_asset_id=None,
         related_entry_ids=[],
+    )
+    raw.update(updates)
+    return raw
+
+
+def approved_ascii_entry(number=1, **updates):
+    raw = approved_entry(
+        number,
+        canonical_term=f"approved term {number}",
+        aliases=[f"approved alias {number}", f"approved alt {number}"],
     )
     raw.update(updates)
     return raw
@@ -206,6 +218,55 @@ def test_approved_corpus_rejects_pending_rejected_or_permission_false(entries):
 
 
 @pytest.mark.parametrize(
+    "updates",
+    [
+        {"usage_review_status": "synthetic", "corpus_ingest_allowed": True},
+        {"usage_review_status": "synthetic", "external_llm_processing_allowed": True},
+        {
+            "usage_review_status": "pending",
+            "content_origin": "user_authored",
+            "corpus_ingest_allowed": True,
+        },
+        {
+            "usage_review_status": "pending",
+            "content_origin": "user_authored",
+            "external_llm_processing_allowed": True,
+        },
+        {
+            "usage_review_status": "rejected",
+            "content_origin": "user_authored",
+            "corpus_ingest_allowed": True,
+        },
+        {
+            "usage_review_status": "rejected",
+            "content_origin": "user_authored",
+            "external_llm_processing_allowed": True,
+        },
+        {"corpus_ingest_allowed": False, "external_llm_processing_allowed": True},
+    ],
+)
+def test_permission_gate_rejects_unapproved_or_llm_without_corpus(updates):
+    with pytest.raises(GlossaryEntryValidationError):
+        validate_glossary_entry(approved_entry(1, **updates))
+
+
+@pytest.mark.parametrize(
+    "updates",
+    [
+        {"usage_review_status": "pending", "content_origin": "user_authored", "corpus_ingest_allowed": False},
+        {"usage_review_status": "rejected", "content_origin": "user_authored", "corpus_ingest_allowed": False},
+        {"corpus_ingest_allowed": False, "external_llm_processing_allowed": False},
+        {"corpus_ingest_allowed": True, "external_llm_processing_allowed": False},
+        {"corpus_ingest_allowed": True, "external_llm_processing_allowed": True},
+    ],
+)
+def test_permission_gate_allows_supported_review_and_approved_combinations(updates):
+    entry = validate_glossary_entry(approved_entry(1, **updates))
+
+    assert entry.external_llm_processing_allowed is updates.get("external_llm_processing_allowed", False)
+
+
+@pytest.mark.parametrize(
     "field",
     [
         "entry_id",
@@ -277,6 +338,13 @@ def test_entry_source_url_and_asset_success_boundaries(updates):
         assert entry.source_asset_id == "asset.glossary-001"
 
 
+@pytest.mark.parametrize("source_url", ["https://example.com/path", "HTTPS://Example.COM:443/path?q=1"])
+def test_entry_source_url_userinfo_success_baseline(source_url):
+    entry = validate_glossary_entry(approved_entry(1, source_url=source_url))
+
+    assert entry.source_url in {"https://example.com/path", "https://example.com/path?q=1"}
+
+
 @pytest.mark.parametrize(
     "source_url",
     [
@@ -284,6 +352,10 @@ def test_entry_source_url_and_asset_success_boundaries(updates):
         "https://example.com/path?ACCESS_TOKEN=secret",
         "https://example.com/path?client%2Esecret=secret",
         "https://example.com/path?X-Amz-Signature=secret",
+        "https://@example.com/path",
+        "https://:@example.com/path",
+        "https://user:@example.com/path",
+        "https://:pass@example.com/path",
         "https://user:pass@example.com/path",
         "https://example.com/path#fragment",
         "https://example.com:bad/path",
@@ -375,6 +447,191 @@ def test_index_is_copy_safe_and_mapping_is_read_only():
         index.lookup_map["new"] = index.lookup_map["알파비율"]  # type: ignore[index]
 
 
+def direct_index(entries, *, corpus_id="glossary-direct-v1", corpus_type="synthetic_unit", language="ko", mutate=None):
+    lookup = {}
+    for entry in entries:
+        lookup[glossary_module._normalize_lookup(entry.canonical_term)] = (entry, "canonical", entry.canonical_term)
+        for alias in entry.aliases:
+            lookup[glossary_module._normalize_lookup(alias)] = (entry, "alias", alias)
+    if mutate is not None:
+        mutate(lookup, entries)
+    return GlossaryIndex(corpus_id=corpus_id, corpus_type=corpus_type, language=language, _lookup=lookup)
+
+
+def synthetic_entries():
+    return load_glossary_entries(FIXTURE_PATH).entries
+
+
+def approved_entries(count=1):
+    return tuple(validate_glossary_entry(approved_ascii_entry(number)) for number in range(1, count + 1))
+
+
+@pytest.mark.parametrize(
+    "index",
+    [
+        GlossaryIndex("glossary-direct-v1", "synthetic_unit", "ko", {}),
+        GlossaryIndex("bad/id", "synthetic_unit", "ko", {"key": "bad"}),
+        GlossaryIndex(123, "synthetic_unit", "ko", {"key": "bad"}),  # type: ignore[arg-type]
+        GlossaryIndex("glossary-direct-v1", "unsupported", "ko", {"key": "bad"}),
+        GlossaryIndex("glossary-direct-v1", "review_corpus", "ko", {"key": "bad"}),
+        GlossaryIndex("glossary-direct-v1", "synthetic_unit", "en", {"key": "bad"}),
+        GlossaryIndex("glossary-direct-v1", "synthetic_unit", "ko", "bad"),  # type: ignore[arg-type]
+        GlossaryIndex("glossary-direct-v1", "synthetic_unit", "ko", {"": "bad"}),
+        GlossaryIndex("glossary-direct-v1", "synthetic_unit", "ko", {123: "bad"}),  # type: ignore[dict-item]
+        GlossaryIndex("glossary-direct-v1", "synthetic_unit", "ko", {"key": ("bad",)}),
+    ],
+)
+def test_direct_index_basic_boundaries_fail_with_lookup_error(index):
+    with pytest.raises(GlossaryLookupValidationError):
+        lookup_glossary_entry(index, "anything")
+
+
+def test_direct_index_malformed_entry_fails_with_lookup_error():
+    entry = replace(synthetic_entries()[0], aliases=(["bad"],))
+    index = GlossaryIndex(
+        "glossary-direct-v1",
+        "synthetic_unit",
+        "ko",
+        {glossary_module._normalize_lookup(entry.canonical_term): (entry, "canonical", entry.canonical_term)},
+    )
+
+    with pytest.raises(GlossaryLookupValidationError):
+        lookup_glossary_entry(index, entry.canonical_term)
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda lookup, entries: lookup.__setitem__("forged", (entries[0], "canonical", entries[0].canonical_term)),
+        lambda lookup, entries: lookup.__setitem__("forgedalias", (entries[0], "alias", entries[0].aliases[0])),
+        lambda lookup, entries: lookup.__setitem__(
+            glossary_module._normalize_lookup(entries[0].canonical_term), (entries[0], "canonical", entries[0].aliases[0])
+        ),
+        lambda lookup, entries: lookup.__setitem__(
+            glossary_module._normalize_lookup(entries[0].aliases[0]), (entries[0], "alias", entries[0].canonical_term)
+        ),
+        lambda lookup, entries: lookup.__setitem__(
+            glossary_module._normalize_lookup("missing alias"), (entries[0], "alias", "missing alias")
+        ),
+        lambda lookup, entries: lookup.__setitem__("ALPHA Ratio", (entries[0], "alias", entries[0].aliases[0])),
+        lambda lookup, entries: lookup.__setitem__(
+            glossary_module._normalize_lookup(entries[0].aliases[0]), (entries[1], "alias", entries[0].aliases[0])
+        ),
+    ],
+)
+def test_direct_index_semantic_tuple_failures(mutate):
+    index = direct_index(synthetic_entries(), mutate=mutate)
+
+    with pytest.raises(GlossaryLookupValidationError):
+        lookup_glossary_entry(index, "anything")
+
+
+def test_direct_index_same_entry_id_with_different_content_fails():
+    first = synthetic_entries()[0]
+    second = replace(first, canonical_term="different direct term", aliases=())
+    index = GlossaryIndex(
+        "glossary-direct-v1",
+        "synthetic_unit",
+        "ko",
+        {
+            glossary_module._normalize_lookup(first.canonical_term): (first, "canonical", first.canonical_term),
+            glossary_module._normalize_lookup(first.aliases[0]): (first, "alias", first.aliases[0]),
+            glossary_module._normalize_lookup(first.aliases[1]): (first, "alias", first.aliases[1]),
+            glossary_module._normalize_lookup(second.canonical_term): (second, "canonical", second.canonical_term),
+        },
+    )
+
+    with pytest.raises(GlossaryLookupValidationError):
+        lookup_glossary_entry(index, first.canonical_term)
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda lookup, entries: lookup.pop(glossary_module._normalize_lookup(entries[0].canonical_term)),
+        lambda lookup, entries: lookup.pop(glossary_module._normalize_lookup(entries[0].aliases[0])),
+        lambda lookup, entries: lookup.pop(glossary_module._normalize_lookup(entries[0].aliases[1])),
+        lambda lookup, entries: lookup.__setitem__("extra", (entries[0], "canonical", entries[0].canonical_term)),
+    ],
+)
+def test_direct_index_key_completeness_failures(mutate):
+    index = direct_index(synthetic_entries(), mutate=mutate)
+
+    with pytest.raises(GlossaryLookupValidationError):
+        lookup_glossary_entry(index, "anything")
+
+
+@pytest.mark.parametrize(
+    "index",
+    [
+        direct_index(approved_entries(), corpus_type="synthetic_unit"),
+        direct_index(synthetic_entries(), corpus_type="approved_corpus"),
+        direct_index(
+            (validate_glossary_entry(approved_ascii_entry(1, corpus_ingest_allowed=False)),),
+            corpus_type="approved_corpus",
+        ),
+        direct_index((replace(synthetic_entries()[0], language="en"),), language="ko"),
+        direct_index(
+            (validate_glossary_entry(approved_ascii_entry(1, related_entry_ids=["glossary:missing"])),),
+            corpus_type="approved_corpus",
+        ),
+    ],
+)
+def test_direct_index_corpus_entry_mismatch_failures(index):
+    with pytest.raises(GlossaryLookupValidationError):
+        lookup_glossary_entry(index, "anything")
+
+
+def test_direct_index_global_collision_failure():
+    first, second = approved_entries(2)
+    second = replace(second, aliases=(first.canonical_term,))
+    index = direct_index((first, second), corpus_type="approved_corpus")
+
+    with pytest.raises(GlossaryLookupValidationError):
+        lookup_glossary_entry(index, first.canonical_term)
+
+
+def test_direct_index_valid_synthetic_success():
+    entry = synthetic_entries()[0]
+    index = direct_index(synthetic_entries(), corpus_type="synthetic_unit")
+
+    result = lookup_glossary_entry(index, entry.canonical_term)
+
+    assert result.status == "found"
+
+
+def test_direct_index_valid_approved_success():
+    entry = approved_entries()[0]
+    index = direct_index((entry,), corpus_type="approved_corpus")
+
+    result = lookup_glossary_entry(index, entry.canonical_term)
+
+    assert result.status == "found"
+
+
+def test_validate_index_returns_sanitized_immutable_copy():
+    raw_lookup = {}
+    entries = synthetic_entries()
+    entry = entries[0]
+    for indexed_entry in entries:
+        raw_lookup[glossary_module._normalize_lookup(indexed_entry.canonical_term)] = (
+            indexed_entry,
+            "canonical",
+            indexed_entry.canonical_term,
+        )
+        for alias in indexed_entry.aliases:
+            raw_lookup[glossary_module._normalize_lookup(alias)] = (indexed_entry, "alias", alias)
+    direct = GlossaryIndex("glossary-direct-v1", "synthetic_unit", "ko", raw_lookup)
+
+    sanitized = glossary_module._validate_index(direct)
+    raw_lookup.clear()
+
+    assert sanitized is not direct
+    assert lookup_glossary_entry(sanitized, entry.canonical_term).status == "found"
+    with pytest.raises(TypeError):
+        sanitized.lookup_map["new"] = sanitized.lookup_map[glossary_module._normalize_lookup(entry.canonical_term)]  # type: ignore[index]
+
+
 @pytest.mark.parametrize("section", ["definition", "why_it_matters", "caution", "formula", "example"])
 def test_locator_success_sections(section):
     bundle = load_glossary_entries(FIXTURE_PATH)
@@ -419,7 +676,7 @@ def test_coverage_counts_review_statuses_and_keeps_actual_coverage_not_run():
 
     assert coverage.total_entries == 3
     assert coverage.pending_entries == 1
-    assert coverage.approved_actual_entries == 1
+    assert coverage.approved_actual_entries == 0
     assert coverage.rejected_entries == 1
     assert coverage.synthetic_entries == 0
     assert coverage.minimum_required == 15
