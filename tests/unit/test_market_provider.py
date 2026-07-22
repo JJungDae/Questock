@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+import app.providers.market as market_module
 from app.config import ProviderConfig
 from app.core.models import DateRange, SecurityIdentifier
 from app.core.resolver import SecurityResolver
@@ -13,11 +14,14 @@ from app.core.status import ProviderStatus
 from app.providers import RecordedMarketSnapshotProvider as ExportedRecordedMarketSnapshotProvider
 from app.providers.base import fetch_with_policy
 from app.providers.market import (
+    DEFAULT_MARKET_FIXTURE_PATH,
+    DEFAULT_SECURITIES_PATH,
     PERCENT_TOLERANCE,
     PRICE_CHANGE_TOLERANCE,
     RECORDED_MARKET_SNAPSHOT_PROVIDER_KEY,
     RecordedMarketSnapshotProvider,
     market_snapshot_direction,
+    normalize_market_snapshot_fixture,
 )
 
 FIXTURE_PATH = Path("tests/fixtures/market/market_snapshot_synthetic.json")
@@ -32,6 +36,14 @@ def run(coro):
 
 def fixture_data():
     return json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
+
+
+def registry_data():
+    return json.loads(DEFAULT_SECURITIES_PATH.read_text(encoding="utf-8"))
+
+
+def write_json(path: Path, data):
+    path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
 
 
 def fixture_with_update(index: int, **updates):
@@ -55,11 +67,26 @@ def fetch_snapshot(provider, security_id=SAMSUNG, date_range=None, query=None):
 
 def assert_failure_is_sanitized(result):
     rendered = json.dumps(result.model_dump(mode="json"), ensure_ascii=False)
-    assert "C:\\Users" not in rendered
-    assert "/tmp/" not in rendered
-    assert "sentinel-secret" not in rendered
-    assert "Traceback" not in rendered
-    assert "raw" not in rendered
+    blocked_fragments = [
+        "C:\\Users",
+        "/tmp/",
+        "market_snapshot_synthetic",
+        "registry-sentinel-secret",
+        "sentinel-secret",
+        "UnicodeDecodeError",
+        "FixtureValidationError",
+        "Traceback",
+        "raw",
+    ]
+    for fragment in blocked_fragments:
+        assert fragment not in rendered
+
+
+def assert_failure_status(result, status: ProviderStatus, error_code: str):
+    assert result.status == status
+    assert result.data is None
+    assert result.error_code == error_code
+    assert_failure_is_sanitized(result)
 
 
 def test_provider_key_and_package_export():
@@ -128,6 +155,119 @@ def test_explicit_non_empty_query_is_invalid_query(query):
     assert result.status == ProviderStatus.INVALID_QUERY
     assert result.error_code == "invalid_query"
     assert_failure_is_sanitized(result)
+
+
+def test_non_empty_query_is_rejected_before_registry_fixture_or_normalizer_io(tmp_path, monkeypatch):
+    security = supported_security(SAMSUNG)
+    malformed_registry = tmp_path / "registry-sentinel-secret.json"
+    malformed_registry.write_text("{", encoding="utf-8")
+    missing_registry = tmp_path / "missing-registry-sentinel-secret.json"
+    market_fixture = tmp_path / "market-sentinel-secret.json"
+    calls: list[str] = []
+
+    def forbidden_io(*args, **kwargs):
+        calls.append("called")
+        raise AssertionError("query validation must run before registry or fixture I/O")
+
+    monkeypatch.setattr(market_module, "_load_canonical_resolver", forbidden_io)
+    monkeypatch.setattr(RecordedMarketSnapshotProvider, "_load_fixture_data", forbidden_io)
+    monkeypatch.setattr(market_module, "normalize_market_snapshot_fixture", forbidden_io)
+
+    for securities_path in [missing_registry, malformed_registry]:
+        provider = RecordedMarketSnapshotProvider(fixture_path=market_fixture, securities_path=securities_path)
+        result = run(provider.fetch(security, query=" price "))
+
+        assert_failure_status(result, ProviderStatus.INVALID_QUERY, "invalid_query")
+
+    assert calls == []
+
+
+def test_missing_registry_returns_provider_unavailable(tmp_path):
+    provider = RecordedMarketSnapshotProvider(
+        fixture_data=fixture_data(),
+        securities_path=tmp_path / "missing-registry-sentinel-secret.json",
+    )
+
+    result = run(provider.fetch(supported_security(SAMSUNG)))
+
+    assert_failure_status(result, ProviderStatus.PROVIDER_UNAVAILABLE, "provider_unavailable")
+
+
+def test_registry_read_os_error_returns_provider_unavailable(tmp_path, monkeypatch):
+    security = supported_security(SAMSUNG)
+    registry_path = tmp_path / "registry-sentinel-secret.json"
+    original_read_text = Path.read_text
+
+    def raising_read_text(self, *args, **kwargs):
+        if self == registry_path:
+            raise OSError(f"sentinel-secret raw registry failure at {registry_path}")
+        return original_read_text(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", raising_read_text)
+    provider = RecordedMarketSnapshotProvider(fixture_data=fixture_data(), securities_path=registry_path)
+
+    result = run(provider.fetch(security))
+
+    assert_failure_status(result, ProviderStatus.PROVIDER_UNAVAILABLE, "provider_unavailable")
+
+
+def test_non_utf8_registry_returns_provider_unavailable(tmp_path):
+    registry_path = tmp_path / "registry-sentinel-secret.json"
+    registry_path.write_bytes(b"\xff\xfe\x00")
+    provider = RecordedMarketSnapshotProvider(fixture_data=fixture_data(), securities_path=registry_path)
+
+    result = run(provider.fetch(supported_security(SAMSUNG)))
+
+    assert_failure_status(result, ProviderStatus.PROVIDER_UNAVAILABLE, "provider_unavailable")
+
+
+def test_malformed_registry_json_returns_parse_error(tmp_path):
+    registry_path = tmp_path / "registry-sentinel-secret.json"
+    registry_path.write_text("{", encoding="utf-8")
+    provider = RecordedMarketSnapshotProvider(fixture_data=fixture_data(), securities_path=registry_path)
+
+    result = run(provider.fetch(supported_security(SAMSUNG)))
+
+    assert_failure_status(result, ProviderStatus.PARSE_ERROR, "parse_error")
+
+
+def test_schema_invalid_registry_returns_parse_error(tmp_path):
+    registry = registry_data()
+    registry["securities"][0]["ticker"] = "123"
+    registry_path = tmp_path / "registry-sentinel-secret.json"
+    write_json(registry_path, registry)
+    provider = RecordedMarketSnapshotProvider(fixture_data=fixture_data(), securities_path=registry_path)
+
+    result = run(provider.fetch(supported_security(SAMSUNG)))
+
+    assert_failure_status(result, ProviderStatus.PARSE_ERROR, "parse_error")
+
+
+def test_normal_fetch_loads_canonical_registry_once(monkeypatch):
+    security = supported_security(SAMSUNG)
+    calls: list[Path] = []
+    original_loader = market_module._load_canonical_resolver
+
+    def counting_loader(securities_path):
+        calls.append(Path(securities_path))
+        return original_loader(securities_path)
+
+    monkeypatch.setattr(market_module, "_load_canonical_resolver", counting_loader)
+    provider = RecordedMarketSnapshotProvider(fixture_data=fixture_data())
+
+    result = run(provider.fetch(security))
+
+    assert result.status == ProviderStatus.OK
+    assert len(calls) == 1
+
+
+def test_direct_normalizer_loads_registry_when_resolver_is_not_supplied():
+    records = normalize_market_snapshot_fixture(
+        fixture_data(),
+        provider_key=RECORDED_MARKET_SNAPSHOT_PROVIDER_KEY,
+    )
+
+    assert {record.security_id for record in records} == {SAMSUNG, SK_HYNIX, HYUNDAI}
 
 
 def test_observed_at_is_timezone_aware_utc_and_kst_date_must_match_trading_date():
@@ -297,9 +437,19 @@ def test_timeout_missing_fixture_and_malformed_json_statuses_are_normalized(tmp_
         assert_failure_is_sanitized(result)
 
 
-def test_fixture_path_and_fixture_data_conflict_is_rejected(tmp_path):
-    with pytest.raises(ValueError):
-        RecordedMarketSnapshotProvider(fixture_path=tmp_path / "fixture.json", fixture_data=fixture_data())
+def test_fixture_path_and_fixture_data_constructor_contract(tmp_path):
+    assert fetch_snapshot(RecordedMarketSnapshotProvider(), SAMSUNG).security_id == SAMSUNG
+    assert fetch_snapshot(RecordedMarketSnapshotProvider(fixture_data=fixture_data()), SAMSUNG).security_id == SAMSUNG
+    assert fetch_snapshot(RecordedMarketSnapshotProvider(fixture_path=FIXTURE_PATH), SAMSUNG).security_id == SAMSUNG
+
+    for fixture_path in [DEFAULT_MARKET_FIXTURE_PATH, tmp_path / "fixture-sentinel-secret.json"]:
+        with pytest.raises(ValueError) as exc_info:
+            RecordedMarketSnapshotProvider(fixture_path=fixture_path, fixture_data=fixture_data())
+
+        message = str(exc_info.value)
+        assert message == "fixture_path and fixture_data must not both be supplied"
+        assert str(fixture_path) not in message
+        assert "sentinel-secret" not in message
 
 
 def test_fixture_data_is_copied_and_repeated_fetch_is_deterministic():

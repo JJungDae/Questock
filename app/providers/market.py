@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from app.core.models import DateRange, MarketSnapshot, ProviderResult, SecurityIdentifier
-from app.core.resolver import SecurityResolver
+from app.core.resolver import FixtureValidationError, SecurityResolver
 from app.core.status import ProviderStatus, ResolutionStatus
 from app.providers.base import create_provider_result, normalize_query, security_id_for
 
@@ -46,6 +46,14 @@ class MarketSnapshotParseError(ValueError):
     """Raised when a recorded market snapshot fixture is malformed."""
 
 
+class CanonicalRegistryUnavailableError(RuntimeError):
+    """Raised when the canonical security registry cannot be read."""
+
+
+class CanonicalRegistryParseError(ValueError):
+    """Raised when the canonical security registry is malformed."""
+
+
 @dataclass(frozen=True)
 class ParsedMarketSnapshotRecord:
     security_id: str
@@ -66,17 +74,16 @@ class RecordedMarketSnapshotProvider:
     def __init__(
         self,
         *,
-        fixture_path: str | Path = DEFAULT_MARKET_FIXTURE_PATH,
+        fixture_path: str | Path | None = None,
         fixture_data: dict[str, Any] | None = None,
         fixture_status: ProviderStatus = ProviderStatus.OK,
         securities_path: str | Path = DEFAULT_SECURITIES_PATH,
         provider_key: str = RECORDED_MARKET_SNAPSHOT_PROVIDER_KEY,
     ) -> None:
-        fixture_path_obj = Path(fixture_path)
-        if fixture_data is not None and fixture_path_obj != DEFAULT_MARKET_FIXTURE_PATH:
+        if fixture_path is not None and fixture_data is not None:
             raise ValueError("fixture_path and fixture_data must not both be supplied")
         self.key = provider_key
-        self._fixture_path = fixture_path_obj
+        self._fixture_path = Path(fixture_path) if fixture_path is not None else DEFAULT_MARKET_FIXTURE_PATH
         self._fixture_data = copy.deepcopy(fixture_data) if fixture_data is not None else None
         self._fixture_status = fixture_status
         self._securities_path = Path(securities_path)
@@ -88,11 +95,19 @@ class RecordedMarketSnapshotProvider:
         date_range: DateRange | None = None,
         attempt_timeout_seconds: float = 8,
     ) -> ProviderResult[MarketSnapshot]:
-        canonical = self._canonical_security(security)
-        if canonical is None or not _matches_requested_security(security, canonical):
-            return create_provider_result(status=ProviderStatus.INVALID_QUERY, message="invalid security")
         if normalize_query(query):
-            return create_provider_result(status=ProviderStatus.INVALID_QUERY, message="invalid query")
+            return create_provider_result(status=ProviderStatus.INVALID_QUERY, message="invalid_query")
+
+        try:
+            resolver = _load_canonical_resolver(self._securities_path)
+        except CanonicalRegistryUnavailableError:
+            return create_provider_result(status=ProviderStatus.PROVIDER_UNAVAILABLE, message="provider_unavailable")
+        except CanonicalRegistryParseError:
+            return create_provider_result(status=ProviderStatus.PARSE_ERROR, message="parse_error")
+
+        canonical = _canonical_security_for_id(resolver, security_id_for(security))
+        if canonical is None or not _matches_requested_security(security, canonical):
+            return create_provider_result(status=ProviderStatus.INVALID_QUERY, message="invalid_query")
 
         if self._fixture_status != ProviderStatus.OK:
             return create_provider_result(status=self._fixture_status, message=self._fixture_status.value)
@@ -110,8 +125,12 @@ class RecordedMarketSnapshotProvider:
             records = normalize_market_snapshot_fixture(
                 fixture_data,
                 provider_key=self.key,
-                securities_path=self._securities_path,
+                resolver=resolver,
             )
+        except CanonicalRegistryUnavailableError:
+            return create_provider_result(status=ProviderStatus.PROVIDER_UNAVAILABLE, message="provider_unavailable")
+        except CanonicalRegistryParseError:
+            return create_provider_result(status=ProviderStatus.PARSE_ERROR, message="parse_error")
         except MarketSnapshotParseError:
             return create_provider_result(status=ProviderStatus.PARSE_ERROR, message="parse error")
 
@@ -125,21 +144,13 @@ class RecordedMarketSnapshotProvider:
             return copy.deepcopy(self._fixture_data)
         return json.loads(self._fixture_path.read_text(encoding="utf-8"))
 
-    def _canonical_security(self, security: SecurityIdentifier) -> SecurityIdentifier | None:
-        try:
-            resolution = SecurityResolver(fixture_path=self._securities_path).resolve(security_id_for(security))
-        except (OSError, ValueError, json.JSONDecodeError):
-            return None
-        if resolution.status != ResolutionStatus.RESOLVED or resolution.security is None:
-            return None
-        return resolution.security
-
 
 def normalize_market_snapshot_fixture(
     fixture_data: Any,
     *,
     provider_key: str,
     securities_path: str | Path = DEFAULT_SECURITIES_PATH,
+    resolver: SecurityResolver | None = None,
 ) -> tuple[ParsedMarketSnapshotRecord, ...]:
     if not isinstance(fixture_data, dict):
         raise MarketSnapshotParseError("market snapshot fixture must be an object")
@@ -150,7 +161,8 @@ def normalize_market_snapshot_fixture(
     if not isinstance(raw_snapshots, list):
         raise MarketSnapshotParseError("market snapshot snapshots must be a list")
 
-    resolver = _load_resolver(securities_path)
+    if resolver is None:
+        resolver = _load_canonical_resolver(securities_path)
     records: list[ParsedMarketSnapshotRecord] = []
     seen: set[tuple[str, str, str]] = set()
     for raw_record in raw_snapshots:
@@ -190,11 +202,15 @@ def market_snapshot_direction(snapshot: MarketSnapshot) -> MarketDirection:
     return "flat"
 
 
-def _load_resolver(securities_path: str | Path) -> SecurityResolver:
+def _load_canonical_resolver(securities_path: str | Path) -> SecurityResolver:
     try:
         return SecurityResolver(fixture_path=securities_path)
-    except Exception as exc:
-        raise MarketSnapshotParseError("market security registry could not be loaded") from exc
+    except (OSError, UnicodeDecodeError) as exc:
+        raise CanonicalRegistryUnavailableError("canonical registry unavailable") from exc
+    except json.JSONDecodeError as exc:
+        raise CanonicalRegistryParseError("canonical registry parse error") from exc
+    except (FixtureValidationError, ValueError) as exc:
+        raise CanonicalRegistryParseError("canonical registry parse error") from exc
 
 
 def _parse_record(raw_record: Any, *, resolver: SecurityResolver) -> ParsedMarketSnapshotRecord:
@@ -369,6 +385,8 @@ __all__ = [
     "PERCENT_TOLERANCE",
     "PRICE_CHANGE_TOLERANCE",
     "RECORDED_MARKET_SNAPSHOT_PROVIDER_KEY",
+    "CanonicalRegistryParseError",
+    "CanonicalRegistryUnavailableError",
     "MarketSnapshotParseError",
     "RecordedMarketSnapshotProvider",
     "market_snapshot_direction",

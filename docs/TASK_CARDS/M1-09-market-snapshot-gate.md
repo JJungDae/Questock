@@ -9,12 +9,18 @@
 - Planning base commit: `519e208fc4abdfc45d69418dc1cc60bb630011d8`
 - M1-08 status: `PASS`
 - M1-08 completion commit: `519e208fc4abdfc45d69418dc1cc60bb630011d8`
-- Current status: `IMPLEMENTED - user review pending`
+- Current status: `M1-09 mandatory supplement implemented - final independent review pending`
 - Implementation approval: `APPROVED by user request`
-- Commit/push/PR/merge/deploy: `NOT_APPROVED`
-- Implementation SHA: `NOT_CREATED`
-- Local gate decision: `A15-M data-qualified stretch candidate`
+- Initial implementation SHA: `443ce731ed8e84757a0a0844074c1cbf68676d73`
+- Initial implementation commit: `Implement m1-09`
+- Initial implementation main push: `complete`
+- Initial independent review: `CONDITIONAL PASS`
+- Supplement commit/push: `NOT_RUN`
+- Commit/push/PR/merge/deploy for supplement: `NOT_APPROVED`
+- Local gate decision: `A15-M remains data-qualified stretch candidate`
+- M1-09 provider completion: `pending final PASS`
 - GitHub CI: `NOT_RUN`
+- Final independent review: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
 - Live market data API: `OUT_OF_SCOPE`
 - M2-09/M3-12 price-move implementation: `OUT_OF_SCOPE`
@@ -170,7 +176,7 @@ The provider constructor must expose a testable boundary:
 def __init__(
     self,
     *,
-    fixture_path: str | Path = DEFAULT_MARKET_FIXTURE_PATH,
+    fixture_path: str | Path | None = None,
     fixture_data: dict[str, Any] | None = None,
     fixture_status: ProviderStatus = ProviderStatus.OK,
     securities_path: str | Path = DEFAULT_SECURITIES_PATH,
@@ -181,7 +187,9 @@ def __init__(
 
 Rules:
 
+- `fixture_path is None` uses the default committed fixture path
 - `fixture_path` and `fixture_data` must not both be explicitly supplied
+- `fixture_path` and `fixture_data` both non-`None` fails with sanitized `ValueError`
 - `fixture_data` is used by tests without filesystem access
 - `fixture_status` represents injected provider execution state, not snapshot content
 - canonical security identity is validated through the existing `SecurityResolver` using `securities_path`
@@ -190,16 +198,16 @@ Rules:
 
 - `ok`: one normalized `MarketSnapshot`
 - `no_data`: valid supported security, but no snapshot remains after security/date filtering
-- `invalid_query`: normalized query is non-empty, the requested security is unsupported, the requested security is not `common_stock`, or the requested identity does not match canonical security data
+- `invalid_query`: normalized query is non-empty; or the canonical registry is healthy and the requested security is unsupported, not `common_stock`, or has identity mismatch against canonical security data
 - `timeout`: injected `fixture_status=ProviderStatus.TIMEOUT`
-- `provider_unavailable`: fixture file missing, unreadable, or otherwise unavailable before schema parsing
-- `parse_error`: JSON decoding, top-level schema, record schema, duplicate identity, numeric invariant, timezone, market-session, or fixture/canonical identity validation failure
+- `provider_unavailable`: market fixture missing/unreadable/non-UTF-8; or canonical registry missing/unreadable/non-UTF-8
+- `parse_error`: market fixture malformed JSON/schema-invalid, record schema, duplicate identity, numeric invariant, timezone, market-session, or fixture/canonical identity validation failure; or canonical registry malformed JSON/schema-invalid
 
 All returned results must pass `create_provider_result()`.
 
-The provider must not expose raw fixture paths, raw exception text, or failing record contents in `message`.
+The provider must not expose raw fixture paths, registry paths, raw exception text, raw JSON, tracebacks, credentials, or failing record contents in `message`.
 
-Fixture loading must not leak an exception from `fetch()`. File-access failures are normalized to `provider_unavailable`; decoded but malformed fixture content is normalized to `parse_error`.
+Fixture and canonical registry loading must not leak an exception from `fetch()`. File-access and non-UTF-8 failures are normalized to `provider_unavailable`; decoded but malformed fixture or registry content is normalized to `parse_error`.
 
 ### 6.3 Snapshot invariants
 
@@ -267,6 +275,7 @@ This provider is queryless and reuses `normalize_query()` from `app.providers.ba
 
 - `query is None` or `normalize_query(query) == ""`: allowed
 - normalized non-empty query: `invalid_query`
+- normalized non-empty query is rejected before registry or fixture I/O
 
 Required cases include `None`, `""`, whitespace-only input, `"price"`, and `" 주가 "`.
 
@@ -449,6 +458,18 @@ Record:
 
 Do not alter M1-08 implementation contracts, test counts, or historical failure logs during this synchronization.
 
+### 9.3 Mandatory Supplement Completion Criteria
+
+- [x] canonical registry failure statuses are classified correctly
+- [x] canonical registry is loaded once per fetch
+- [x] non-empty query is rejected before registry/fixture I/O
+- [x] `fixture_path`/`fixture_data` explicit conflict contract passes
+- [x] targeted tests pass after supplement
+- [x] regression passes after supplement
+- [x] supplement commit/push accurately recorded as `NOT_RUN` pending approval
+- [ ] final independent review completed
+- [ ] M1-09 provider implementation complete after final `PASS`
+
 ## 10. Risk IDs
 
 - `R15` timeout
@@ -497,13 +518,16 @@ If M1-09 cannot satisfy its gate within the approved scope:
 11. Report diff and results.
 12. Wait for separate commit/push approval.
 
-## 14. Implementation Result Log
+## 14. Initial Implementation Result Log
 
-- Implementation status: `PASS in local implementation environment - user review pending`
-- Implementation SHA: `NOT_CREATED`
-- Commit/push/PR/merge/deploy: `NOT_RUN`
+- Implementation status: `initial implementation pushed - independent review CONDITIONAL PASS`
+- Initial implementation SHA: `443ce731ed8e84757a0a0844074c1cbf68676d73`
+- Initial implementation commit: `Implement m1-09`
+- Initial implementation main push: `complete`
+- Initial independent review: `CONDITIONAL PASS`
+- Supplement commit/push/PR/merge/deploy: `NOT_RUN`
 - GitHub CI: `NOT_RUN`
-- Independent pytest rerun: `NOT_RUN`
+- Final independent review: `NOT_RUN`
 - Live market data coverage: `NOT_RUN`
 - M2-09/M3-12/price_move_reason implementation: `NOT_RUN`
 - A15-M gate decision: `data-qualified stretch candidate`
@@ -562,7 +586,7 @@ If M1-09 cannot satisfy its gate within the approved scope:
 
 ### 14.4 Gate Decision
 
-All M1-09 local implementation gate items passed in the local implementation environment.
+The initial data qualification remains valid, but M1-09 provider implementation completion is pending the mandatory supplement and final independent review.
 
 Recorded status:
 
@@ -571,3 +595,67 @@ A15-M: data-qualified stretch candidate
 ```
 
 This does not activate A15-M as P0 and does not authorize M2-09 or M3-12. Future M2-09/M3-12 planning must be approved separately.
+
+## 15. Mandatory Supplement Result Log
+
+- Supplement status: `M1-09 mandatory supplement implemented`
+- A15-M gate decision: `A15-M remains data-qualified stretch candidate`
+- Final independent review: `NOT_RUN`
+- Supplement commit/push: `NOT_RUN`
+- M1-09 provider completion: `pending final PASS`
+- GitHub CI: `NOT_RUN`
+
+### 15.1 Supplement Modified Files
+
+- `app/providers/market.py`
+- `tests/unit/test_market_provider.py`
+- `docs/TASK_CARDS/M1-09-market-snapshot-gate.md`
+
+### 15.2 Supplement Implemented Scope
+
+- Classified canonical registry failures separately from healthy-registry `invalid_query` results.
+- Normalized missing/unreadable/non-UTF-8 registry to `provider_unavailable`.
+- Normalized malformed JSON/schema-invalid registry to `parse_error`.
+- Rejected non-empty query before registry, market fixture, or normalizer I/O.
+- Loaded canonical registry once per normal `fetch()` and reused the resolver for fixture identity validation.
+- Changed constructor conflict contract to reject any non-`None` `fixture_path` with `fixture_data`.
+- Preserved market fixture status taxonomy and existing provider protocol.
+
+### 15.3 Supplement Verification Results
+
+- Targeted first command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_market_provider.py -q`
+  - execution: sandboxed run
+  - exit code: `1`
+  - output: `PermissionError: [Errno 13] Permission denied: 'C:\\Users\\USER\\Questock\\.deps\\pytest\\__init__.py'`
+- Targeted rerun command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_market_provider.py -q`
+  - execution: approved elevated run
+  - exit code: `0`
+  - passed count: `39 passed`
+- Regression command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_core_models.py tests/unit/test_status_contracts.py tests/unit/test_security_resolver.py tests/unit/test_provider_base.py tests/unit/test_config.py tests/unit/test_news_provider.py tests/unit/test_disclosure_provider.py tests/unit/test_report_ingest.py tests/unit/test_glossary_ingest.py tests/unit/test_health_phase_slice.py tests/unit/test_phase_slice_cli.py tests/unit/test_secret_scan.py tests/unit/test_api_health.py tests/unit/test_market_provider.py -q`
+  - execution: approved elevated run
+  - exit code: `0`
+  - passed count: `761 passed`
+  - warning: FastAPI TestClient emitted Starlette deprecation warning for `httpx`.
+- Direct import smoke command: `$env:PYTHONPATH = ".deps;."; python -c "from app.providers.market import RecordedMarketSnapshotProvider; print('ok')"`
+  - execution: approved elevated run
+  - exit code: `0`
+  - output: `ok`
+- Package import smoke command: `$env:PYTHONPATH = ".deps;."; python -c "from app.providers import RecordedMarketSnapshotProvider; print('ok')"`
+  - execution: approved elevated run
+  - exit code: `0`
+  - output: `ok`
+- Secret scan command: `python scripts/secret_scan.py`
+  - exit code: `0`
+  - output: `[]`
+- Compile command: `python -m compileall app tests scripts -q`
+  - exit code: `0`
+
+### 15.4 Final State Pending Review
+
+```text
+M1-09 mandatory supplement implemented
+A15-M remains data-qualified stretch candidate
+final independent review pending
+supplement commit/push pending approval
+M1-09 provider completion pending final PASS
+```
