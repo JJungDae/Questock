@@ -320,7 +320,7 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.ingest.reports import load
 ## 14.4 Final Type And Publication Supplement
 - Supplement date: 2026-07-22
 - Final type/publication supplement commit/push: `NOT_RUN`
-- Current status: M13 and M14 supplement implemented, user review pending
+- Current status: M13, M14, and M16 supplement implemented, user review pending
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
 - Supplement scope:
@@ -331,6 +331,7 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.ingest.reports import load
   - Date precision and timezone basis combinations are validated for internal consistency.
   - Timezone offset basis is validated through Python timezone construction.
   - Coverage skips malformed direct manifest entries and continues with valid entries.
+  - M16 manifest document element type checks now run before uniqueness checks, preventing raw `TypeError` for unhashable direct dataclass document IDs.
 
 ## 15. Actual Verification Results
 - PYTHONPATH: `.test_deps;.`
@@ -339,10 +340,10 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.ingest.reports import load
 - targeted first output: `No module named pytest.__main__; 'pytest' is a package and cannot be directly executed`
 - targeted rerun command: `python -m pytest tests/unit/test_report_ingest.py -q`
 - targeted rerun exit code: `0`
-- targeted rerun passed count: `207`
+- targeted rerun passed count: `210`
 - regression command: `python -m pytest tests/unit/test_core_models.py tests/unit/test_status_contracts.py tests/unit/test_security_resolver.py tests/unit/test_provider_base.py tests/unit/test_config.py tests/unit/test_news_provider.py tests/unit/test_disclosure_provider.py tests/unit/test_report_ingest.py -q`
 - regression exit code: `0`
-- regression passed count: `428`
+- regression passed count: `431`
 - smoke first command: `python -c "from app.ingest.reports import load_report_manifest, normalize_manual_research_report, build_manual_research_documents; print('ok')"`
 - smoke first exit code: `1`
 - smoke first output: `ImportError: cannot import name 'BaseModel' from 'pydantic' (unknown location)`
@@ -373,4 +374,4 @@ $env:PYTHONPATH = ".test_deps;."; python -c "from app.ingest.reports import load
 - User implementation approval: pending review.
 - Independent review: `NOT_RUN`
 - GitHub CI: `NOT_RUN`
-- Final M1-06 status: M13 and M14 supplement implemented, user review pending.
+- Final M1-06 status: M13, M14, and M16 supplement implemented, user review pending.

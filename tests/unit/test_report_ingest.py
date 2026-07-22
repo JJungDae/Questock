@@ -862,6 +862,9 @@ def assert_manifest_fails_public_boundaries(bad_manifest):
         {"hash_verification_status": 123},
         {"documents": ["report:synthetic-report-001:section-1"]},
         {"documents": ("report:synthetic-report-001:section-1", 123)},
+        {"documents": (["bad"],)},
+        {"documents": ({"bad": "value"},)},
+        {"documents": ({1, 2},)},
         {"source_url": 123},
         {"source_asset_id": 123},
     ],
@@ -976,10 +979,13 @@ def test_valid_publication_metadata_combinations_still_build(published_at):
 def test_calculate_report_coverage_skips_malformed_direct_manifest_and_keeps_valid_entry():
     source_bytes = b"approved report bytes"
     approved = corpus_manifest(source_bytes=source_bytes)
-    invalid = replace(approved, manifest_id=123)
+    invalid_id = replace(approved, manifest_id=123)
+    invalid_unhashable_list = replace(approved, documents=(["bad"],))
+    invalid_unhashable_dict = replace(approved, documents=({"bad": "value"},))
+    invalid_unhashable_set = replace(approved, documents=({1, 2},))
 
     coverage = calculate_report_coverage(
-        [invalid, approved],
+        [invalid_id, invalid_unhashable_list, invalid_unhashable_dict, invalid_unhashable_set, approved],
         {approved.manifest_id: corpus_documents()},
         as_of_date=date(2026, 7, 22),
         source_bytes_by_manifest={approved.manifest_id: source_bytes},

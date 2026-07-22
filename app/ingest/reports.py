@@ -790,11 +790,12 @@ def _validate_manifest_instance(manifest: ReportManifest) -> ReportManifest:
         raise ReportManifestValidationError("source_url or source_asset_id is required")
     if not isinstance(manifest.documents, tuple) or not manifest.documents:
         raise ReportManifestValidationError("manifest documents must be a non-empty tuple")
-    if len(set(manifest.documents)) != len(manifest.documents):
-        raise ReportManifestValidationError("manifest documents must not contain duplicates")
     for document_id in manifest.documents:
         if not isinstance(document_id, str):
             raise ReportManifestValidationError("manifest document ids must be strings")
+    if len(set(manifest.documents)) != len(manifest.documents):
+        raise ReportManifestValidationError("manifest documents must not contain duplicates")
+    for document_id in manifest.documents:
         _validate_report_document_id(document_id, manifest_id, ReportManifestValidationError)
     file_hash = _validate_nonblank_string(manifest.file_hash, "file_hash", ReportManifestValidationError)
     if not _SHA256_RE.fullmatch(file_hash):
