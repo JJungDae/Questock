@@ -138,6 +138,7 @@ def test_recorded_fixture_returns_three_supported_securities():
     assert samsung.metadata["content_level"] == "listing_metadata"
     assert samsung.metadata["corp_code_verification_status"] == "candidate"
     assert samsung.metadata["correction_of"] == "20260720000004"
+    assert samsung.metadata["has_subsequent_correction"] is False
     assert samsung.published_at is not None
     assert samsung.published_at.tzinfo == UTC
     assert sk_docs[0].primary_security_ids == [SK_HYNIX]
@@ -468,19 +469,29 @@ def test_correction_order_and_request_are_separate_from_correction_submission(ma
 def test_remark_marks_subsequent_correction_and_withdrawn_without_forcing_current_correction():
     recorded = fixture_with(
         [
-            item(report_nm="subsequent exists", rm="\uc720", rcept_no="20260721000013"),
-            item(report_nm="withdrawn", rm="\ucca0", rcept_no="20260721000014"),
+            item(report_nm="securities market", rm="\uc720", rcept_no="20260721000013"),
+            item(report_nm="subsequent exists", rm="\uc815", rcept_no="20260721000014"),
+            item(report_nm="market and subsequent", rm="\uc720\uc815", rcept_no="20260721000015"),
+            item(report_nm="market and withdrawn", rm="\uc720\ucca0", rcept_no="20260721000016"),
         ]
     )
     provider = RecordedDisclosureProvider(recorded_fixture=recorded)
 
     docs = fetch_docs(provider)
 
-    subsequent = next(doc for doc in docs if doc.document_id == "disclosure:20260721000013")
-    withdrawn = next(doc for doc in docs if doc.document_id == "disclosure:20260721000014")
+    market = next(doc for doc in docs if doc.document_id == "disclosure:20260721000013")
+    subsequent = next(doc for doc in docs if doc.document_id == "disclosure:20260721000014")
+    market_subsequent = next(doc for doc in docs if doc.document_id == "disclosure:20260721000015")
+    withdrawn = next(doc for doc in docs if doc.document_id == "disclosure:20260721000016")
+    assert market.metadata["has_subsequent_correction"] is False
+    assert market.metadata["is_correction"] is False
     assert subsequent.metadata["has_subsequent_correction"] is True
     assert subsequent.metadata["is_correction"] is False
+    assert market_subsequent.metadata["has_subsequent_correction"] is True
+    assert market_subsequent.metadata["is_correction"] is False
+    assert withdrawn.metadata["has_subsequent_correction"] is False
     assert withdrawn.metadata["is_withdrawn"] is True
+    assert withdrawn.metadata["is_correction"] is False
 
 
 def test_sorting_is_received_date_desc_then_receipt_desc_and_not_legal_effective_order():

@@ -61,7 +61,7 @@ M1-05에서는 recorded OpenDART list API 형식 fixture를 사용하는 `Record
 - raw response -> `FinancialDocument` 정규화
 - 공시 receipt locator 보존
 - 정정 공시 식별 정보 보존
-- 최신 유효본 우선 정렬 또는 dedupe 가능성 검증
+- 최신 유효본 미확정 계약과 receipt 기반 안정 정렬 검증
 - M1-03 `create_provider_result` 기반 상태 mapping
 - deterministic unit/regression/smoke test
 
@@ -160,10 +160,15 @@ Recorded fixture는 OpenDART disclosure list 응답과 유사한 top-level objec
 - `corp_cls`
 - `flr_nm`
 - `rm`
-- `source_url`
-- `correction_of`
 
-`correction_of`는 recorded fixture에서 정정 관계를 명시하기 위한 확장 필드다. 실제 OpenDART raw field라고 주장하지 않는다.
+정정 관계는 OpenDART raw item에 섞지 않고 fixture wrapper의 `extensions.correction_links`에만 둔다.
+
+`extensions.correction_links` 형식:
+```json
+{
+  "정정공시접수번호": "원공시접수번호"
+}
+```
 
 ## 10. query 규칙
 - `query is None`: 해당 종목의 recorded disclosure 전체를 반환한다.
@@ -179,14 +184,14 @@ Recorded fixture는 OpenDART disclosure list 응답과 유사한 top-level objec
 - date filter 결과가 없으면 `no_data`.
 
 ## 12. FinancialDocument 정규화
-- `document_id`: `rcept_no` 기반 SHA-256 deterministic id
+- `document_id`: `disclosure:{rcept_no}` receipt-only deterministic id
 - `source_type`: `disclosure`
 - `provider`: `recorded_disclosure`
 - `primary_security_ids`: target `security_id` 1개
 - `mentioned_security_ids`: 기본 빈 목록
 - `title`: cleaned `report_nm`
 - `published_at`: timezone-aware UTC
-- `source_url`: fixture에 valid HTTP(S) URL이 있으면 정규화 후 사용, 없으면 `None`
+- `source_url`: receipt 기반 공식 DART viewer URL
 - `text`: title과 제출자/회사명/정정 표시 등 안전한 요약 text
 - `locator`:
   - `provider`
@@ -196,7 +201,7 @@ Recorded fixture는 OpenDART disclosure list 응답과 유사한 top-level objec
   - `corp_name`
   - `report_name`
   - `received_date`
-  - `source_url`
+  - `viewer_url`
 - `metadata`:
   - `corp_cls`
   - `submitter`
@@ -206,16 +211,24 @@ Recorded fixture는 OpenDART disclosure list 응답과 유사한 top-level objec
   - `corp_code_verification_status`
 - `ingestion_version`: `disclosure-provider-m1-05-v1`
 
-`locator`, `metadata`, `source_url`에는 로컬 절대경로와 credential 값을 넣지 않는다.
+`locator`, `metadata`, `source_url`에는 fixture 경로, 로컬 절대경로, credential 값을 넣지 않는다.
 
 ## 13. 공시 귀속과 정정 공시
 - item의 `stock_code`와 `corp_code`가 target security fixture와 일치하면 target security를 primary로 둔다.
 - 다른 지원 종목의 ticker/corp_code item은 wrong-company로 제외한다.
-- item의 `report_nm`에 정정 표시가 있거나 fixture `correction_of`가 있으면 `metadata.is_correction=True`로 보존한다.
-- `correction_of`가 있으면 원공시 receipt와 정정공시 receipt 관계를 locator/metadata에 보존한다.
-- 같은 `correction_of` 또는 같은 report family가 있으면 최신 `rcept_dt`가 먼저 오도록 정렬한다.
+- item의 `report_nm`에 정정 제출 marker가 있거나 `extensions.correction_links`에 현재 receipt가 key로 있으면 `metadata.is_correction=True`로 보존한다.
+- `extensions.correction_links`에 명시 관계가 있으면 원공시 receipt와 정정공시 receipt 관계를 metadata에 보존한다.
+- report family는 추론하지 않는다.
+- 서로 다른 receipt는 모두 보존한다.
+- 전체 유효 문서는 `rcept_dt` 내림차순, 같은 날짜면 `rcept_no` 내림차순으로 안정 정렬한다.
 - 정정 관계가 fixture로 명시되지 않은 경우 수치 변경을 추론하지 않는다.
 - 정정 chain이 불확실하면 최신 유효본이라고 단정하지 않고 보존 정보만 반환한다.
+
+`rm` 의미:
+- `유`: 유가증권시장 소관. 후속 정정으로 처리하지 않는다.
+- `정`: 해당 보고서 제출 후 정정신고 존재. `has_subsequent_correction=True`.
+- `철`: 철회 또는 철회 간주. `is_withdrawn=True`.
+- `rm`의 `정` 또는 `철`은 현재 item의 `is_correction`을 강제로 true로 만들지 않는다.
 
 ## 14. parse 정책
 - raw response가 dict가 아니면 `parse_error`.
@@ -264,10 +277,10 @@ Targeted tests:
 - 모두 malformed parse_error
 - non-string required field malformed
 - invalid `rcept_dt` malformed
-- source_url HTTP(S)만 허용하고 local absolute path 비노출
+- receipt 기반 공식 viewer URL 사용, raw fixture URL 무시, local absolute path 비노출
 - correction disclosure metadata 보존
 - correction_of 관계 보존
-- 최신 정정 공시 우선 정렬
+- rcept_dt/rcept_no 기반 안정 정렬
 - 동일 receipt dedupe, API 순서상 첫 항목 유지
 - 동일 fixture 재실행 동일 결과
 - timeout/rate_limited/unauthorized/provider_unavailable fixture status mapping
@@ -311,7 +324,8 @@ GitHub CI: `NOT_RUN — 별도 확인 전 성공 주장 금지`
 - [x] unsupported ticker/preferred_stock invalid_query 테스트 통과
 - [x] receipt locator 보존 테스트 통과
 - [x] 정정 공시 식별 정보 보존 테스트 통과
-- [x] 최신 정정 공시 우선 정렬 또는 dedupe 테스트 통과
+- [x] `rm` 유/정/철 의미 테스트 통과
+- [x] receipt-only dedupe와 rcept_dt/rcept_no 안정 정렬 테스트 통과
 - [x] deterministic document_id 테스트 통과
 - [x] DateRange inclusive 테스트 통과
 - [x] no_data와 parse_error 분리 테스트 통과
@@ -354,7 +368,10 @@ GitHub CI: `NOT_RUN — 별도 확인 전 성공 주장 금지`
 ## 22. 구현 결과 기록
 - 기록 일시: 2026-07-22
 - 구현 기준 commit: `192207e35c902aded50d43facc3c67393f2eb3b7`
-- 구현 SHA: 미생성, 사용자 별도 승인 전 commit/push 미수행
+- 최초 구현 SHA: `f20b33d7f77edc04f2c7b4599b2464c5f553d8be`
+- 최초 main push: 완료
+- 사용자 검수: `CONDITIONAL PASS`
+- 보완 SHA: 미생성, 사용자 별도 승인 전 commit/push 미수행
 - 수정 파일:
   - `app/providers/disclosure.py`
   - `app/providers/__init__.py`
@@ -427,4 +444,41 @@ GitHub CI: `NOT_RUN — 별도 확인 전 성공 주장 금지`
 - live adapter: `PLANNED/NOT_IMPLEMENTED`
 - GitHub CI: `NOT_RUN`
 - commit/push: `NOT_RUN`
-- 최종 상태: 사용자 리뷰 대기
+- 최종 상태: 보완 구현 후 사용자 재검수 대기
+
+## 23. CONDITIONAL PASS 보완 결과 기록
+- 기록 일시: 2026-07-22
+- 최초 구현 SHA: `f20b33d7f77edc04f2c7b4599b2464c5f553d8be`
+- 최초 main push: 완료
+- 사용자 검수: `CONDITIONAL PASS`
+- 보완 SHA: 미생성, 사용자 별도 승인 전 commit/push 미수행
+- 보완 범위:
+  - OpenDART `rm` 의미 수정
+  - `rm="유"`는 유가증권시장 소관으로만 처리하고 후속 정정으로 보지 않음
+  - `rm`에 `정`이 포함될 때만 `has_subsequent_correction=True`
+  - `rm`에 `철`이 포함될 때 `is_withdrawn=True`
+  - `rm` 정정/철회 표시는 현재 item의 `is_correction`을 강제로 true로 만들지 않음
+  - Task Card의 raw `source_url`/`correction_of` 계약 제거 및 `extensions.correction_links` 계약 명시
+  - receipt viewer URL, receipt-only document_id/dedupe, report family 추론 금지, 최신 유효본 미확정, listing_metadata 제한 재기록
+- 실제 검증 결과:
+  - PYTHONPATH: `.test_deps;.`
+  - targeted 최초 명령: `python -m pytest tests/unit/test_disclosure_provider.py -q`
+  - targeted 최초 exit code: `1`
+  - targeted 최초 출력: `.test_deps` 접근 `PermissionError`
+  - targeted 재실행 명령: `python -m pytest tests/unit/test_disclosure_provider.py -q`
+  - targeted 재실행 exit code: `0`
+  - targeted 재실행 출력: `70 passed in 0.24s`
+  - regression 명령: `python -m pytest tests/unit/test_core_models.py tests/unit/test_status_contracts.py tests/unit/test_security_resolver.py tests/unit/test_provider_base.py tests/unit/test_config.py tests/unit/test_news_provider.py tests/unit/test_disclosure_provider.py -q`
+  - regression exit code: `0`
+  - regression 출력: `221 passed in 0.34s`
+  - smoke 명령: `python -c "from app.providers.disclosure import RecordedDisclosureProvider, map_opendart_status, normalize_opendart_disclosure_response; print('ok')"`
+  - smoke exit code: `0`
+  - smoke 출력: `ok`
+- live OpenDART: `NOT_RUN`
+- corp-code source verification: `NOT_RUN`
+- real disclosure coverage: `NOT_RUN`
+- live adapter: `PLANNED/NOT_IMPLEMENTED`
+- M1-06 구현: `NOT_RUN`
+- GitHub CI: `NOT_RUN`
+- commit/push: `NOT_RUN`
+- 최종 상태: 보완 구현 후 사용자 재검수 대기
