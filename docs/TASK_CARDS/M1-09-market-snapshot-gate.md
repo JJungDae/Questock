@@ -9,18 +9,20 @@
 - Planning base commit: `519e208fc4abdfc45d69418dc1cc60bb630011d8`
 - M1-08 status: `PASS`
 - M1-08 completion commit: `519e208fc4abdfc45d69418dc1cc60bb630011d8`
-- Current status: `M1-09 mandatory supplement implemented - final independent review pending`
+- Current status: `PASS / complete`
 - Implementation approval: `APPROVED by user request`
 - Initial implementation SHA: `443ce731ed8e84757a0a0844074c1cbf68676d73`
 - Initial implementation commit: `Implement m1-09`
 - Initial implementation main push: `complete`
 - Initial independent review: `CONDITIONAL PASS`
-- Supplement commit/push: `NOT_RUN`
-- Commit/push/PR/merge/deploy for supplement: `NOT_APPROVED`
+- Supplement SHA: `4c7b2d58e11f7e9b83b48614aa271a277ad26d37`
+- Supplement commit: `m1-09 conditional pass updates`
+- Supplement main push: `complete`
+- Commit/push/PR/merge/deploy after final PASS: `NOT_APPROVED`
 - Local gate decision: `A15-M remains data-qualified stretch candidate`
-- M1-09 provider completion: `pending final PASS`
+- M1-09 provider completion: `complete`
 - GitHub CI: `NOT_RUN`
-- Final independent review: `NOT_RUN`
+- Final independent review: `PASS`
 - Independent pytest rerun: `NOT_RUN`
 - Live market data API: `OUT_OF_SCOPE`
 - M2-09/M3-12 price-move implementation: `OUT_OF_SCOPE`
@@ -466,9 +468,9 @@ Do not alter M1-08 implementation contracts, test counts, or historical failure 
 - [x] `fixture_path`/`fixture_data` explicit conflict contract passes
 - [x] targeted tests pass after supplement
 - [x] regression passes after supplement
-- [x] supplement commit/push accurately recorded as `NOT_RUN` pending approval
-- [ ] final independent review completed
-- [ ] M1-09 provider implementation complete after final `PASS`
+- [x] supplement commit/push accurately recorded as `complete`
+- [x] final independent review completed
+- [x] M1-09 provider implementation complete after final `PASS`
 
 ## 10. Risk IDs
 
@@ -525,9 +527,12 @@ If M1-09 cannot satisfy its gate within the approved scope:
 - Initial implementation commit: `Implement m1-09`
 - Initial implementation main push: `complete`
 - Initial independent review: `CONDITIONAL PASS`
-- Supplement commit/push/PR/merge/deploy: `NOT_RUN`
+- Supplement SHA: `4c7b2d58e11f7e9b83b48614aa271a277ad26d37`
+- Supplement commit: `m1-09 conditional pass updates`
+- Supplement main push: `complete`
+- Supplement PR/merge/deploy: `NOT_RUN`
 - GitHub CI: `NOT_RUN`
-- Final independent review: `NOT_RUN`
+- Final independent review: `PASS`
 - Live market data coverage: `NOT_RUN`
 - M2-09/M3-12/price_move_reason implementation: `NOT_RUN`
 - A15-M gate decision: `data-qualified stretch candidate`
@@ -586,7 +591,7 @@ If M1-09 cannot satisfy its gate within the approved scope:
 
 ### 14.4 Gate Decision
 
-The initial data qualification remains valid, but M1-09 provider implementation completion is pending the mandatory supplement and final independent review.
+The initial data qualification remains valid, and M1-09 provider implementation is complete after final independent review PASS.
 
 Recorded status:
 
@@ -598,11 +603,13 @@ This does not activate A15-M as P0 and does not authorize M2-09 or M3-12. Future
 
 ## 15. Mandatory Supplement Result Log
 
-- Supplement status: `M1-09 mandatory supplement implemented`
+- Supplement status: `PASS / complete`
+- Supplement SHA: `4c7b2d58e11f7e9b83b48614aa271a277ad26d37`
+- Supplement commit: `m1-09 conditional pass updates`
+- Supplement main push: `complete`
 - A15-M gate decision: `A15-M remains data-qualified stretch candidate`
-- Final independent review: `NOT_RUN`
-- Supplement commit/push: `NOT_RUN`
-- M1-09 provider completion: `pending final PASS`
+- Final independent review: `PASS`
+- M1-09 provider completion: `complete`
 - GitHub CI: `NOT_RUN`
 
 ### 15.1 Supplement Modified Files
@@ -650,12 +657,12 @@ This does not activate A15-M as P0 and does not authorize M2-09 or M3-12. Future
 - Compile command: `python -m compileall app tests scripts -q`
   - exit code: `0`
 
-### 15.4 Final State Pending Review
+### 15.4 Final State
 
 ```text
-M1-09 mandatory supplement implemented
+M1-09 mandatory supplement PASS
 A15-M remains data-qualified stretch candidate
-final independent review pending
-supplement commit/push pending approval
-M1-09 provider completion pending final PASS
+final independent review PASS
+supplement main push complete
+M1-09 provider completion complete
 ```
