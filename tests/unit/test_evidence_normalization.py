@@ -392,6 +392,67 @@ def test_unsafe_output_scalars_are_rejected(path: str) -> None:
     assert_sanitized(exc_info, path)
 
 
+@pytest.mark.parametrize(
+    ("source_document", "raw_path"),
+    [
+        (document(title=r"report saved at C:\Users\review\private.txt"), r"C:\Users\review\private.txt"),
+        (document(text="loaded from /root/private/report.txt"), "/root/private/report.txt"),
+        (document(locator={"source": r"source \\server\share\private.pdf"}), r"\\server\share\private.pdf"),
+        (
+            document(locator={"internal file file:///home/user/report.pdf": "safe"}),
+            "file:///home/user/report.pdf",
+        ),
+        (document(document_id="doc stored at D:/private/report"), "D:/private/report"),
+    ],
+)
+def test_embedded_local_absolute_paths_are_rejected(source_document: FinancialDocument, raw_path: str) -> None:
+    with pytest.raises(EvidenceNormalizationError) as exc_info:
+        normalize_financial_document(source_document)
+
+    assert_sanitized(exc_info, raw_path)
+
+
+@pytest.mark.parametrize(
+    "source_document",
+    [
+        document(source_url="https://example.test/report"),
+        document(source_url="http://example.test/article"),
+        document(title="profit / loss widened"),
+        document(title="API key exposure was discussed in the report"),
+        document(title="authorization policy changed"),
+    ],
+)
+def test_safe_near_neighbor_text_and_urls_remain_valid(source_document: FinancialDocument) -> None:
+    evidence = normalize_financial_document(source_document)
+
+    assert evidence.document_id == source_document.document_id
+    assert evidence.title == source_document.title
+    assert evidence.source_url == source_document.source_url
+
+
+def test_returned_security_lists_are_isolated_from_caller_mutation() -> None:
+    source_document = document(primary_security_ids=[SAMSUNG], mentioned_security_ids=[SK_HYNIX])
+
+    evidence = normalize_financial_document(source_document)
+    evidence.subject_security_ids.append(HYUNDAI)
+    evidence.mentioned_security_ids.append(HYUNDAI)
+    later = normalize_financial_document(source_document)
+
+    assert source_document.primary_security_ids == [SAMSUNG]
+    assert source_document.mentioned_security_ids == [SK_HYNIX]
+    assert later.subject_security_ids == [SAMSUNG]
+    assert later.mentioned_security_ids == [SK_HYNIX]
+
+
+def test_non_string_locator_key_is_rejected_without_leaking_input() -> None:
+    source_document = bypass_document(locator={1: "safe"})
+
+    with pytest.raises(EvidenceNormalizationError) as exc_info:
+        normalize_financial_document(source_document)
+
+    assert_sanitized(exc_info, "safe")
+
+
 def test_http_url_is_allowed_and_ordinary_credential_vocabulary_is_preserved() -> None:
     source_document = document(
         source_url="https://example.test/article?topic=api-key",

@@ -16,10 +16,17 @@
 - M1-09 provider completion: `pending final PASS`
 - M2-04 plan review: `PASS WITH REQUIRED FOLLOW-UP - required clarifications incorporated`
 - M2-04 planning entry: `ALLOWED`
-- M2-04 implementation entry: `ALLOWED only after this final plan is approved and preflight passes`
-- Current status: `IMPLEMENTATION COMPLETE - USER REVIEW PENDING`
+- M2-04 implementation entry: `IMPLEMENTED at first implementation SHA; conditional-pass supplement implemented locally`
+- First implementation SHA: `d6c410b836334cbb267b70116c098c30fe624dc2`
+- First implementation commit: `Implement m2-04`
+- First implementation main push: `complete`
+- Independent implementation review: `CONDITIONAL PASS`
+- Required supplement: `implemented locally / user review pending`
+- Current status: `CONDITIONAL PASS - SUPPLEMENT IMPLEMENTED LOCALLY / USER REVIEW PENDING`
 - Implementation approval: `APPROVED by user instruction using this final Task Card`
-- Commit/push/PR/merge/deploy: `NOT_APPROVED`
+- Supplement commit/push/PR/merge/deploy: `NOT_APPROVED`
+- M2-05 planning: `ALLOWED`
+- M2-05 implementation: `BLOCKED pending M2-04 closure`
 - Live API/provider/API/UI/LLM work: `OUT_OF_SCOPE`
 - M2-05 freshness, M2-06 EvidencePolicy, M2-07 citation validation, M2-08 dedupe/context budget: `NOT_STARTED`
 
@@ -1054,19 +1061,39 @@ Closure review after remediation is limited to:
 - Preflight secret scan: `PASS - exit 0 - []`
 - Preflight compile: `PASS - exit 0 - no output`
 - Preflight execution context: `initial PYTHONPATH=.deps;. command exited 1 because pytest.__main__ was unavailable; corrected PYTHONPATH=.test_deps;.deps;. sandbox command exited 1 on dependency-file access; approved local dependency access reruns used the corrected PYTHONPATH and passed`
-- Implementation status: `IMPLEMENTATION COMPLETE - USER REVIEW PENDING`
-- Implementation SHA: `NOT_CREATED - commit is not approved`
+- First implementation status: `complete - independently reviewed CONDITIONAL PASS`
+- First implementation SHA: `d6c410b836334cbb267b70116c098c30fe624dc2`
+- First implementation commit: `Implement m2-04`
+- First implementation main push: `complete`
+- Independent implementation review: `CONDITIONAL PASS`
+- Required supplement: `implemented locally / user review pending`
 - Allowed implementation files: `app/evidence/__init__.py, app/evidence/normalizer.py, tests/unit/test_evidence_normalization.py, docs/TASK_CARDS/M2-04-evidence-normalization.md, and the allowed stale M2-03 Task Card synchronization`
-- Targeted pytest: `PASS - exit 0 - 55 passed`
-- M2 integration regression: `PASS - exit 0 - 214 passed`
-- Full unit regression: `PASS - exit 0 - 975 passed, 1 existing FastAPI/Starlette deprecation warning`
-- Import smoke: `PASS - exit 0 - ok`
-- Secret scan: `PASS - exit 0 - []`
-- Compile: `PASS - exit 0 - no output`
-- Diff check: `PASS - exit 0 - no whitespace errors; Git reported only the existing M2-03 LF-to-CRLF working-copy warning`
-- Final Git working tree: `M docs/TASK_CARDS/M2-03-retrieval-baseline.md; ?? app/evidence/; ?? docs/TASK_CARDS/M2-04-evidence-normalization.md; ?? tests/unit/test_evidence_normalization.py`
+- First implementation targeted pytest: `PASS - exit 0 - 55 passed`
+- First implementation M2 integration regression: `PASS - exit 0 - 214 passed`
+- First implementation full unit regression: `PASS - exit 0 - 975 passed, 1 existing FastAPI/Starlette deprecation warning`
+- Supplement implementation status: `IMPLEMENTED LOCALLY - USER REVIEW PENDING`
+- Supplement SHA: `NOT_CREATED`
+- Supplement commit/push: `NOT_RUN`
+- Supplement targeted pytest: `PASS - exit 0 - 67 passed`
+- Supplement M2 integration regression: `PASS - exit 0 - 226 passed`
+- Supplement full unit regression: `PASS - exit 0 - 987 passed, 1 existing FastAPI/Starlette deprecation warning`
+- Supplement import smoke: `PASS - exit 0 - ok`
+- Supplement secret scan: `PASS - exit 0 - []`
+- Supplement compile: `PASS - exit 0 - no output`
+- Supplement execution context: `initial PYTHONPATH=.deps;. targeted command exited 1 because pytest.__main__ was unavailable; corrected PYTHONPATH=.test_deps;.deps;. approved local dependency access rerun passed`
+- Supplement commands: `targeted: $env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_evidence_normalization.py -q (exit 1), then corrected PYTHONPATH=.test_deps;.deps;. with approved local dependency access (exit 0); M2 integration, full unit, and smoke used the corrected PYTHONPATH`
+- Supplement M2 integration command: `$env:PYTHONPATH = ".test_deps;.deps;."; python -m pytest tests/unit/test_query_planner.py tests/unit/test_retrieval_filters.py tests/unit/test_retrieval_baseline.py tests/unit/test_evidence_normalization.py -q` (exit `0`)
+- Supplement full-unit command: `$env:PYTHONPATH = ".test_deps;.deps;."; python -m pytest tests/unit -q` (exit `0`)
+- Supplement smoke command: `$env:PYTHONPATH = ".test_deps;.deps;."; python -c "from app.evidence import EvidenceNormalizationError, normalize_financial_document, normalize_financial_documents; print('ok')"` (exit `0`)
+- Supplement hygiene commands: `python scripts/secret_scan.py` (exit `0`), `python -m compileall app tests scripts -q` (exit `0`)
+- Supplement diff check: `PASS - git diff --check exit 0; no whitespace errors; 3 LF-to-CRLF working-copy warnings only`
+- Supplement diff name-status: `PASS - app/evidence/normalizer.py, docs/TASK_CARDS/M2-04-evidence-normalization.md, tests/unit/test_evidence_normalization.py modified`
+- Supplement diff stat: `PASS - 3 files changed, 119 insertions, 22 deletions`
+- Supplement Git working tree: `M app/evidence/normalizer.py; M docs/TASK_CARDS/M2-04-evidence-normalization.md; M tests/unit/test_evidence_normalization.py`
+- Supplement Git log: `d6c410b (HEAD -> main, origin/main, origin/HEAD) Implement m2-04; 008fd4a Implement m2-03`
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
 - Live provider/actual source/API/UI/LLM: `NOT_RUN - out of scope`
-- M2-05 freshness: `NOT_STARTED`
-- Commit/push/PR/merge/deploy: `NOT_RUN`
+- M2-05 planning: `ALLOWED`
+- M2-05 implementation: `BLOCKED pending M2-04 closure`
+- Supplement commit/push/PR/merge/deploy: `NOT_RUN`

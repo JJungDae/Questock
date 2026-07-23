@@ -11,7 +11,11 @@ from pydantic import ValidationError
 
 from app.core.models import Evidence, FinancialDocument, ensure_evidence_matches_document
 
-_WINDOWS_ABSOLUTE_PATH = re.compile(r"^[A-Za-z]:[\\/]")
+_WINDOWS_DRIVE_PATH = re.compile(r"(?<![A-Za-z0-9_])[A-Za-z]:[\\/]")
+_BACKSLASH_UNC_PATH = re.compile(r"\\\\[^\\/\s]+[\\/][^\\/\s]+")
+_FORWARD_UNC_PATH = re.compile(r"(?<![A-Za-z0-9_:])//[^/\s]+/[^/\s]+")
+_FILE_URL = re.compile(r"file://", re.IGNORECASE)
+_POSIX_ABSOLUTE_PATH = re.compile(r"(?:^|[\s\"'()=\[\]{},;])/(?![/\s])")
 _WHITESPACE = re.compile(r"\s+")
 _QUERY_KEY_NORMALIZER = re.compile(r"[^a-z0-9]")
 _CREDENTIAL_QUERY_KEYS = frozenset(
@@ -201,13 +205,18 @@ def _validate_safe_value(value: Any, message: str) -> None:
 
 
 def _validate_safe_string(value: str, message: str) -> None:
-    normalized = value.replace("\\", "/")
-    if (
-        value.casefold().startswith("file://")
-        or bool(_WINDOWS_ABSOLUTE_PATH.match(value))
-        or normalized.startswith("/")
-    ):
+    if _contains_local_absolute_path(value):
         raise EvidenceNormalizationError(message)
+
+
+def _contains_local_absolute_path(value: str) -> bool:
+    return bool(
+        _WINDOWS_DRIVE_PATH.search(value)
+        or _BACKSLASH_UNC_PATH.search(value)
+        or _FORWARD_UNC_PATH.search(value)
+        or _FILE_URL.search(value)
+        or _POSIX_ABSOLUTE_PATH.search(value)
+    )
 
 
 __all__ = [
