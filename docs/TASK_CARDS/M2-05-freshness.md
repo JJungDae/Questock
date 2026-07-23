@@ -6,7 +6,7 @@
 - Step: `M2-05 Freshness`
 - Planning date: `2026-07-23`
 - Planning base branch: `main`
-- Planning base commit: `726bb633d1c5c935f04c9f691a97e966fbdcd0fc`
+- Planning base SHA: `726bb633d1c5c935f04c9f691a97e966fbdcd0fc`
 - Planning base commit message: `m2-04 conditional pass updates`
 - M2-01 final code line: `5ffef6ca47c1ad8961bd717bb5623742bab8ddcb`
 - M2-02 final code line: `9c5d609c20ed860d99f054415433ff15ff398a26`
@@ -19,11 +19,17 @@
 - M1-09 provider completion: `pending final PASS`
 - M2-05 plan review: `RE-REVIEWED - corrected final plan supplied`
 - M2-05 planning entry: `ALLOWED`
-- M2-05 implementation entry: `APPROVED - preflight PASS; implemented locally`
-- Current status: `IMPLEMENTED LOCALLY - USER REVIEW PENDING`
-- Commit/push/PR/merge/deploy: `NOT_RUN - separate approval required`
+- M2-05 implementation entry: `PASS - complete`
+- Current status: `PASS / complete`
+- Implementation SHA: `df20eae6457ac852e622b4006084acc16d1220fb`
+- Implementation commit: `Implement m2-05`
+- Implementation main push: `complete`
+- Independent implementation review: `PASS WITH REQUIRED FOLLOW-UP`
+- Further commit/push/PR/merge/deploy: `NOT_APPROVED`
 - Live provider/API/UI/LLM work: `OUT_OF_SCOPE`
-- M2-06 EvidencePolicy, M2-07 citation validation, M2-08 dedupe/context budget: `NOT_STARTED`
+- M2-06 planning: `ALLOWED`
+- M2-06 implementation: `ALLOWED only after approved M2-06 plan and preflight PASS`
+- M2-07 citation validation and M2-08 dedupe/context budget: `NOT_STARTED`
 
 The user approved this corrected final plan and the required preflight passed. The approved local implementation and verification are complete; Git operations remain separately gated.
 
@@ -1363,8 +1369,11 @@ Do not silently:
 - Preflight smoke: `PASS - exit 0 - ok`
 - Preflight secret scan: `PASS - exit 0 - []`
 - Preflight compile: `PASS - exit 0`
-- M2-05 implementation: `IMPLEMENTED LOCALLY - USER REVIEW PENDING`
-- Implementation SHA: `NOT_CREATED`
+- M2-05 implementation: `PASS / complete`
+- Implementation SHA: `df20eae6457ac852e622b4006084acc16d1220fb`
+- Implementation commit: `Implement m2-05`
+- Implementation main push: `complete`
+- Independent implementation review: `PASS WITH REQUIRED FOLLOW-UP`
 - Targeted pytest: `PASS - exit 0 - 88 passed, 1 PytestCacheWarning`
 - M2 composition regression: `PASS - exit 0 - 314 passed, 1 PytestCacheWarning`
 - Full unit regression: `PASS - exit 0 - 1075 passed, 1 existing FastAPI/Starlette deprecation warning`
@@ -1372,10 +1381,12 @@ Do not silently:
 - Secret scan: `PASS - exit 0 - []`
 - Compile: `PASS - exit 0`
 - Diff check: `PASS - git diff --check exit 0; no whitespace errors; M2-04 LF-to-CRLF working-copy warning only`
-- Changed files: `M docs/TASK_CARDS/M2-04-evidence-normalization.md; A app/evidence/freshness.py; A docs/TASK_CARDS/M2-05-freshness.md; A tests/unit/test_evidence_freshness.py`
+- Implementation changed files: `A app/evidence/freshness.py; M docs/TASK_CARDS/M2-04-evidence-normalization.md; A docs/TASK_CARDS/M2-05-freshness.md; A tests/unit/test_evidence_freshness.py`
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
-- Live provider/actual source/365-day candidate completeness/cache/API/UI/LLM: `NOT_RUN - out of scope`
-- Production orchestration wiring: `NOT_RUN - required before M2 milestone close`
-- M2-06 EvidencePolicy: `NOT_STARTED`
-- Commit/push/PR/merge/deploy: `NOT_RUN`
+- 365-day candidate completeness: `NOT_RUN - required before M2 milestone close`
+- Live provider/actual source/cache/API/UI/LLM: `NOT_RUN - out of scope`
+- Production orchestration: `NOT_RUN - required before M2 milestone close`
+- M2-06 planning: `ALLOWED`
+- M2-06 implementation: `ALLOWED only after approved M2-06 plan and preflight PASS`
+- Further commit/push/PR/merge/deploy: `NOT_APPROVED`
