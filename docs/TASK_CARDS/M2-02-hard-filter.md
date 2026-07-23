@@ -12,16 +12,22 @@
 - M2-01 final closure fix main push: `complete`
 - M1-09 recorded status: `mandatory supplement implemented - final independent review pending`
 - M1-09 provider completion: `pending final PASS`
-- Current status: `PASS WITH REQUIRED FOLLOW-UP - follow-up implemented locally, closure review pending`
+- Current status: `PASS - complete`
 - Implementation approval: `APPROVED by user request after corrected M2-02 plan review`
 - Implementation SHA: `188c7efeba7ba6dbd3fb1c794e744dc2f80385ea`
 - Implementation commit: `Implement m2-02`
 - Implementation main push: `complete`
 - Independent implementation review: `PASS WITH REQUIRED FOLLOW-UP`
-- Required follow-up implementation: `PASS in local implementation environment - closure review pending`
-- Commit/push/PR/merge/deploy: `NOT_APPROVED`
+- Required follow-up implementation: `PASS`
+- Required follow-up SHA: `9c5d609c20ed860d99f054415433ff15ff398a26`
+- Required follow-up commit: `m2-02 conditional pass updates`
+- Required follow-up main push: `complete`
+- Final closure review: `PASS`
+- M2-03 planning entry: `ALLOWED`
+- M2-03 implementation entry: `ALLOWED after approved M2-03 plan and preflight; IMPLEMENTATION COMPLETE - USER REVIEW PENDING`
+- Post-closure Task Card sync commit/push/PR/merge/deploy: `NOT_APPROVED`
 - Live API/LLM/provider/retrieval ranking/API/UI work: `OUT_OF_SCOPE`
-- M2-03 retrieval baseline: `NOT_STARTED`
+- M2-03 retrieval baseline: `IMPLEMENTATION COMPLETE - USER REVIEW PENDING`
 
 This Task Card plans only the deterministic M2-02 hard-filter layer and the required M2-01 preflight synchronization. It does not authorize commit, push, PR, merge, deploy, live API calls, provider changes, retrieval ranking, Evidence generation, API/UI work, or LLM work.
 
@@ -570,7 +576,10 @@ If an initial command fails, preserve the failure record and add the rerun resul
 - [x] secret scan passes
 - [x] compile passes
 - [x] actual commands, exit codes, warnings, and pass counts are recorded
-- [x] supplement commit/push remains `NOT_RUN` pending separate user approval
+- [x] required follow-up commit/push complete at `9c5d609c20ed860d99f054415433ff15ff398a26`
+- [x] final closure review PASS
+- [x] M2-03 planning entry allowed
+- [x] M2-03 implementation entry allowed after approved plan and preflight
 
 ---
 
@@ -691,20 +700,25 @@ The independent implementation review must confirm:
 
 ## 15. Result Log
 
-- Implementation status: `PASS WITH REQUIRED FOLLOW-UP - follow-up implemented locally, closure review pending`
+- Implementation status: `PASS - complete`
 - Implementation SHA: `188c7efeba7ba6dbd3fb1c794e744dc2f80385ea`
 - Implementation commit: `Implement m2-02`
 - Implementation main push: `complete`
 - Independent implementation review: `PASS WITH REQUIRED FOLLOW-UP`
-- Required follow-up implementation: `PASS in local implementation environment - closure review pending`
-- Required follow-up SHA: `NOT_CREATED`
+- Required follow-up implementation: `PASS`
+- Required follow-up SHA: `9c5d609c20ed860d99f054415433ff15ff398a26`
+- Required follow-up commit: `m2-02 conditional pass updates`
+- Required follow-up main push: `complete`
+- Final closure review: `PASS`
+- M2-03 planning entry: `ALLOWED`
+- M2-03 implementation entry: `ALLOWED after approved M2-03 plan and preflight; IMPLEMENTATION COMPLETE - USER REVIEW PENDING`
 - Preflight baseline SHA: `5ffef6ca47c1ad8961bd717bb5623742bab8ddcb`
 - Preflight baseline commit: `m2-01 conditional pass2 updates`
 - Preflight working tree note: `approved Task Card docs were present before implementation; no code files were dirty`
 - Preflight deviation: `working tree was not fully clean because approved Task Card documents were already present; code, fixture, and dependency files were clean, and no destructive Git operation such as reset, restore, checkout, clean, or stash was used`
 - M2-01 Task Card synchronization: `PASS`
 - M1-09 state: `mandatory supplement implemented - final independent review pending`
-- Commit/push/PR/merge/deploy: `NOT_RUN`
+- Post-closure Task Card sync commit/push/PR/merge/deploy: `NOT_RUN`
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
 
@@ -786,9 +800,12 @@ The independent implementation review must confirm:
 ### 15.5 Final Local State
 
 ```text
-M2-02 required follow-up local PASS
-commit/push NOT_RUN
+M2-02 PASS complete
+required follow-up SHA 9c5d609c20ed860d99f054415433ff15ff398a26
+required follow-up commit/push complete
+final closure review PASS
 GitHub CI NOT_RUN
 independent pytest rerun NOT_RUN
-M2-03 NOT_STARTED
+M2-03 planning entry ALLOWED
+M2-03 implementation entry IMPLEMENTATION COMPLETE - USER REVIEW PENDING
 ```
