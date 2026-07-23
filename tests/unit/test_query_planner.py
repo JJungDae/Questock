@@ -232,7 +232,20 @@ def test_financial_term_does_not_inherit_session_security_but_preserves_explicit
     assert_success(explicit, security_id=SAMSUNG_ID, intent=FINANCIAL_TERM, sources=["glossary"], evidence=["definition"])
 
 
-@pytest.mark.parametrize("query", ["\uc2dc\uc774\uc775\uc774 \ubb50\uc57c?", "\uc601\uc5c5\uc774\uc775\ub960\uc774 \ubb50\uc57c?"])
+def test_net_income_financial_term_routes_to_exact_query_plan():
+    result = planner().plan("\uc21c\uc774\uc775\uc774 \ubb50\uc57c?")
+
+    assert result == QueryPlan(
+        security=None,
+        intent=FINANCIAL_TERM,
+        date_range=None,
+        required_sources=["glossary"],
+        required_evidence=["definition"],
+        requires_clarification=False,
+    )
+
+
+@pytest.mark.parametrize("query", ["\uc601\uc5c5\uc774\uc775\ub960\uc774 \ubb50\uc57c?"])
 def test_financial_term_markers_route_without_security(query):
     result = planner().plan(query)
 
@@ -274,6 +287,8 @@ def test_exact_intent_source_and_evidence_matrix(query, intent, sources, evidenc
         (f"{SAMSUNG} \ub9e4\uc218 \uc758\uacac {REPORT} \uc694\uc57d", RESEARCH_REPORT_SUMMARY, ["research_report"], ["research_report"]),
         (f"{SAMSUNG} \ubaa9\ud45c\uac00 {REPORT} \uc694\uc57d", RESEARCH_REPORT_SUMMARY, ["research_report"], ["research_report"]),
         (f"{SAMSUNG} brief {REPORT} \uc694\uc57d", RESEARCH_REPORT_SUMMARY, ["research_report"], ["research_report"]),
+        (f"{SAMSUNG} \uc190\uc808 \uad00\ub828 {REPORT} \uc694\uc57d", RESEARCH_REPORT_SUMMARY, ["research_report"], ["research_report"]),
+        (f"{SAMSUNG} \uc775\uc808 \uc804\ub7b5 {REPORT} \uc694\uc57d", RESEARCH_REPORT_SUMMARY, ["research_report"], ["research_report"]),
     ],
 )
 def test_benign_financial_wording_is_not_prohibited(query, intent, sources, evidence):
@@ -292,7 +307,9 @@ def test_benign_financial_wording_is_not_prohibited(query, intent, sources, evid
         (f"{SAMSUNG} \ubaa9\ud45c\uac00 \uc5bc\ub9c8\uc57c?", PROHIBITED_ADVICE),
         (f"{SAMSUNG} \ub0b4\uc77c \uc624\ub97c\uae4c?", PROHIBITED_ADVICE),
         (f"{SAMSUNG} \uc0c1\uc2b9 \ud655\ub960 \uc54c\ub824\uc918", PROHIBITED_ADVICE),
+        (f"{SAMSUNG} \uc190\uc808\ud574\uc57c \ud574?", PROHIBITED_ADVICE),
         (f"{SAMSUNG} \uc190\uc808 \uc2dc\uc810 \uc54c\ub824\uc918", PROHIBITED_ADVICE),
+        (f"{SAMSUNG} \uc775\uc808\ud560\uae4c?", PROHIBITED_ADVICE),
         (f"{SAMSUNG} \uc775\uc808 \uc2dc\uc810 \uc54c\ub824\uc918", PROHIBITED_ADVICE),
         (f"{SAMSUNG} {TODAY} \uc65c \uc62c\ub790\uc5b4?", OUT_OF_SCOPE),
     ],
