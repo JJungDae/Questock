@@ -23,8 +23,16 @@
 - M2-07 final plan approval: `APPROVED by user on 2026-07-24`
 - M2-07 preflight: `PASS`
 - M2-07 planning: `ALLOWED`
-- M2-07 implementation: `IMPLEMENTED LOCALLY - USER REVIEW PENDING`
-- M2-08 dedupe/context budget: `NOT_STARTED`
+- M2-07 first implementation SHA: `7e952d10eb29eebf29f2c0ac657a484914b53ae7`
+- M2-07 first implementation commit: `Implement m2-07`
+- M2-07 first implementation main push: `complete`
+- M2-07 independent first implementation review: `CONDITIONAL PASS`
+- M2-07 required supplement:
+  `IMPLEMENTED LOCALLY - CLOSURE REVIEW PENDING`
+- M2-07 supplement SHA: `NOT_CREATED`
+- M2-07 supplement commit/push: `NOT_RUN`
+- M2-08 planning: `ALLOWED`
+- M2-08 implementation: `BLOCKED pending M2-07 closure`
 - M3 claim/answer composition: `NOT_STARTED`
 - M1-09:
   `mandatory supplement implemented - final independent review pending`
@@ -1284,16 +1292,73 @@ operations.
 - Live URL/permission/M2-08/M3/production orchestration: `NOT_RUN`
 - Commit/push/PR/merge/deploy: `NOT_RUN`
 
+### 23.1 First Implementation Git State
+
+- First implementation SHA: `7e952d10eb29eebf29f2c0ac657a484914b53ae7`
+- First implementation commit: `Implement m2-07`
+- First implementation main push: `complete`
+- Independent first implementation review: `CONDITIONAL PASS`
+
+### 23.2 Required Supplement
+
+- Implemented recursive path/control/credential validation for every locator
+  mapping key.
+- Added final defense-in-depth locator revalidation after Citation deep copy.
+- Added stable opaque report `source_asset_id` validation using
+  `[A-Za-z0-9._-]+`, an alphanumeric requirement, and dot/dot-dot rejection.
+- Public API, selected-Evidence boundary, rejection precedence, extractive
+  support, company attribution, duplicate behavior, and no-I/O boundary:
+  `UNCHANGED`
+- Targeted command:
+  `.\.venv\Scripts\python.exe -m pytest tests/unit/test_citation_validation.py -q`
+- Targeted result:
+  `PASS - exit 0 - 145 passed, 1 PytestCacheWarning`
+- Policy/citation command:
+  `.\.venv\Scripts\python.exe -m pytest tests/unit/test_evidence_policy.py tests/unit/test_citation_validation.py -q`
+- Policy/citation result:
+  `PASS - exit 0 - 238 passed, 1 PytestCacheWarning`
+- M2-01~07 command:
+  `.\.venv\Scripts\python.exe -m pytest tests/unit/test_query_planner.py tests/unit/test_retrieval_filters.py tests/unit/test_retrieval_baseline.py tests/unit/test_evidence_normalization.py tests/unit/test_evidence_freshness.py tests/unit/test_evidence_policy.py tests/unit/test_citation_validation.py -q`
+- M2-01~07 result:
+  `PASS - exit 0 - 552 passed, 1 PytestCacheWarning`
+- Full unit command:
+  `.\.venv\Scripts\python.exe -m pytest tests/unit -q`
+- Full unit result:
+  `PASS - exit 0 - 1313 passed, 1 existing StarletteDeprecationWarning`
+- Full unit execution context:
+  `approved local execution because sandbox cannot access the user Temp pytest directory`
+- Import smoke: `PASS - exit 0 - ok`
+- ZoneInfo smoke: `PASS - exit 0 - Asia/Seoul`
+- Secret scan: `PASS - exit 0 - []`
+- Compile: `PASS - exit 0`
+- Git baseline:
+  `PASS - main; HEAD and origin/main 7e952d10eb29eebf29f2c0ac657a484914b53ae7`
+- Diff check:
+  `PASS - exit 0 - no whitespace errors; LF-to-CRLF working-copy warnings`
+- Final changed files:
+  `M app/evidence/citations.py`;
+  `M tests/unit/test_citation_validation.py`;
+  `M docs/TASK_CARDS/M2-07-citation-validation.md`
+- Initial supplement failure/corrected rerun: `NONE`
+- GitHub CI: `NOT_RUN`
+- Independent pytest rerun: `NOT_RUN`
+- Live URL, permission, M2-08, M3, production orchestration: `NOT_RUN`
+- Supplement SHA: `NOT_CREATED`
+- Supplement commit/push/PR/merge/deploy: `NOT_RUN`
+- Current M2-07 status:
+  `REQUIRED SUPPLEMENT IMPLEMENTED LOCALLY - CLOSURE REVIEW PENDING`
+- M2-08 planning: `ALLOWED`
+- M2-08 implementation: `BLOCKED pending M2-07 closure`
+- M1-09:
+  `mandatory supplement implemented - final independent review pending`
+
 ---
 
 ## 24. Approval Request
 
 Requested:
 
-- approval of this corrected final M2-07 plan
-- permission to run the existing-environment preflight
-- permission to implement only M2-07 when every preflight command passes
-- permission to update M2-06 Task Card closure state only when it remains stale
+- independent closure review of the required M2-07 supplement
 
 Not requested:
 

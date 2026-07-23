@@ -45,6 +45,7 @@ _POSIX_ABSOLUTE_PATH = re.compile(r"(?:^|[\s\"'()=\[\]{},;])/(?![/\s])")
 _CONTROL_CHARACTER = re.compile(r"[\x00-\x1f\x7f]")
 _QUERY_KEY_NORMALIZER = re.compile(r"[^a-z0-9]")
 _WHITESPACE = re.compile(r"\s+")
+_OPAQUE_SOURCE_ASSET_ID = re.compile(r"^[A-Za-z0-9._-]+$")
 _CREDENTIAL_KEYS = frozenset(
     {
         "accesstoken",
@@ -414,14 +415,16 @@ def _report_locator_issue(
         return "invalid_locator"
 
     locator_url = locator.get("source_url")
+    source_asset_id = locator.get("source_asset_id")
+    if source_asset_id is not None and not _stable_source_asset_id(source_asset_id):
+        return "invalid_locator"
     if item.source_url is not None:
         if locator_url != item.source_url:
             return "unsafe_source_url"
         return None if _safe_url(item.source_url) else "unsafe_source_url"
     if locator_url is not None:
         return "unsafe_source_url"
-    source_asset_id = locator.get("source_asset_id")
-    if not _nonblank_string(source_asset_id) or _contains_local_path(source_asset_id):
+    if not _stable_source_asset_id(source_asset_id):
         return "invalid_locator"
     return None
 
@@ -466,8 +469,7 @@ def _safe_locator_value(value: object) -> bool:
     if isinstance(value, Mapping):
         for key, nested in value.items():
             if (
-                not isinstance(key, str)
-                or _normalized_key(key) in _CREDENTIAL_KEYS
+                not _safe_locator_key(key)
                 or not _safe_locator_value(nested)
             ):
                 return False
@@ -577,6 +579,11 @@ def _audit_result(result: CitationValidationResult) -> None:
                 )
             ):
                 raise ValueError
+            if (
+                not _locator_structure_valid(citation.locator)
+                or not _all_locator_urls_safe(citation.locator)
+            ):
+                raise ValueError
             if citation.source_url is not None and not _safe_url(citation.source_url):
                 raise ValueError
         json.dumps(serialized, allow_nan=False)
@@ -632,6 +639,24 @@ def _normalize_text(value: str) -> str:
 
 def _normalized_key(value: str) -> str:
     return _QUERY_KEY_NORMALIZER.sub("", unquote_plus(value).casefold())
+
+
+def _safe_locator_key(value: object) -> bool:
+    return (
+        type(value) is str
+        and not _CONTROL_CHARACTER.search(value)
+        and not _contains_local_path(value)
+        and _normalized_key(value) not in _CREDENTIAL_KEYS
+    )
+
+
+def _stable_source_asset_id(value: object) -> bool:
+    return (
+        type(value) is str
+        and value not in {".", ".."}
+        and _OPAQUE_SOURCE_ASSET_ID.fullmatch(value) is not None
+        and any(character.isalnum() for character in value)
+    )
 
 
 def _unsafe_public_string(value: str) -> bool:

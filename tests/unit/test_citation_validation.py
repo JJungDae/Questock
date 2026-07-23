@@ -558,6 +558,57 @@ def test_recursive_locator_failures_return_invalid_locator(unsafe_value):
     )
 
 
+@pytest.mark.parametrize("nested", [False, True])
+@pytest.mark.parametrize(
+    "unsafe_key",
+    [
+        "C:\\private\\report.pdf",
+        "\\\\server\\share\\report.pdf",
+        "//server/share/report.pdf",
+        "/root/private/report.pdf",
+        "file://private/report.pdf",
+        "bad\x00key",
+    ],
+)
+def test_locator_mapping_keys_reject_paths_and_controls(unsafe_key, nested):
+    item = evidence()
+    if nested:
+        item.locator["nested"] = {unsafe_key: "value"}
+    else:
+        item.locator[unsafe_key] = "value"
+
+    result = validate_citations([claim(item.evidence_id)], plan(), [item])
+
+    assert result == CitationValidationResult(
+        (),
+        (CitationRejection("claim-1", "invalid_locator"),),
+    )
+    assert unsafe_key not in str(result)
+
+
+def test_safe_ordinary_locator_key_is_preserved():
+    item = evidence()
+    item.locator["profit_loss_note"] = "reviewed"
+    result = validate_citations([claim(item.evidence_id)], plan(), [item])
+    assert result.rejections == ()
+    assert result.citations[0].locator["profit_loss_note"] == "reviewed"
+
+
+def test_final_audit_rechecks_deep_copied_locator_keys(monkeypatch):
+    original = citation_module._build_citation
+
+    def inject_unsafe_key(claim_id, item):
+        built = original(claim_id, item)
+        built.locator["/root/private/report.pdf"] = "value"
+        return built
+
+    monkeypatch.setattr(citation_module, "_build_citation", inject_unsafe_key)
+    with pytest.raises(CitationValidationError) as exc_info:
+        validate_citations([claim()], plan(), [evidence()])
+    assert str(exc_info.value) == "citation output is invalid"
+    assert "/root/private/report.pdf" not in str(exc_info.value)
+
+
 @pytest.mark.parametrize(
     "unsafe_value",
     [
@@ -807,6 +858,76 @@ def test_report_publisher_and_access_note_are_not_minimum_runtime_requirements()
         [item],
     )
     assert len(result.citations) == 1
+
+
+@pytest.mark.parametrize(
+    "source_asset_id",
+    [
+        "approved-asset-001",
+        "report_asset.v1",
+        "asset_2026",
+    ],
+)
+def test_report_source_asset_accepts_stable_opaque_ids(source_asset_id):
+    item = evidence("research_report", source_url=None)
+    item.locator["source_asset_id"] = source_asset_id
+    result = validate_citations(
+        [claim(item.evidence_id)],
+        plan("research_report_summary"),
+        [item],
+    )
+    assert len(result.citations) == 1
+    assert result.rejections == ()
+
+
+@pytest.mark.parametrize(
+    "source_asset_id",
+    [
+        "../private/report.pdf",
+        "folder/report.pdf",
+        "folder\\report.pdf",
+        "https://example.com/report.pdf",
+        "asset id",
+        ".",
+        "..",
+        "---",
+    ],
+)
+def test_report_source_asset_rejects_non_opaque_values(source_asset_id):
+    item = evidence("research_report", source_url=None)
+    item.locator["source_asset_id"] = source_asset_id
+    result = validate_citations(
+        [claim(item.evidence_id)],
+        plan("research_report_summary"),
+        [item],
+    )
+    assert result == CitationValidationResult(
+        (),
+        (CitationRejection("claim-1", "invalid_locator"),),
+    )
+    assert source_asset_id not in str(result)
+
+
+def test_report_url_does_not_require_a_source_asset():
+    item = evidence("research_report")
+    assert item.locator["source_asset_id"] is None
+    result = validate_citations(
+        [claim(item.evidence_id)],
+        plan("research_report_summary"),
+        [item],
+    )
+    assert len(result.citations) == 1
+
+
+def test_report_present_source_asset_must_be_opaque_even_with_url():
+    item = evidence("research_report")
+    item.locator["source_asset_id"] = "folder/report.pdf"
+    result = validate_citations(
+        [claim(item.evidence_id)],
+        plan("research_report_summary"),
+        [item],
+    )
+    assert result.rejections == (CitationRejection("claim-1", "invalid_locator"),)
 
 
 @pytest.mark.parametrize(
