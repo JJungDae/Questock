@@ -9,16 +9,25 @@ import pytest
 from app.core.models import (
     DateRange,
     Evidence,
+    FinancialDocument,
     ProviderResult,
     QueryPlan,
+    RetrievalRequest,
     RetrievalResult,
     SecurityIdentifier,
 )
 from app.core.status import EvidenceDecisionStatus, ProviderStatus, RetrievalStatus
-from app.evidence.freshness import FreshnessResult, FreshnessWarning, FreshnessWindow
+from app.evidence.freshness import (
+    FreshnessResult,
+    FreshnessWarning,
+    FreshnessWindow,
+    evaluate_freshness,
+)
+from app.evidence.normalizer import normalize_financial_documents
 from app.evidence.policy import EvidencePolicy, EvidencePolicyValidationError
 from app.planning.query_planner import QueryPlanner
 from app.providers.base import create_provider_result
+from app.retrieval import filter_evidence, retrieve_evidence
 
 UTC = timezone.utc
 BASIS_AT = datetime(2026, 7, 23, 3, 0, tzinfo=UTC)
@@ -468,6 +477,117 @@ def test_actual_query_planner_outputs_match_policy_matrix(query):
     plan = QueryPlanner(basis_date=BASIS_DATE).plan(query)
     result = evaluate(plan)
     assert result.status == EvidenceDecisionStatus.NO_EVIDENCE
+
+
+def test_public_recent_news_pipeline_composes_to_complete_without_mutating_inputs():
+    query = "\uc0bc\uc131\uc804\uc790 \ucd5c\uadfc \ub274\uc2a4 samsung earnings"
+    plan = QueryPlanner(basis_date=BASIS_DATE).plan(query)
+    assert plan.security is not None
+    planned_security_id = f"{plan.security.market}:{plan.security.ticker}"
+    request = RetrievalRequest(
+        query=query,
+        security_id=planned_security_id,
+        source_types=list(plan.required_sources),
+        date_range=plan.date_range,
+        top_k=6,
+    )
+
+    def news_document(
+        document_id: str,
+        target: str,
+        published_at: datetime,
+    ) -> FinancialDocument:
+        return FinancialDocument(
+            document_id=document_id,
+            source_type="news",
+            provider="recorded_news",
+            primary_security_ids=[target],
+            mentioned_security_ids=[],
+            title="Samsung earnings semiconductor outlook",
+            published_at=published_at,
+            source_url=f"https://example.test/{document_id.replace(':', '-')}",
+            text="Samsung earnings semiconductor outlook remains relevant.",
+            locator={"kind": "unit", "document_id": document_id},
+            metadata={"document_type": "article"},
+            ingestion_version="news-provider-m1-04-v1",
+        )
+
+    documents = [
+        news_document("document:news:current", SAMSUNG, BASIS_AT - timedelta(days=1)),
+        news_document("document:news:wrong-company", SK_HYNIX, BASIS_AT - timedelta(days=1)),
+        news_document("document:news:stale", SAMSUNG, BASIS_AT - timedelta(days=31)),
+    ]
+    documents_by_id = {item.document_id: item for item in documents}
+    provider_results = {"news": provider(ProviderStatus.OK)}
+    plan_before = plan.model_dump(mode="python")
+    request_before = request.model_dump(mode="python")
+    documents_before = [item.model_dump(mode="python") for item in documents]
+    providers_before = {
+        key: value.model_dump(mode="python")
+        for key, value in provider_results.items()
+    }
+
+    normalized = normalize_financial_documents(documents)
+    normalized_before = [item.model_dump(mode="python") for item in normalized]
+    filtered = filter_evidence(normalized, request, documents_by_id=documents_by_id)
+    filtered_before = [item.model_dump(mode="python") for item in filtered]
+    fresh = evaluate_freshness(
+        filtered,
+        request,
+        documents_by_id=documents_by_id,
+        basis_at=BASIS_AT,
+    )
+    freshness_before = [
+        item.model_dump(mode="python")
+        for item in fresh.evidence
+    ]
+    retrieved = retrieve_evidence(
+        fresh.evidence,
+        request,
+        documents_by_id=documents_by_id,
+    )
+    retrieval_before = retrieved.model_dump(mode="python")
+    decision = EvidencePolicy().evaluate(plan, provider_results, fresh, retrieved)
+
+    assert plan.intent == "recent_issue"
+    assert plan.required_sources == ["news"]
+    assert [item.document_id for item in filtered] == [
+        "document:news:current",
+        "document:news:stale",
+    ]
+    assert "document:news:wrong-company" not in {
+        item.document_id
+        for item in filtered
+    }
+    assert [item.document_id for item in fresh.evidence] == ["document:news:current"]
+    assert "document:news:stale" not in {
+        item.document_id
+        for item in fresh.evidence
+    }
+    assert retrieved.status == RetrievalStatus.OK
+    assert [item.document_id for item in retrieved.evidence] == ["document:news:current"]
+    assert all(
+        item.retrieval_score is not None and item.retrieval_score >= 0.5
+        for item in retrieved.evidence
+    )
+    assert all(item.subject_security_ids == [SAMSUNG] for item in retrieved.evidence)
+    assert decision.status == EvidenceDecisionStatus.COMPLETE
+    assert decision.satisfied_sources == ("news",)
+    assert decision.missing_sources == ()
+    assert [item.document_id for item in decision.evidence] == ["document:news:current"]
+    assert decision.evidence[0].subject_security_ids == [SAMSUNG]
+
+    assert plan.model_dump(mode="python") == plan_before
+    assert request.model_dump(mode="python") == request_before
+    assert [item.model_dump(mode="python") for item in documents] == documents_before
+    assert [item.model_dump(mode="python") for item in normalized] == normalized_before
+    assert [item.model_dump(mode="python") for item in filtered] == filtered_before
+    assert [item.model_dump(mode="python") for item in fresh.evidence] == freshness_before
+    assert retrieved.model_dump(mode="python") == retrieval_before
+    assert {
+        key: value.model_dump(mode="python")
+        for key, value in provider_results.items()
+    } == providers_before
 
 
 @pytest.mark.parametrize("field", ["required_sources", "required_evidence", "requires_clarification"])

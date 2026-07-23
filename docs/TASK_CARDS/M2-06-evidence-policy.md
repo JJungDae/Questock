@@ -17,14 +17,24 @@
 - M2-06 total re-review: `PASS - matrix-mirror and retrieval-only target guard corrections incorporated`
 - M2-06 final plan approval: `APPROVED by user on 2026-07-24`
 - M2-06 preflight: `PASS`
-- M2-06 implementation: `IMPLEMENTED LOCALLY - USER REVIEW PENDING`
-- M2-07 citation validation: `NOT_STARTED`
+- M2-06 first implementation SHA: `45c5203f6c385626ca8a5db8cf8d28a7076f822e`
+- M2-06 first implementation commit: `Implement m2-06`
+- M2-06 first implementation main push: `complete`
+- M2-06 independent first implementation review: `CONDITIONAL PASS`
+- M2-06 required supplement:
+  `IMPLEMENTED LOCALLY - FINAL CLOSURE REVIEW PENDING`
+- M2-06 supplement SHA: `NOT_CREATED`
+- M2-06 supplement commit/push: `NOT_RUN`
+- M2-07 planning: `ALLOWED`
+- M2-07 implementation: `BLOCKED - M2-06 final closure PASS required`
 - M2-08 dedupe/context budget: `NOT_STARTED`
 - Further commit/push/PR/merge/deploy: `NOT_APPROVED`
 
-The user approved this corrected final plan. The preflight and local
-implementation are complete. Dependency installation and Git operations remain
-unapproved.
+The user approved this corrected final plan. The first implementation was
+committed and pushed for review, and its independent review was
+`CONDITIONAL PASS`. The required public-function composition test is now
+implemented and verified locally. Final closure review and any further Git
+operation remain pending.
 
 The corrected plan preserves the existing core/status models and adds only
 step-local validation needed to prevent an inconsistent QueryPlan, wrong-company
@@ -1166,7 +1176,9 @@ Implementation completion after approval:
 - [x] compile passes
 - [x] diff review passes
 - [x] actual results recorded
-- [ ] user reviews implementation result
+- [x] user reviews first implementation result
+- [x] required public-function composition test passes
+- [ ] final closure review passes
 
 ---
 
@@ -1299,11 +1311,61 @@ Not requested:
 
 ### 19.4 Git State
 
-- Implementation SHA: `NOT_CREATED`
-- Commit: `NOT_RUN`
-- Push: `NOT_RUN`
+- First implementation SHA: `45c5203f6c385626ca8a5db8cf8d28a7076f822e`
+- First implementation commit: `Implement m2-06`
+- First implementation main push: `complete`
+- Independent first implementation review: `CONDITIONAL PASS`
+- Supplement SHA: `NOT_CREATED`
+- Supplement commit: `NOT_RUN`
+- Supplement push: `NOT_RUN`
 - PR: `NOT_RUN`
 - Merge: `NOT_RUN`
 - Deploy: `NOT_RUN`
-- Current implementation status:
-  `IMPLEMENTED LOCALLY - USER REVIEW PENDING`
+- Current M2-06 status:
+  `REQUIRED SUPPLEMENT IMPLEMENTED LOCALLY - FINAL CLOSURE REVIEW PENDING`
+
+### 19.5 Required Supplement
+
+- Added one deterministic in-memory public-function composition test using:
+  `QueryPlanner.plan -> normalize_financial_documents -> filter_evidence
+  -> evaluate_freshness -> retrieve_evidence -> EvidencePolicy.evaluate`.
+- Scenario:
+  `recent_issue` for Samsung Electronics with one current relevant news item,
+  one wrong-company news item, and one stale Samsung Electronics news item.
+- Exact composition results:
+  required source `news`; wrong-company Evidence removed by hard filter; stale
+  Evidence removed by freshness before ranking; only threshold-eligible target
+  Evidence retrieved; final decision `complete`; satisfied sources `("news",)`;
+  missing sources `()`.
+- Mutation checks:
+  plan, request, documents, provider results, normalized Evidence, hard-filtered
+  Evidence, freshness Evidence, and retrieval result remained unchanged.
+- `app/evidence/policy.py`: `NOT_CHANGED - no policy defect exposed`
+- Production orchestration:
+  `NOT_RUN - this deterministic unit composition is not production orchestration evidence`
+- Targeted command:
+  `.\.venv\Scripts\python.exe -m pytest tests/unit/test_evidence_policy.py -q`
+- Targeted result:
+  `PASS - exit 0 - 93 passed, 1 PytestCacheWarning`
+- M2 composition command:
+  `.\.venv\Scripts\python.exe -m pytest tests/unit/test_query_planner.py tests/unit/test_retrieval_filters.py tests/unit/test_retrieval_baseline.py tests/unit/test_evidence_normalization.py tests/unit/test_evidence_freshness.py tests/unit/test_evidence_policy.py -q`
+- M2 composition result:
+  `PASS - exit 0 - 407 passed, 1 PytestCacheWarning`
+- Full unit command:
+  `.\.venv\Scripts\python.exe -m pytest tests/unit -q`
+- Full unit execution context:
+  `approved local execution because the sandbox cannot access the user Temp pytest directory`
+- Full unit result:
+  `PASS - exit 0 - 1168 passed, 1 existing StarletteDeprecationWarning`
+- Import smoke:
+  `PASS - exit 0 - ok`
+- Secret scan:
+  `PASS - exit 0 - []`
+- Compile:
+  `PASS - exit 0`
+- GitHub CI: `NOT_RUN`
+- Independent pytest rerun: `NOT_RUN`
+- M2-07 planning: `ALLOWED`
+- M2-07 implementation: `BLOCKED - M2-06 final closure PASS required`
+- M1-09:
+  `mandatory supplement implemented - final independent review pending`
