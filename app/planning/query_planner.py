@@ -4,7 +4,7 @@ import re
 import unicodedata
 from dataclasses import dataclass
 from datetime import date
-from typing import Any, Literal
+from typing import Literal
 
 from app.core.models import DateRange, QueryPlan, SecurityIdentifier, SessionContext
 from app.core.resolver import SecurityResolver, security_id_for
@@ -79,15 +79,25 @@ PROHIBITED_PATTERNS = (
     "\uc0ac\uc57c",
     "\ud314\uc544",
     "\ud314\uae4c",
-    "\ub9e4\uc218",
-    "\ub9e4\ub3c4",
-    "\ubcf4\uc720",
-    "\ubaa9\ud45c\uac00",
+    "\ub9e4\uc218\ud574",
+    "\ub9e4\uc218\ud574\uc57c",
+    "\ub9e4\uc218\ud560\uae4c",
+    "\ub9e4\uc218 \ucd94\ucc9c",
+    "\ub9e4\ub3c4\ud574",
+    "\ub9e4\ub3c4\ud574\uc57c",
+    "\ub9e4\ub3c4\ud560\uae4c",
+    "\ub9e4\ub3c4 \ucd94\ucc9c",
+    "\uacc4\uc18d \ubcf4\uc720",
+    "\ubcf4\uc720\ud574\uc57c",
+    "\ubaa9\ud45c\uac00 \uc5bc\ub9c8",
+    "\ubaa9\ud45c\uac00 \uc54c\ub824",
+    "\ubaa9\ud45c\uac00 \uc81c\uc2dc",
     "\uc190\uc808",
     "\uc775\uc808",
-    "\ub0b4\uc77c",
-    "\uc624\ub97c\uae4c",
-    "\ub5a8\uc5b4\uc9c8\uae4c",
+    "\ub0b4\uc77c \uc624\ub97c\uae4c",
+    "\ub0b4\uc77c \ub5a8\uc5b4\uc9c8\uae4c",
+    "\uc624\ub97c \ud655\ub960",
+    "\ub5a8\uc5b4\uc9c8 \ud655\ub960",
     "\uc0c1\uc2b9 \ud655\ub960",
     "\ud558\ub77d \ud655\ub960",
     "\ud655\uc815 \uc218\uc775",
@@ -124,6 +134,8 @@ FINANCIAL_TERM_MARKERS = (
     "\uc2dc\uac00\ucd1d\uc561",
     "\ub9e4\ucd9c",
     "\uc601\uc5c5\uc774\uc775",
+    "\uc601\uc5c5\uc774\uc775\ub960",
+    "\uc2dc\uc774\uc775",
     "\uc2dc\ucd1d",
     "\uc720\uc0c1\uc99d\uc790",
     "\uc804\ud658\uc0ac\ucc44",
@@ -180,13 +192,14 @@ COMPARISON_PATTERNS = (
     " versus ",
 )
 
-DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
-RANGE_RE = re.compile(r"(\d{4}-\d{2}-\d{2})\s*~\s*(\d{4}-\d{2}-\d{2})")
+DATE_RE = re.compile(r"(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)")
+RANGE_RE = re.compile(r"(?<!\d)(\d{4}-\d{2}-\d{2})\s*~\s*(\d{4}-\d{2}-\d{2})(?!\d)")
+MALFORMED_DATE_RE = re.compile(r"(?<!\d)\d{4}-\d{2}-\d{2}\d+(?!\d)")
 TOKEN_RE = re.compile(r"\S+")
 UPPER_FOREIGN_RE = re.compile(r"^[A-Z]{1,5}([.\-][A-Z])?$")
 HANGUL_RE = re.compile(r"[\uac00-\ud7a3]")
 SECURITY_ENGLISH_HINTS = frozenset({"samsung", "electronics", "sk", "hynix", "hyundai", "motor"})
-IGNORED_ASCII_SECURITY_WORDS = frozenset({"news", "risk", "report", "price", "issue", "per", "pbr", "roe", "eps"})
+ASCII_FINANCIAL_TERM_MARKERS = frozenset({"PER", "PBR", "ROE", "EPS"})
 TRAILING_PUNCTUATION = ".,;:!?()[]{}\"'`"
 
 
@@ -235,20 +248,21 @@ class QueryPlanner:
         if session is not None and not isinstance(session, SessionContext):
             raise TypeError("session must be a SessionContext or None")
 
-        normalized = _normalize_text(query)
-        if not normalized:
+        intent_query = _normalize_intent_text(query)
+        security_query = _normalize_security_text(query)
+        if not intent_query:
             return _clarification_plan(OUT_OF_SCOPE)
-        if _contains_any(normalized, PROHIBITED_PATTERNS):
+        if _contains_any(intent_query, PROHIBITED_PATTERNS):
             return _clarification_plan(PROHIBITED_ADVICE)
-        if _contains_any(normalized, PRICE_MOVE_PATTERNS):
+        if _contains_any(intent_query, PRICE_MOVE_PATTERNS):
             return _clarification_plan(OUT_OF_SCOPE)
 
-        intent = _classify_intent(normalized)
+        intent = _classify_intent(intent_query)
         if intent == OUT_OF_SCOPE:
             return _clarification_plan(OUT_OF_SCOPE)
 
-        period = _parse_period(normalized, self._basis_date)
-        extraction = self._extract_security(normalized)
+        period = _parse_period(intent_query, self._basis_date)
+        extraction = self._extract_security(security_query, intent_query)
         if extraction.multi_security:
             return _clarification_plan(OUT_OF_SCOPE, date_range=period.date_range)
         if extraction.requires_clarification:
@@ -289,8 +303,8 @@ class QueryPlanner:
             return None
         return result.security
 
-    def _extract_security(self, normalized_query: str) -> _SecurityExtraction:
-        candidates = _candidate_spans(normalized_query)
+    def _extract_security(self, security_query: str, intent_query: str) -> _SecurityExtraction:
+        candidates = _candidate_spans(security_query)
         accepted: list[tuple[_Candidate, SecurityIdentifier]] = []
         issues: list[_Candidate] = []
 
@@ -307,7 +321,7 @@ class QueryPlanner:
         for _candidate, security in accepted:
             accepted_by_id.setdefault(security_id_for(security), security)
 
-        if len(accepted_by_id) > 1 or (_contains_any(normalized_query, COMPARISON_PATTERNS) and len(accepted_by_id) > 1):
+        if len(accepted_by_id) > 1 or (_contains_any(intent_query, COMPARISON_PATTERNS) and len(accepted_by_id) > 1):
             return _SecurityExtraction(None, True, multi_security=True)
         if accepted_by_id and issues:
             return _SecurityExtraction(None, True)
@@ -335,33 +349,48 @@ def _classify_intent(normalized_query: str) -> Intent:
 
 
 def _parse_period(normalized_query: str, basis_date: date) -> _PeriodParse:
-    if "\uc624\ub298" in normalized_query:
-        return _PeriodParse(DateRange(start=basis_date, end=basis_date), True)
-    if "\ucd5c\uadfc" in normalized_query:
+    if MALFORMED_DATE_RE.search(normalized_query):
         return _PeriodParse(None, True)
 
+    has_today = "\uc624\ub298" in normalized_query
+    has_recent = "\ucd5c\uadfc" in normalized_query
     ranges = list(RANGE_RE.finditer(normalized_query))
+    range_spans = tuple((match.start(), match.end()) for match in ranges)
+    dates = tuple(match.group(0) for match in DATE_RE.finditer(normalized_query) if not _span_is_inside_any((match.start(), match.end()), range_spans))
+
+    if has_today and has_recent:
+        return _PeriodParse(None, True)
+    if (has_today or has_recent) and (ranges or dates):
+        return _PeriodParse(None, True)
+    if len(ranges) > 1:
+        return _PeriodParse(None, True)
+    if ranges and dates:
+        return _PeriodParse(None, True)
+    if len(dates) > 1:
+        return _PeriodParse(None, True)
+
     if ranges:
-        if len(ranges) != 1:
-            return _PeriodParse(None, True)
         try:
             start = date.fromisoformat(ranges[0].group(1))
             end = date.fromisoformat(ranges[0].group(2))
             return _PeriodParse(DateRange(start=start, end=end), True)
         except ValueError:
             return _PeriodParse(None, True)
-
-    dates = DATE_RE.findall(normalized_query)
-    unique_dates = tuple(dict.fromkeys(dates))
-    if len(unique_dates) > 1:
-        return _PeriodParse(None, True)
-    if len(unique_dates) == 1:
+    if dates:
         try:
-            parsed = date.fromisoformat(unique_dates[0])
-            return _PeriodParse(DateRange(start=parsed, end=parsed), True)
+            parsed = date.fromisoformat(dates[0])
         except ValueError:
             return _PeriodParse(None, True)
+        return _PeriodParse(DateRange(start=parsed, end=parsed), True)
+    if has_today:
+        return _PeriodParse(DateRange(start=basis_date, end=basis_date), True)
+    if has_recent:
+        return _PeriodParse(None, True)
     return _PeriodParse(None, False)
+
+
+def _span_is_inside_any(span: tuple[int, int], containers: tuple[tuple[int, int], ...]) -> bool:
+    return any(span[0] >= container[0] and span[1] <= container[1] for container in containers)
 
 
 def _candidate_spans(normalized_query: str) -> list[_Candidate]:
@@ -401,9 +430,9 @@ def _should_resolve_candidate(value: str, token_width: int) -> bool:
     words = value.split()
     if len(words) > 1:
         return any(word.lower().strip(TRAILING_PUNCTUATION) in SECURITY_ENGLISH_HINTS for word in words)
+    if value in ASCII_FINANCIAL_TERM_MARKERS:
+        return False
     if UPPER_FOREIGN_RE.fullmatch(value):
-        return True
-    if re.fullmatch(r"[a-z]{1,5}([.\-][a-z])?", value) and value not in IGNORED_ASCII_SECURITY_WORDS:
         return True
     if token_width > 1:
         return any(word.lower() in SECURITY_ENGLISH_HINTS for word in words)
@@ -414,13 +443,17 @@ def _is_contained_by_resolved(candidate: _Candidate, accepted: list[tuple[_Candi
     return any(candidate.start >= accepted_candidate.start and candidate.end <= accepted_candidate.end for accepted_candidate, _ in accepted)
 
 
-def _normalize_text(value: str) -> str:
+def _normalize_security_text(value: str) -> str:
     normalized = unicodedata.normalize("NFKC", value)
-    return " ".join(normalized.split()).casefold()
+    return " ".join(normalized.split())
+
+
+def _normalize_intent_text(value: str) -> str:
+    return _normalize_security_text(value).casefold()
 
 
 def _contains_any(normalized_query: str, patterns: tuple[str, ...]) -> bool:
-    return any(_normalize_text(pattern) in normalized_query for pattern in patterns)
+    return any(_normalize_intent_text(pattern) in normalized_query for pattern in patterns)
 
 
 def _allows_session_date(intent: str) -> bool:

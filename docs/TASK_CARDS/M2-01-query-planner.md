@@ -12,8 +12,16 @@
 - M1-09 provider completion: `pending final PASS`
 - M1-09 recorded gate decision: `A15-M remains a data-qualified stretch candidate`
 - M2-01 dependency on M1-09: `NONE - price_move_reason remains inactive`
-- Current status: `IMPLEMENTED - user review pending`
+- Current status: `IMPLEMENTED - independent review CONDITIONAL PASS`
 - Implementation approval: `APPROVED for the corrected M2-01 implementation and tests`
+- Initial implementation SHA: `1192fcd769b43b7c72e23b2095cbe7f58861b2c4`
+- Initial implementation commit: `Implement m2-01`
+- Initial implementation main push: `complete`
+- Initial independent review: `CONDITIONAL PASS`
+- Supplement implementation: `PASS in local implementation environment - final closure review pending`
+- Supplement commit/push: `NOT_RUN`
+- Final closure review: `NOT_RUN`
+- M2-02 entry: `BLOCKED pending M2-01 closure review`
 - Commit/push/PR/merge/deploy: `NOT_APPROVED`
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
@@ -569,26 +577,28 @@ The implementation review must confirm:
 - targeted, full regression, smoke, secret scan, and compile records
 - Task Card, commit, push, CI, and independent rerun statuses match reality
 
-## 14. Implementation Result Log
+## 14. Initial Implementation Result Log
 
-- Implementation status: `PASS in local implementation environment - user review pending`
-- Implementation SHA: `NOT_CREATED`
-- Commit/push/PR/merge/deploy: `NOT_RUN`
-- Targeted pytest: `PASS - 47 passed`
-- Full unit regression: `PASS - 808 passed, 1 warning`
-- Import smoke: `PASS`
-- Secret scan: `PASS - []`
-- Compile: `PASS`
+- Implementation status: `initial implementation pushed - independent review CONDITIONAL PASS`
+- Initial implementation SHA: `1192fcd769b43b7c72e23b2095cbe7f58861b2c4`
+- Initial implementation commit: `Implement m2-01`
+- Initial implementation main push: `complete`
+- Initial independent review: `CONDITIONAL PASS`
+- Supplement implementation: `PASS in local implementation environment - final closure review pending`
+- Supplement commit/push: `NOT_RUN`
+- Final closure review: `NOT_RUN`
+- M2-02 entry: `BLOCKED pending M2-01 closure review`
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
 - Live API/LLM/retrieval/API/UI: `NOT_RUN`
 
-### 14.1 Modified Files
+### 14.1 Initial Changed Files
 
 - `app/planning/__init__.py`
 - `app/planning/query_planner.py`
 - `tests/unit/test_query_planner.py`
 - `docs/TASK_CARDS/M2-01-query-planner.md`
+- `docs/TASK_CARDS/M1-09-market-snapshot-gate.md`
 
 ### 14.2 Implemented Scope
 
@@ -600,7 +610,7 @@ The implementation review must confirm:
 - Added deterministic date parsing and session fallback suppression rules.
 - Kept provider, ingest, retrieval, API, UI, LLM, live API, and new dependency work out of scope.
 
-### 14.3 Verification Results
+### 14.3 Initial Verification Results
 
 - Targeted command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_query_planner.py -q`
   - execution: approved elevated run
@@ -623,12 +633,69 @@ The implementation review must confirm:
 - Compile command: `python -m compileall app tests scripts -q`
   - exit code: `0`
 
-### 14.4 Git Status at Report Time
+### 15.4 Git Status at Report Time
 
+- `M app/planning/query_planner.py`
 - `M docs/TASK_CARDS/M1-09-market-snapshot-gate.md`
-  - pre-existing M1-09 PASS status synchronization from before M2-01 implementation
-- `?? app/planning/`
-- `?? docs/TASK_CARDS/M2-01-query-planner.md`
-- `?? tests/unit/test_query_planner.py`
+- `M docs/TASK_CARDS/M2-01-query-planner.md`
+- `M tests/unit/test_query_planner.py`
 
-M2-01 implementation changed only the approved new implementation/test files and this Task Card. Commit and push remain `NOT_RUN`.
+Supplement commit, push, PR, merge, deploy, M2-02, provider, retrieval, API, UI, LLM, and live API work remain `NOT_RUN`.
+
+## 15. Supplement Result Log
+
+- Supplement status: `PASS in local implementation environment - final closure review pending`
+- Supplement SHA: `NOT_CREATED`
+- Supplement commit/push: `NOT_RUN`
+- Final closure review: `NOT_RUN`
+- M2-02 entry: `BLOCKED pending M2-01 closure review`
+- GitHub CI: `NOT_RUN`
+- Independent pytest rerun: `NOT_RUN`
+- Live API/LLM/retrieval/API/UI: `NOT_RUN`
+
+### 15.1 Supplement Modified Files
+
+- `app/planning/query_planner.py`
+- `tests/unit/test_query_planner.py`
+- `docs/TASK_CARDS/M2-01-query-planner.md`
+- `docs/TASK_CARDS/M1-09-market-snapshot-gate.md`
+
+### 15.2 Supplement Implemented Scope
+
+- Narrowed prohibited-advice detection to direct buy/sell/hold, target-price request, stop-loss/take-profit, guaranteed return, and future direction/probability requests.
+- Preserved normal routing for benign disclosure and research report phrases containing hold, tomorrow, buy opinion, or target-price report wording.
+- Split casefolded intent matching from case-preserving security candidate extraction.
+- Kept uppercase standalone foreign ticker conflict detection while ignoring ordinary lowercase English words such as `stock`, `brief`, and lowercase `aapl`.
+- Added financial-term routing markers for `시이익` and `영업이익률`.
+- Reworked period parsing to collect ISO range/date, today, recent, malformed, and conflicting cues before applying session fallback.
+- Did not implement provider, ingest, retrieval, API, UI, LLM, dependency, or M2-02 work.
+
+### 15.3 Supplement Verification Results
+
+- Targeted first command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_query_planner.py -q`
+  - execution: sandboxed run
+  - exit code: `1`
+  - output: `No module named pytest.__main__; 'pytest' is a package and cannot be directly executed`
+- Targeted second command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_query_planner.py -q`
+  - execution: approved elevated run
+  - exit code: `1`
+  - result: `69 passed`, `3 failed`
+  - failure fixed: P0 glossary acronyms `PER`, `PBR`, `ROE`, and `EPS` were being treated as uppercase foreign ticker candidates.
+- Targeted rerun command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_query_planner.py -q`
+  - execution: approved elevated run
+  - exit code: `0`
+  - passed count: `72 passed`
+- Full unit regression command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit -q`
+  - execution: approved elevated run
+  - exit code: `0`
+  - passed count: `833 passed`
+  - warning: FastAPI TestClient emitted Starlette deprecation warning for `httpx`.
+- Import smoke command: `$env:PYTHONPATH = ".deps;."; python -c "from app.planning.query_planner import QueryPlanner; print('ok')"`
+  - execution: approved elevated run
+  - exit code: `0`
+  - output: `ok`
+- Secret scan command: `python scripts/secret_scan.py`
+  - exit code: `0`
+  - output: `[]`
+- Compile command: `python -m compileall app tests scripts -q`
+  - exit code: `0`

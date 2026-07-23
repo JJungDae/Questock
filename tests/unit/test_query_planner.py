@@ -140,6 +140,9 @@ def test_early_return_paths_do_not_call_resolver(query, intent):
         (f"005930 {RECENT_NEWS}", SAMSUNG_ID),
         (f"{SAMSUNG_ID} {RECENT_NEWS}", SAMSUNG_ID),
         (f"{SAMSUNG_ALIAS} {RECENT_NEWS}", SAMSUNG_ID),
+        (f"Samsung Electronics stock {RECENT_NEWS}", SAMSUNG_ID),
+        (f"{SAMSUNG} stock {RECENT_NEWS}", SAMSUNG_ID),
+        (f"{SAMSUNG} aapl {RECENT_NEWS}", SAMSUNG_ID),
         (f"SK hynix {RECENT_NEWS}", SK_HYNIX_ID),
         (f"{SK_HYNIX} {RECENT_NEWS}", SK_HYNIX_ID),
         (f"SK  \ud558\uc774\ub2c9\uc2a4 {RECENT_NEWS}", SK_HYNIX_ID),
@@ -159,6 +162,20 @@ def test_security_mentions_resolve_inside_full_questions(query, security_id):
 
 def test_ordinary_lowercase_english_words_do_not_become_foreign_tickers():
     result = planner().plan(f"{SAMSUNG} news risk")
+
+    assert_clarification(result, OUT_OF_SCOPE)
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "Samsung Electronics stock news",
+        "SK hynix recent news",
+        f"{SAMSUNG} brief report",
+    ],
+)
+def test_english_only_intent_routing_is_not_implemented(query):
+    result = planner().plan(query)
 
     assert_clarification(result, OUT_OF_SCOPE)
 
@@ -215,6 +232,13 @@ def test_financial_term_does_not_inherit_session_security_but_preserves_explicit
     assert_success(explicit, security_id=SAMSUNG_ID, intent=FINANCIAL_TERM, sources=["glossary"], evidence=["definition"])
 
 
+@pytest.mark.parametrize("query", ["\uc2dc\uc774\uc775\uc774 \ubb50\uc57c?", "\uc601\uc5c5\uc774\uc775\ub960\uc774 \ubb50\uc57c?"])
+def test_financial_term_markers_route_without_security(query):
+    result = planner().plan(query)
+
+    assert_success(result, security_id=None, intent=FINANCIAL_TERM, sources=["glossary"], evidence=["definition"])
+
+
 def test_invalid_session_security_clarifies_only_security_required_intent():
     session = SessionContext(current_security_id="KRX:999999")
     query_planner = planner()
@@ -243,11 +267,33 @@ def test_exact_intent_source_and_evidence_matrix(query, intent, sources, evidenc
 
 
 @pytest.mark.parametrize(
+    ("query", "intent", "sources", "evidence"),
+    [
+        (f"{SAMSUNG} \ubcf4\uc720 \uc9c0\ubd84 {DISCLOSURE} \uc694\uc57d", DISCLOSURE_SUMMARY, ["disclosure"], ["disclosure"]),
+        (f"{SAMSUNG} \ub0b4\uc77c \ubc1c\ud45c {DISCLOSURE} \uc694\uc57d", DISCLOSURE_SUMMARY, ["disclosure"], ["disclosure"]),
+        (f"{SAMSUNG} \ub9e4\uc218 \uc758\uacac {REPORT} \uc694\uc57d", RESEARCH_REPORT_SUMMARY, ["research_report"], ["research_report"]),
+        (f"{SAMSUNG} \ubaa9\ud45c\uac00 {REPORT} \uc694\uc57d", RESEARCH_REPORT_SUMMARY, ["research_report"], ["research_report"]),
+        (f"{SAMSUNG} brief {REPORT} \uc694\uc57d", RESEARCH_REPORT_SUMMARY, ["research_report"], ["research_report"]),
+    ],
+)
+def test_benign_financial_wording_is_not_prohibited(query, intent, sources, evidence):
+    result = planner().plan(query)
+
+    assert_success(result, security_id=SAMSUNG_ID, intent=intent, sources=sources, evidence=evidence)
+
+
+@pytest.mark.parametrize(
     ("query", "intent"),
     [
         (f"{SAMSUNG} \uc0ac\ub3c4 \ub3fc?", PROHIBITED_ADVICE),
+        (f"{SAMSUNG} \ub9e4\uc218\ud574\uc57c \ud574?", PROHIBITED_ADVICE),
+        (f"{SAMSUNG} \ub9e4\ub3c4\ud574\uc57c \ud574?", PROHIBITED_ADVICE),
+        (f"{SAMSUNG} \uacc4\uc18d \ubcf4\uc720\ud574\uc57c \ud574?", PROHIBITED_ADVICE),
         (f"{SAMSUNG} \ubaa9\ud45c\uac00 \uc5bc\ub9c8\uc57c?", PROHIBITED_ADVICE),
+        (f"{SAMSUNG} \ub0b4\uc77c \uc624\ub97c\uae4c?", PROHIBITED_ADVICE),
         (f"{SAMSUNG} \uc0c1\uc2b9 \ud655\ub960 \uc54c\ub824\uc918", PROHIBITED_ADVICE),
+        (f"{SAMSUNG} \uc190\uc808 \uc2dc\uc810 \uc54c\ub824\uc918", PROHIBITED_ADVICE),
+        (f"{SAMSUNG} \uc775\uc808 \uc2dc\uc810 \uc54c\ub824\uc918", PROHIBITED_ADVICE),
         (f"{SAMSUNG} {TODAY} \uc65c \uc62c\ub790\uc5b4?", OUT_OF_SCOPE),
     ],
 )
@@ -295,8 +341,14 @@ def test_deterministic_period_parsing(query, expected):
     [
         f"{SAMSUNG} {RECENT_NEWS}",
         f"{SAMSUNG} 2026-02-30 {DISCLOSURE}",
+        f"{SAMSUNG} 2026-07-210 {DISCLOSURE}",
         f"{SAMSUNG} 2026-07-22~2026-07-21 {DISCLOSURE}",
         f"{SAMSUNG} 2026-07-20~2026-07-21 2026-08-01~2026-08-02 {DISCLOSURE}",
+        f"{SAMSUNG} 2026-07-20~2026-07-21 2026-08-01 {DISCLOSURE}",
+        f"{SAMSUNG} {TODAY} 2026-07-21 {DISCLOSURE}",
+        f"{SAMSUNG} {RECENT_NEWS} 2026-07-21",
+        f"{SAMSUNG} {TODAY} 2026-07-20~2026-07-21 {DISCLOSURE}",
+        f"{SAMSUNG} \ucd5c\uadfc 2026-07-20~2026-07-21 {DISCLOSURE}",
     ],
 )
 def test_period_cues_suppress_session_date_fallback(query):
