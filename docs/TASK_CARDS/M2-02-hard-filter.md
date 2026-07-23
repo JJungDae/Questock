@@ -12,8 +12,13 @@
 - M2-01 final closure fix main push: `complete`
 - M1-09 recorded status: `mandatory supplement implemented - final independent review pending`
 - M1-09 provider completion: `pending final PASS`
-- Current status: `PASS in local implementation environment - user review pending`
+- Current status: `PASS WITH REQUIRED FOLLOW-UP - follow-up implemented locally, closure review pending`
 - Implementation approval: `APPROVED by user request after corrected M2-02 plan review`
+- Implementation SHA: `188c7efeba7ba6dbd3fb1c794e744dc2f80385ea`
+- Implementation commit: `Implement m2-02`
+- Implementation main push: `complete`
+- Independent implementation review: `PASS WITH REQUIRED FOLLOW-UP`
+- Required follow-up implementation: `PASS in local implementation environment - closure review pending`
 - Commit/push/PR/merge/deploy: `NOT_APPROVED`
 - Live API/LLM/provider/retrieval ranking/API/UI work: `OUT_OF_SCOPE`
 - M2-03 retrieval baseline: `NOT_STARTED`
@@ -686,13 +691,19 @@ The independent implementation review must confirm:
 
 ## 15. Result Log
 
-- Implementation status: `PASS in local implementation environment - user review pending`
+- Implementation status: `PASS WITH REQUIRED FOLLOW-UP - follow-up implemented locally, closure review pending`
+- Implementation SHA: `188c7efeba7ba6dbd3fb1c794e744dc2f80385ea`
+- Implementation commit: `Implement m2-02`
+- Implementation main push: `complete`
+- Independent implementation review: `PASS WITH REQUIRED FOLLOW-UP`
+- Required follow-up implementation: `PASS in local implementation environment - closure review pending`
+- Required follow-up SHA: `NOT_CREATED`
 - Preflight baseline SHA: `5ffef6ca47c1ad8961bd717bb5623742bab8ddcb`
 - Preflight baseline commit: `m2-01 conditional pass2 updates`
 - Preflight working tree note: `approved Task Card docs were present before implementation; no code files were dirty`
+- Preflight deviation: `working tree was not fully clean because approved Task Card documents were already present; code, fixture, and dependency files were clean, and no destructive Git operation such as reset, restore, checkout, clean, or stash was used`
 - M2-01 Task Card synchronization: `PASS`
 - M1-09 state: `mandatory supplement implemented - final independent review pending`
-- Implementation SHA: `NOT_CREATED`
 - Commit/push/PR/merge/deploy: `NOT_RUN`
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
@@ -734,26 +745,33 @@ The independent implementation review must confirm:
 - Preserved input order and model identity while returning fresh outer lists.
 - Did not add provider, ingest, core model, planning, API/UI, LLM, ranking, top-k, dependency, or retrieval scoring work.
 
+### 15.2.1 Required Follow-up Implemented Scope
+
+- Changed document-type proof so whitespace-only `document_type`, `report_type`, and `content_level` metadata values cannot match.
+- Added an exact industry-common Evidence test where the target appears only in the linked document's `mentioned_security_ids`.
+- Did not implement M2-03 code.
+- Did not modify provider, ingest, core model, planning code, API/UI, LLM, ranking, top-k, fixtures, data, or dependency files.
+
 ### 15.3 Implementation Verification Results
 
 - Targeted command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_retrieval_filters.py -q`
-  - execution: approved elevated run
+  - execution: local run with `PYTHONPATH=.deps;.`
   - exit code: `0`
-  - passed count: `53 passed`
+  - passed count: `55 passed`
 - M2 regression command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_query_planner.py tests/unit/test_retrieval_filters.py -q`
-  - execution: approved elevated run
+  - execution: local run with `PYTHONPATH=.deps;.`
   - exit code: `0`
-  - passed count: `129 passed`
+  - passed count: `131 passed`
 - Full unit regression command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit -q`
-  - execution: approved elevated run
+  - execution: local run with `PYTHONPATH=.deps;.`
   - exit code: `0`
-  - passed count: `890 passed`
+  - passed count: `892 passed`
   - warning: FastAPI TestClient emitted Starlette deprecation warning for `httpx`.
 - Import smoke command: `$env:PYTHONPATH = ".deps;."; python -c "from app.retrieval import HardFilterValidationError, filter_financial_documents, filter_evidence; print('ok')"`
-  - execution: approved elevated run
+  - execution: local run with `PYTHONPATH=.deps;.`
   - exit code: `0`
   - output: `ok`
-- Secret scan command: `python scripts/secret_scan.py`
+- Secret scan command: `cmd /c "python scripts\secret_scan.py"`
   - exit code: `0`
   - output: `[]`
 - Compile command: `python -m compileall app tests scripts -q`
@@ -761,16 +779,14 @@ The independent implementation review must confirm:
 
 ### 15.4 Modified Files
 
-- `app/retrieval/__init__.py`
 - `app/retrieval/filters.py`
 - `tests/unit/test_retrieval_filters.py`
-- `docs/TASK_CARDS/M2-01-query-planner.md`
 - `docs/TASK_CARDS/M2-02-hard-filter.md`
 
 ### 15.5 Final Local State
 
 ```text
-M2-02 implementation local PASS
+M2-02 required follow-up local PASS
 commit/push NOT_RUN
 GitHub CI NOT_RUN
 independent pytest rerun NOT_RUN

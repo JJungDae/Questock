@@ -113,7 +113,7 @@ def _document_type_match(document: FinancialDocument, request: RetrievalRequest)
         return False
     for key in DOCUMENT_TYPE_METADATA_KEYS:
         value = document.metadata.get(key)
-        if isinstance(value, str) and value and value in request.document_types:
+        if isinstance(value, str) and value.strip() and value in request.document_types:
             return True
     return False
 

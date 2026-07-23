@@ -221,6 +221,7 @@ def test_document_filter_date_range_uses_aware_asia_seoul_dates(published_at, da
         ({"content_level": "listing_metadata"}, ["listing_metadata"], True),
         ({}, ["annual"], False),
         ({"document_type": ""}, ["annual"], False),
+        ({"document_type": "   "}, ["   "], False),
         ({"document_type": 1}, ["annual"], False),
         ({"title": "annual"}, ["annual"], False),
     ],
@@ -313,6 +314,25 @@ def test_industry_common_evidence_target_connection_rules():
 
     assert without_mapping == [mentioned_target]
     assert with_mapping == [linked_target_ev]
+
+
+def test_industry_common_evidence_passes_when_target_only_mentioned_by_linked_document():
+    linked_mentioned_only = document("doc:1", primary_security_ids=[SK_HYNIX], mentioned_security_ids=[SAMSUNG])
+    linked_ev = evidence(
+        "ev:1",
+        document_id="doc:1",
+        subject_security_ids=[],
+        mentioned_security_ids=[],
+        scope="industry_common",
+    )
+
+    result = filter_evidence(
+        [linked_ev],
+        request(source_types=["news"]),
+        documents_by_id={"doc:1": linked_mentioned_only},
+    )
+
+    assert result == [linked_ev]
 
 
 def test_linked_evidence_integrity_excludes_missing_source_mismatch_and_security_mismatch():
