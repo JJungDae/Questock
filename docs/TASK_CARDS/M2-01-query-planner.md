@@ -12,16 +12,22 @@
 - M1-09 provider completion: `pending final PASS`
 - M1-09 recorded gate decision: `A15-M remains a data-qualified stretch candidate`
 - M2-01 dependency on M1-09: `NONE - price_move_reason remains inactive`
-- Current status: `IMPLEMENTED - independent review CONDITIONAL PASS`
+- Current status: `PASS / complete`
 - Implementation approval: `APPROVED for the corrected M2-01 implementation and tests`
 - Initial implementation SHA: `1192fcd769b43b7c72e23b2095cbe7f58861b2c4`
 - Initial implementation commit: `Implement m2-01`
 - Initial implementation main push: `complete`
 - Initial independent review: `CONDITIONAL PASS`
-- Supplement implementation: `PASS in local implementation environment - final closure review pending`
-- Supplement commit/push: `NOT_RUN`
-- Final closure review: `NOT_RUN`
-- M2-02 entry: `BLOCKED pending M2-01 closure review`
+- Supplement implementation: `PASS in local implementation environment`
+- Supplement SHA: `a11a539da93226338662996da0cd933c7221bab7`
+- Supplement main push: `complete`
+- Final closure fix SHA: `5ffef6ca47c1ad8961bd717bb5623742bab8ddcb`
+- Final closure fix commit: `m2-01 conditional pass2 updates`
+- Final closure fix main push: `complete`
+- Final closure review: `PASS WITH REQUIRED FOLLOW-UP`
+- Final preflight verification: `PASS`
+- M2-02 planning entry: `ALLOWED`
+- M2-02 implementation entry: `ALLOWED`
 - Commit/push/PR/merge/deploy: `NOT_APPROVED`
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
@@ -584,10 +590,16 @@ The implementation review must confirm:
 - Initial implementation commit: `Implement m2-01`
 - Initial implementation main push: `complete`
 - Initial independent review: `CONDITIONAL PASS`
-- Supplement implementation: `PASS in local implementation environment - final closure review pending`
-- Supplement commit/push: `NOT_RUN`
-- Final closure review: `NOT_RUN`
-- M2-02 entry: `BLOCKED pending M2-01 closure review`
+- Supplement implementation: `PASS in local implementation environment`
+- Supplement SHA: `a11a539da93226338662996da0cd933c7221bab7`
+- Supplement main push: `complete`
+- Final closure fix SHA: `5ffef6ca47c1ad8961bd717bb5623742bab8ddcb`
+- Final closure fix commit: `m2-01 conditional pass2 updates`
+- Final closure fix main push: `complete`
+- Final closure review: `PASS WITH REQUIRED FOLLOW-UP`
+- Final preflight verification: `PASS`
+- M2-02 planning entry: `ALLOWED`
+- M2-02 implementation entry: `ALLOWED`
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
 - Live API/LLM/retrieval/API/UI: `NOT_RUN`
@@ -633,44 +645,89 @@ The implementation review must confirm:
 - Compile command: `python -m compileall app tests scripts -q`
   - exit code: `0`
 
-### 15.4 Git Status at Report Time
+## 15. Final Preflight Verification For M2-02
 
-- `M app/planning/query_planner.py`
-- `M docs/TASK_CARDS/M1-09-market-snapshot-gate.md`
+- Preflight baseline SHA: `5ffef6ca47c1ad8961bd717bb5623742bab8ddcb`
+- Preflight baseline commit: `m2-01 conditional pass2 updates`
+- M2-01 Task Card final synchronization: `PASS`
+- M1-09 state: `mandatory supplement implemented - final independent review pending`
+- M1-09 provider completion: `pending final PASS`
+- GitHub CI: `NOT_RUN`
+- Independent pytest rerun: `NOT_RUN`
+
+### 15.1 Preflight Results
+
+- M2-01 targeted command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_query_planner.py -q`
+  - execution: approved elevated run
+  - exit code: `0`
+  - passed count: `76 passed`
+- Full unit regression command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit -q`
+  - execution: approved elevated run
+  - exit code: `0`
+  - passed count: `837 passed`
+  - warning: FastAPI TestClient emitted Starlette deprecation warning for `httpx`.
+- QueryPlanner import smoke command: `$env:PYTHONPATH = ".deps;."; python -c "from app.planning.query_planner import QueryPlanner; print('ok')"`
+  - execution: approved elevated run
+  - exit code: `0`
+  - output: `ok`
+- Secret scan command: `python scripts/secret_scan.py`
+  - exit code: `0`
+  - output: `[]`
+- Compile command: `python -m compileall app tests scripts -q`
+  - exit code: `0`
+
+### 15.2 Final State
+
+```text
+M2-01 PASS / complete
+final closure fix main push complete
+final closure review PASS WITH REQUIRED FOLLOW-UP
+final preflight verification PASS
+M2-02 planning ALLOWED
+M2-02 implementation ALLOWED
+```
+
+### 15.3 Git Status at Report Time
+
 - `M docs/TASK_CARDS/M2-01-query-planner.md`
-- `M tests/unit/test_query_planner.py`
+- `?? docs/TASK_CARDS/M2-02-hard-filter.md`
 
-Supplement commit, push, PR, merge, deploy, M2-02, provider, retrieval, API, UI, LLM, and live API work remain `NOT_RUN`.
+Supplement PR, merge, deploy, provider, retrieval, API, UI, LLM, and live API work remain `NOT_RUN`. M2-02 implementation is allowed because the M2-01 preflight gate passed.
 
-## 15. Supplement Result Log
+## 16. Historical Supplement Result Log
 
-- Supplement status: `PASS in local implementation environment - final closure review pending`
-- Supplement SHA: `NOT_CREATED`
-- Supplement commit/push: `NOT_RUN`
-- Final closure review: `NOT_RUN`
-- M2-02 entry: `BLOCKED pending M2-01 closure review`
+- Supplement status: `PASS in local implementation environment`
+- Supplement SHA: `a11a539da93226338662996da0cd933c7221bab7`
+- Supplement main push: `complete`
+- Final closure fix SHA: `5ffef6ca47c1ad8961bd717bb5623742bab8ddcb`
+- Final closure fix commit: `m2-01 conditional pass2 updates`
+- Final closure fix main push: `complete`
+- Final closure review: `PASS WITH REQUIRED FOLLOW-UP`
+- Final preflight verification: `PASS`
+- M2-02 planning entry: `ALLOWED`
+- M2-02 implementation entry: `ALLOWED`
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
 - Live API/LLM/retrieval/API/UI: `NOT_RUN`
 
-### 15.1 Supplement Modified Files
+### 16.1 Supplement Modified Files
 
 - `app/planning/query_planner.py`
 - `tests/unit/test_query_planner.py`
 - `docs/TASK_CARDS/M2-01-query-planner.md`
 - `docs/TASK_CARDS/M1-09-market-snapshot-gate.md`
 
-### 15.2 Supplement Implemented Scope
+### 16.2 Supplement Implemented Scope
 
 - Narrowed prohibited-advice detection to direct buy/sell/hold, target-price request, stop-loss/take-profit, guaranteed return, and future direction/probability requests.
 - Preserved normal routing for benign disclosure and research report phrases containing hold, tomorrow, buy opinion, or target-price report wording.
 - Split casefolded intent matching from case-preserving security candidate extraction.
 - Kept uppercase standalone foreign ticker conflict detection while ignoring ordinary lowercase English words such as `stock`, `brief`, and lowercase `aapl`.
-- Added financial-term routing markers for `시이익` and `영업이익률`.
+- Added financial-term routing markers for `순이익` and `영업이익률`.
 - Reworked period parsing to collect ISO range/date, today, recent, malformed, and conflicting cues before applying session fallback.
 - Did not implement provider, ingest, retrieval, API, UI, LLM, dependency, or M2-02 work.
 
-### 15.3 Supplement Verification Results
+### 16.3 Supplement Verification Results
 
 - Targeted first command: `$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_query_planner.py -q`
   - execution: sandboxed run
