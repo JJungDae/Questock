@@ -22,20 +22,22 @@
 - M2-06 first implementation main push: `complete`
 - M2-06 independent first implementation review: `CONDITIONAL PASS`
 - M2-06 required supplement:
-  `IMPLEMENTED AND PUSHED - FINAL CLOSURE REVIEW PENDING`
+  `IMPLEMENTED AND PUSHED`
 - M2-06 supplement SHA: `ebb481ae7ec1b749d7907ca59dd0a732211341c1`
 - M2-06 supplement commit: `m2-06 conditional pass updates`
 - M2-06 supplement main push: `complete`
+- M2-06 final closure review: `PASS - confirmed by total review`
+- M2-06 status: `PASS / complete`
 - M2-07 planning: `ALLOWED`
-- M2-07 implementation: `BLOCKED - M2-06 final closure PASS required`
+- M2-07 implementation: `ALLOWED after approved plan and preflight PASS`
 - M2-08 dedupe/context budget: `NOT_STARTED`
 - Further commit/push/PR/merge/deploy: `NOT_APPROVED`
 
 The user approved this corrected final plan. The first implementation was
 committed and pushed for review, and its independent review was
 `CONDITIONAL PASS`. The required public-function composition test is now
-implemented, verified, committed, and pushed. Final closure review and any
-further Git operation remain pending.
+implemented, verified, committed, and pushed. The total closure review is
+`PASS`; any further Git operation remains pending.
 
 The corrected plan preserves the existing core/status models and adds only
 step-local validation needed to prevent an inconsistent QueryPlan, wrong-company
@@ -1179,7 +1181,7 @@ Implementation completion after approval:
 - [x] actual results recorded
 - [x] user reviews first implementation result
 - [x] required public-function composition test passes
-- [ ] final closure review passes
+- [x] final closure review passes
 
 ---
 
@@ -1322,8 +1324,8 @@ Not requested:
 - PR: `NOT_RUN`
 - Merge: `NOT_RUN`
 - Deploy: `NOT_RUN`
-- Current M2-06 status:
-  `REQUIRED SUPPLEMENT PUSHED - FINAL CLOSURE REVIEW PENDING`
+- Current M2-06 status: `PASS / complete`
+- Final closure review: `PASS - confirmed by total review`
 
 ### 19.5 Required Supplement
 
@@ -1367,6 +1369,6 @@ Not requested:
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
 - M2-07 planning: `ALLOWED`
-- M2-07 implementation: `BLOCKED - M2-06 final closure PASS required`
+- M2-07 implementation: `ALLOWED after approved plan and preflight PASS`
 - M1-09:
   `mandatory supplement implemented - final independent review pending`
