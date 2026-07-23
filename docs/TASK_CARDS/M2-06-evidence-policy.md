@@ -22,9 +22,10 @@
 - M2-06 first implementation main push: `complete`
 - M2-06 independent first implementation review: `CONDITIONAL PASS`
 - M2-06 required supplement:
-  `IMPLEMENTED LOCALLY - FINAL CLOSURE REVIEW PENDING`
-- M2-06 supplement SHA: `NOT_CREATED`
-- M2-06 supplement commit/push: `NOT_RUN`
+  `IMPLEMENTED AND PUSHED - FINAL CLOSURE REVIEW PENDING`
+- M2-06 supplement SHA: `ebb481ae7ec1b749d7907ca59dd0a732211341c1`
+- M2-06 supplement commit: `m2-06 conditional pass updates`
+- M2-06 supplement main push: `complete`
 - M2-07 planning: `ALLOWED`
 - M2-07 implementation: `BLOCKED - M2-06 final closure PASS required`
 - M2-08 dedupe/context budget: `NOT_STARTED`
@@ -33,8 +34,8 @@
 The user approved this corrected final plan. The first implementation was
 committed and pushed for review, and its independent review was
 `CONDITIONAL PASS`. The required public-function composition test is now
-implemented and verified locally. Final closure review and any further Git
-operation remain pending.
+implemented, verified, committed, and pushed. Final closure review and any
+further Git operation remain pending.
 
 The corrected plan preserves the existing core/status models and adds only
 step-local validation needed to prevent an inconsistent QueryPlan, wrong-company
@@ -1315,14 +1316,14 @@ Not requested:
 - First implementation commit: `Implement m2-06`
 - First implementation main push: `complete`
 - Independent first implementation review: `CONDITIONAL PASS`
-- Supplement SHA: `NOT_CREATED`
-- Supplement commit: `NOT_RUN`
-- Supplement push: `NOT_RUN`
+- Supplement SHA: `ebb481ae7ec1b749d7907ca59dd0a732211341c1`
+- Supplement commit: `m2-06 conditional pass updates`
+- Supplement main push: `complete`
 - PR: `NOT_RUN`
 - Merge: `NOT_RUN`
 - Deploy: `NOT_RUN`
 - Current M2-06 status:
-  `REQUIRED SUPPLEMENT IMPLEMENTED LOCALLY - FINAL CLOSURE REVIEW PENDING`
+  `REQUIRED SUPPLEMENT PUSHED - FINAL CLOSURE REVIEW PENDING`
 
 ### 19.5 Required Supplement
 
