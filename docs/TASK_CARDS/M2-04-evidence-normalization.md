@@ -21,12 +21,12 @@
 - First implementation commit: `Implement m2-04`
 - First implementation main push: `complete`
 - Independent implementation review: `CONDITIONAL PASS`
-- Required supplement: `implemented locally / user review pending`
-- Current status: `CONDITIONAL PASS - SUPPLEMENT IMPLEMENTED LOCALLY / USER REVIEW PENDING`
+- Required supplement: `complete - closure review PASS`
+- Current status: `PASS - complete`
 - Implementation approval: `APPROVED by user instruction using this final Task Card`
-- Supplement commit/push/PR/merge/deploy: `NOT_APPROVED`
+- Supplement commit/push/PR/merge/deploy: `complete`
 - M2-05 planning: `ALLOWED`
-- M2-05 implementation: `BLOCKED pending M2-04 closure`
+- M2-05 implementation: `ALLOWED after approved M2-05 plan and preflight PASS`
 - Live API/provider/API/UI/LLM work: `OUT_OF_SCOPE`
 - M2-05 freshness, M2-06 EvidencePolicy, M2-07 citation validation, M2-08 dedupe/context budget: `NOT_STARTED`
 
@@ -1066,14 +1066,16 @@ Closure review after remediation is limited to:
 - First implementation commit: `Implement m2-04`
 - First implementation main push: `complete`
 - Independent implementation review: `CONDITIONAL PASS`
-- Required supplement: `implemented locally / user review pending`
+- Required supplement: `complete - closure review PASS`
 - Allowed implementation files: `app/evidence/__init__.py, app/evidence/normalizer.py, tests/unit/test_evidence_normalization.py, docs/TASK_CARDS/M2-04-evidence-normalization.md, and the allowed stale M2-03 Task Card synchronization`
 - First implementation targeted pytest: `PASS - exit 0 - 55 passed`
 - First implementation M2 integration regression: `PASS - exit 0 - 214 passed`
 - First implementation full unit regression: `PASS - exit 0 - 975 passed, 1 existing FastAPI/Starlette deprecation warning`
-- Supplement implementation status: `IMPLEMENTED LOCALLY - USER REVIEW PENDING`
-- Supplement SHA: `NOT_CREATED`
-- Supplement commit/push: `NOT_RUN`
+- Supplement implementation status: `complete - closure review PASS`
+- Supplement SHA: `726bb633d1c5c935f04c9f691a97e966fbdcd0fc`
+- Supplement commit: `m2-04 conditional pass updates`
+- Supplement main push: `complete`
+- Supplement independent closure review: `PASS`
 - Supplement targeted pytest: `PASS - exit 0 - 67 passed`
 - Supplement M2 integration regression: `PASS - exit 0 - 226 passed`
 - Supplement full unit regression: `PASS - exit 0 - 987 passed, 1 existing FastAPI/Starlette deprecation warning`
@@ -1089,11 +1091,11 @@ Closure review after remediation is limited to:
 - Supplement diff check: `PASS - git diff --check exit 0; no whitespace errors; 3 LF-to-CRLF working-copy warnings only`
 - Supplement diff name-status: `PASS - app/evidence/normalizer.py, docs/TASK_CARDS/M2-04-evidence-normalization.md, tests/unit/test_evidence_normalization.py modified`
 - Supplement diff stat: `PASS - 3 files changed, 119 insertions, 22 deletions`
-- Supplement Git working tree: `M app/evidence/normalizer.py; M docs/TASK_CARDS/M2-04-evidence-normalization.md; M tests/unit/test_evidence_normalization.py`
-- Supplement Git log: `d6c410b (HEAD -> main, origin/main, origin/HEAD) Implement m2-04; 008fd4a Implement m2-03`
+- Supplement Git working tree: `clean after main push at 726bb633d1c5c935f04c9f691a97e966fbdcd0fc`
+- Supplement Git log: `726bb63 (HEAD -> main, origin/main, origin/HEAD) m2-04 conditional pass updates; d6c410b Implement m2-04`
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
 - Live provider/actual source/API/UI/LLM: `NOT_RUN - out of scope`
 - M2-05 planning: `ALLOWED`
-- M2-05 implementation: `BLOCKED pending M2-04 closure`
-- Supplement commit/push/PR/merge/deploy: `NOT_RUN`
+- M2-05 implementation: `ALLOWED after approved M2-05 plan and preflight PASS`
+- Supplement commit/push/PR/merge/deploy: `complete`
