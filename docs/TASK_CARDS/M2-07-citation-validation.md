@@ -27,12 +27,14 @@
 - M2-07 first implementation commit: `Implement m2-07`
 - M2-07 first implementation main push: `complete`
 - M2-07 independent first implementation review: `CONDITIONAL PASS`
-- M2-07 required supplement:
-  `IMPLEMENTED LOCALLY - CLOSURE REVIEW PENDING`
-- M2-07 supplement SHA: `NOT_CREATED`
-- M2-07 supplement commit/push: `NOT_RUN`
+- M2-07 required supplement: `complete`
+- M2-07 supplement SHA: `0711d62cd62f86d71c4a712b6205f7643f5f9209`
+- M2-07 supplement commit: `m2-07 conditional pass updates`
+- M2-07 supplement main push: `complete`
+- M2-07 independent final closure review: `PASS`
+- M2-07 current status: `PASS / complete`
 - M2-08 planning: `ALLOWED`
-- M2-08 implementation: `BLOCKED pending M2-07 closure`
+- M2-08 implementation: `ALLOWED after approved M2-08 plan and preflight PASS`
 - M3 claim/answer composition: `NOT_STARTED`
 - M1-09:
   `mandatory supplement implemented - final independent review pending`
@@ -1343,12 +1345,14 @@ operations.
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
 - Live URL, permission, M2-08, M3, production orchestration: `NOT_RUN`
-- Supplement SHA: `NOT_CREATED`
-- Supplement commit/push/PR/merge/deploy: `NOT_RUN`
-- Current M2-07 status:
-  `REQUIRED SUPPLEMENT IMPLEMENTED LOCALLY - CLOSURE REVIEW PENDING`
+- Supplement SHA: `0711d62cd62f86d71c4a712b6205f7643f5f9209`
+- Supplement commit: `m2-07 conditional pass updates`
+- Supplement main push: `complete`
+- Supplement PR/merge/deploy: `NOT_RUN`
+- Independent final closure review: `PASS`
+- Current M2-07 status: `PASS / complete`
 - M2-08 planning: `ALLOWED`
-- M2-08 implementation: `BLOCKED pending M2-07 closure`
+- M2-08 implementation: `ALLOWED after approved M2-08 plan and preflight PASS`
 - M1-09:
   `mandatory supplement implemented - final independent review pending`
 
@@ -1358,7 +1362,8 @@ operations.
 
 Requested:
 
-- independent closure review of the required M2-07 supplement
+- no further M2-07 code or closure review
+- review and approval of the separate M2-08 Task Card before implementation
 
 Not requested:
 
