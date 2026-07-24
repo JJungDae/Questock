@@ -31,12 +31,14 @@
 - M2-08 implementation main push: `complete`
 - M2-08 independent implementation review: `PASS`
 - M2-08 current status: `PASS / complete`
-- M2 integrated review:
-  `ALLOWED - required before M3 implementation`
-- M2-09 implementation:
-  `NOT_ALLOWED without separate A15-M gate`
+- M2 integrated review: `PASS`
+- M2 integration closure SHA:
+  `866dbb2a349e54b59f8dec1f9b770bc4ee68729b`
+- M2-09:
+  `NOT_STARTED / not required without separate A15-M gate`
+- M3 planning: `ALLOWED`
 - M3 implementation:
-  `BLOCKED pending M2 integrated review PASS`
+  `ALLOWED only after a separately approved M3 plan and preflight PASS`
 - M1-09:
   `mandatory supplement implemented - final independent review pending`
 - M2-08 status synchronization approval:
@@ -1072,16 +1074,20 @@ Do not commit or push without separate user approval.
 - actual LLM call integration: `NOT_RUN`
 - application structured log emission: `NOT_RUN`
 - permission and external-transmission gate: `NOT_IMPLEMENTED`
-- M2 integrated review:
-  `NOT_RUN - ALLOWED and required before M3 implementation`
+- M2 integrated review: `PASS`
+- M2 integration closure SHA:
+  `866dbb2a349e54b59f8dec1f9b770bc4ee68729b`
 - production orchestration: `NOT_RUN - required before M2 milestone close`
 - actual 365-day disclosure candidate completeness:
   `NOT_RUN - required before M2 milestone close`
 - live provider/API/UI/LLM: `NOT_RUN`
 - GitHub CI: `NOT_RUN`
 - independent pytest rerun: `NOT_RUN`
-- M2-09: `NOT_STARTED - conditional A15-M work`
-- M3: `BLOCKED pending M2 integrated review PASS`
+- M2-09:
+  `NOT_STARTED / not required without separate A15-M gate`
+- M3 planning: `ALLOWED`
+- M3 implementation:
+  `ALLOWED only after a separately approved M3 plan and preflight PASS`
 
 ## 20. Implementation Review Checklist
 
@@ -1259,10 +1265,12 @@ implementation. No destructive Git operation was used.
 - Independent pytest rerun: `NOT_RUN`
 - Independent implementation review: `PASS`
 - Current M2-08 status: `PASS / complete`
-- M2 integrated review:
-  `ALLOWED - required before M3 implementation`
+- M2 integrated review: `PASS`
+- M2 integration closure SHA:
+  `866dbb2a349e54b59f8dec1f9b770bc4ee68729b`
+- M3 planning: `ALLOWED`
 - M3 implementation:
-  `BLOCKED pending M2 integrated review PASS`
+  `ALLOWED only after a separately approved M3 plan and preflight PASS`
 - M1-09:
   `mandatory supplement implemented - final independent review pending`
 

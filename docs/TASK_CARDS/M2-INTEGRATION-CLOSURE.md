@@ -12,15 +12,19 @@
 - Working tree before implementation: `clean`
 - M2 individual capability: `PASS`
 - M2 independent regression: `PASS`
-- M2 integration fix: `IMPLEMENTED LOCALLY`
-- M2 Gate: `CONDITIONAL PASS`
-- M2 Gate closure: `USER/INDEPENDENT REVIEW PENDING`
-- M3 implementation: `BLOCKED pending closure review PASS`
-- Closure review: `PENDING`
-- Commit/push: `NOT_RUN - separate approval required`
-
-`PASS` is not recorded for the integrated closure until the implementation is
-pushed and the user or an independent reviewer approves it.
+- M2 integration fix: `PASS / complete`
+- Implementation SHA: `866dbb2a349e54b59f8dec1f9b770bc4ee68729b`
+- Implementation commit: `add m2 test`
+- Implementation main push: `complete`
+- M2 Gate: `PASS`
+- M2 Gate closure: `PASS`
+- Independent code/contract closure review: `PASS`
+- Post-push independent pytest rerun: `NOT_RUN`
+- GitHub CI: `NOT_RUN`
+- M3 planning: `ALLOWED`
+- M3 implementation:
+  `ALLOWED only after a separately approved M3 plan and preflight PASS`
+- Closure review: `PASS`
 
 ## 2. Purpose And Blocker
 
@@ -200,9 +204,18 @@ git status --short
   `only the two approved untracked files; no tracked file changes`
 - App code changes: `none`
 - Dependency changes: `none`
-- M2 integration fix: `IMPLEMENTED LOCALLY`
-- M2 Gate closure: `USER/INDEPENDENT REVIEW PENDING`
-- M3 implementation: `BLOCKED pending closure review PASS`
+- M2 integration fix: `PASS / complete`
+- Implementation SHA: `866dbb2a349e54b59f8dec1f9b770bc4ee68729b`
+- Implementation commit: `add m2 test`
+- Implementation main push: `complete`
+- M2 Gate: `PASS`
+- M2 Gate closure: `PASS`
+- Independent code/contract closure review: `PASS`
+- Post-push independent pytest rerun: `NOT_RUN`
+- Closure review: `PASS`
+- M3 planning: `ALLOWED`
+- M3 implementation:
+  `ALLOWED only after a separately approved M3 plan and preflight PASS`
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
 
@@ -213,6 +226,8 @@ git status --short
 - API/UI: `NOT_STARTED`
 - LLM/LangChain: `NOT_STARTED`
 - M2-09: `NOT_STARTED / not required`
-- M3: `BLOCKED`
+- M3 planning: `ALLOWED`
+- M3 implementation:
+  `ALLOWED only after a separately approved M3 plan and preflight PASS`
 - PR/merge/deploy: `NOT_RUN`
-- commit/push: `NOT_RUN`
+- implementation commit/push: `complete`
