@@ -142,6 +142,20 @@ LLM_TIMEOUT_SECONDS
   callback logging, remote prompt, or live Gemini call is part of M3-00.
 - Deterministic dependency source: repository `uv.lock`.
 
+### M3-00 closure and M3-01 local implementation status
+
+- M3-00 implementation SHA:
+  `a3cb8e6de5309bc68ac6856648d275883ec9407f`
+- M3-00 main push: complete
+- M3-00 independent implementation review: PASS
+- M3-01 adds exact `tzdata==2026.3` to the existing `uv.lock`.
+- A clean locked Windows environment loaded `ZoneInfo("Asia/Seoul")` from
+  `tzdata==2026.3`.
+- The smallest fixture-passing explicit thinking budget is `0`; `1024`
+  remains an accepted explicit fixture value.
+- M3-01 local implementation and regression: PASS, independent review pending.
+- Gemini credential, quota, billing, and sanitized live smoke: NOT_RUN.
+
 - package: `litellm`
 - 필요한 이유: Gemini 호출을 project-owned `LLMClient` 뒤에서 정규화하고 향후 adapter 교체 범위를 제한
 - 기존 dependency로 대체하기 어려운 이유: 현재 저장소에는 provider-neutral LLM 호출·예외 normalization 계층이 없음

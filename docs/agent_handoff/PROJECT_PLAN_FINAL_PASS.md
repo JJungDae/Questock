@@ -1,8 +1,8 @@
 # PROJECT_PLAN.md
 
 > 작성일: 2026-07-20  
-> 개정일: 2026-07-21  
-> 개정 사유: P0 지원 종목 확정과 공동 기사 Evidence 귀속 계약 정합성 보완  ; P0 LLM stack을 LiteLLM Python SDK + Gemini로 확정; 무료 등급 데이터 처리·M3 실행계획·LLM 오류 계약 정합성 보완
+> 개정일: 2026-07-24
+> 개정 사유: M3-00 LangChain 경계 확정, 멘토링 기반 처리 과정 UI 계약, M3-12 비활성화와 M5-01 우선순위 반영
 > 프로젝트: 증권 AI 투자 어시스턴트 프로토타입 개발  
 > MVP 기준: **10개 작업 세션 × 세션당 약 5시간 = 약 50시간**  
 > 목표 기간: **2주**  
@@ -88,25 +88,9 @@
 | 시장 범위 | 국내 상장 종목 3개 | 시장 전체 탐색 제외 |
 | 언어 | 한국어 답변 | 해외 뉴스·다국어 분석 P3 |
 
-## 2.2 확정 지원 종목과 선정 기준
+## 2.2 종목 선정 기준
 
-M0의 지원 종목은 다음 3개 보통주로 확정한다.
-
-| security_id | 회사명 | ticker | DART corp_code 후보 | P0 검증 목적 |
-|---|---|---:|---:|---|
-| `KRX:005930` | 삼성전자 | `005930` | `00126380` | 반도체 대형주와 다중 기업 기사 처리 |
-| `KRX:000660` | SK하이닉스 | `000660` | `00164779` | 삼성전자와 같은 산업에서 Evidence·수치 귀속 검증 |
-| `KRX:005380` | 현대자동차 | `005380` | `00164742` | 자동차·제조업 자료로 산업 다양성 검증 |
-
-`corp_code`는 M1 resolver fixture 작성 전에 OpenDART corporation-code 원본으로 다시 검증한다.
-
-선정 의도:
-
-- 삼성전자와 SK하이닉스를 함께 지원해 동일 기사에 두 회사가 등장할 때 문장·수치 귀속을 검증한다.
-- 현대자동차를 포함해 반도체 산업에만 편중되지 않도록 한다.
-- P0 질문은 한 번에 하나의 종목을 대상으로 한다.
-- 삼성전자와 SK하이닉스의 직접 비교·우열 판단은 P0·P1과 현재 M5 기본 큐에서 제외한다. 별도 데이터 계약·평가 fixture·Human Owner 승인이 있을 때만 새 계획으로 추가한다.
-- 우선주와 해외 DR은 P0에서 지원하지 않는다.
+M0에서 정확한 종목 3개를 확정한다.
 
 선정 조건:
 
@@ -161,7 +145,7 @@ M0의 지원 종목은 다음 3개 보통주로 확정한다.
 
 이 절은 2주 실행을 위한 공식 활성 P0 결정이다.
 
-- `A15-M`: 기본은 P1. M1 데이터 gate를 통과하고 **M3 핵심 gate 이후 1개 전체 세션의 버퍼가 남을 때만** stretch P0로 활성화
+- `A15-M`: 현재 M3에서는 활성화하지 않는다. M4 Gate 통과 후 MarketSnapshot·시간 정합성 gate를 다시 확인하고, 조건이 맞으면 `M5-01`의 첫 확장 기능으로 수행한다.
 - `A23-M`: P0 단일 안전 구조화 답변. 별도 mode toggle과 두 답변 모드는 `A23-H`로 분리하여 M5-06에서 구현
 - `A17-M`: 독립 사업 전망 카드로 구현하지 않고 리서치 리포트 요약의 `확인된 계획·성장 조건·위험 조건·예정 이벤트` 항목으로 통합
 - `A05-M`·`A06-M`: 별도 분석 시스템이나 graph node를 만들지 않고 AnswerComposer의 구조화 규칙과 validator acceptance criterion으로 최소 구현
@@ -171,7 +155,7 @@ M0의 지원 종목은 다음 3개 보통주로 확정한다.
 
 ### `A15-M` 국내 자료 기반 상승·하락 배경
 
-M1 종료 시까지 아래 데이터 조건을 통과하면 stretch 후보 자격을 얻는다. 실제 P0 활성화는 M3 핵심 gate 이후 1개 전체 세션의 버퍼가 남을 때만 확정한다.
+M1 종료 시까지 아래 데이터 조건을 통과하면 post-M4 확장 후보 자격을 얻는다. 현재 M3에서는 활성화하지 않으며, M4 Gate 통과 후 `M5-01` activation check에서 최종 수행 여부를 확정한다.
 
 - `MarketSnapshot` adapter 존재
 - 가격·전일 종가·변동률·observed_at 반환
@@ -179,7 +163,7 @@ M1 종료 시까지 아래 데이터 조건을 통과하면 stretch 후보 자�
 - 정상·no-data·timeout fixture 통과
 - 뉴스·공시 `published_at`과 가격 시점 비교 가능
 
-데이터 조건 또는 일정 버퍼 조건 중 하나라도 충족하지 못하면 P1으로 유지한다.
+데이터 조건, temporal filter, 품질 gate 또는 일정 버퍼 중 하나라도 충족하지 못하면 구현하지 않고 P1 후보로 유지한다.
 
 ## 2.6 P1
 
@@ -241,53 +225,13 @@ M4 완료 후 어느 묶음을 먼저 시작할지 결정한다.
 | Metadata DB | SQLite | 3~5개 종목 프로토타입에 충분 |
 | 문서 원본 | versioned JSON/Markdown + manifest | 리포트 수동 정규화와 locator 관리 |
 | UI | Streamlit 기본 권장 | 2~3주 내 빠른 단일 화면 구현 |
-| LLM | `LLMClient` + LiteLLM Python SDK + Gemini 단일 모델 | provider 교체 경계를 유지하되 P0 routing·자동 fallback 제외 |
+| LLM | 단일 provider adapter | multi-provider routing 제외 |
 | 관측 | 구조화 JSON log | 2주 P0에서는 Langfuse 미도입 |
 | 테스트 | pytest + provider fake/fixture | 외부 API와 분리된 결정적 테스트 |
 | 배포 | Docker Compose 또는 단일 Docker 이미지 1안 | 한 가지 실행 경로에 집중 |
 | CI | GitHub Actions 최소 구성 | test·lint·secret scan 자동화 |
 
 React/Vite 등 별도 프론트엔드는 기존 scaffold가 이미 있고 M0에서 추가 부담이 없다고 판단될 때만 선택한다. UI 선택 때문에 M1 시작이 지연되면 Streamlit으로 고정한다.
-
-### 3.1.1 P0 LLM stack 확정
-
-```text
-AnswerComposer
-→ project-owned Evidence/context adapter
-→ ChatPromptTemplate
-→ RunnableLambda(project-owned LLMClient)
-→ LiteLLM Python SDK
-→ Gemini API
-→ Pydantic structured parser
-→ project-owned validators
-```
-
-확정값:
-
-- provider: Google Gemini API
-- 호출 layer: LiteLLM Python SDK
-- 기본 model: `gemini/gemini-2.5-flash`
-- 사용 정책: Gemini API 무료 등급 우선 사용
-- 가용성 상태: credential 연결·AI Studio 활성 quota 확인·sanitized live smoke 전까지 미검증
-- 무료 quota 실패 시 자동 billing 연결·유료 호출 전환 금지
-- 유료 Gemini 모델 검토 시점: MVP end-to-end 완성 및 Critical regression 통과 이후
-- credential 환경변수: `GEMINI_API_KEY`
-- model config: `LLM_MODEL`
-- 사용자별 모델 선택, LiteLLM Proxy, Router, 자동 fallback: P0 제외
-- 유료 모델 전환·모델 비교 실험: MVP 완성 전 제외
-- Gemini Google Search Grounding: P0 제외
-- 무료 등급에는 개인·기밀·민감정보와 외부 처리 미허용 리포트를 전송하지 않음
-- 질문과 선택된 Evidence snippet만 최소 전송하며 전체 세션·원문 전체 전송 금지
-- 모델 변경은 runtime UI가 아니라 config 변경과 Critical regression 재실행으로만 허용
-
-경계 원칙:
-
-- `AnswerComposer`와 `ChatService`는 LiteLLM 응답 객체를 직접 사용하지 않는다.
-- `LLMClient`가 요청, 응답, usage, finish reason, latency, 오류를 프로젝트 내부 계약으로 변환한다.
-- Gemini가 JSON schema를 지원하더라도 의미 정확성을 보장한다고 간주하지 않는다.
-- 구조화 출력은 focused compatibility test를 통과한 뒤 사용한다.
-- schema parse 또는 의미 validation 실패 시 자유 텍스트를 그대로 채택하지 않고, 호출 상한 안에서 1회 보정하거나 `partial`·`blocked`·고정 보류 응답으로 전환한다.
-- 종목 식별, Evidence hard filter, 수치·회사 귀속, citation locator, 투자 조언 차단은 기존 코드 validator가 담당한다.
 
 ## 3.2 초기에는 도입하지 않는 기술
 
@@ -299,9 +243,6 @@ AnswerComposer
 - 자동 PDF OCR·표 추출
 - 실시간 websocket 시세
 - 다중 LLM provider routing
-- LiteLLM Proxy·Router·자동 모델 fallback
-- 사용자 모델 선택 UI
-- Gemini Google Search Grounding
 - 시장 전체 종목 검색 DB
 
 ## 3.3 권장 저장소 구조
@@ -326,9 +267,6 @@ project/
 │  │  ├─ disclosure.py
 │  │  ├─ market.py
 │  │  └─ base.py
-│  ├─ llm/
-│  │  ├─ base.py
-│  │  └─ litellm_client.py
 │  ├─ retrieval/
 │  │  ├─ index.py
 │  │  ├─ retriever.py
@@ -424,52 +362,7 @@ Evidence Decision
 - 안전 정책 위반은 `blocked`
 - required source 일부 실패는 `partial` 또는 `provider_failed`
 
-## 4.3 다중 기업 문서의 최소 귀속 계약
-
-삼성전자와 SK하이닉스가 같은 뉴스·리포트에 함께 등장할 수 있으므로 문서 관련성과 Evidence 주체를 분리한다.
-
-`FinancialDocument` 최소 필드:
-
-```text
-primary_security_ids: list[str]
-mentioned_security_ids: list[str]
-```
-
-`Evidence` 최소 필드:
-
-```text
-subject_security_ids: list[str]
-mentioned_security_ids: list[str]
-scope: company_specific | industry_common | multi_company
-```
-
-귀속 원칙과 validation 불변조건:
-
-### FinancialDocument
-
-- `primary_security_ids`와 `mentioned_security_ids`의 합집합은 비어 있지 않아야 한다.
-- 동일 `security_id`를 두 필드에 중복 저장하지 않는다.
-- 두 회사를 직접 분석하면 두 종목 모두 `primary_security_ids`에 둔다.
-- 한 회사가 중심이고 다른 회사가 단순 언급이면 중심 회사는 `primary`, 다른 회사는 `mentioned`에 둔다.
-
-### Evidence
-
-- `subject_security_ids`는 연결된 FinancialDocument의 primary/mentioned 종목 범위 안에 있어야 한다.
-- `company_specific`이면 `subject_security_ids`는 P0에서 정확히 1개여야 한다.
-- `industry_common`이면 `subject_security_ids`는 비워 둔다.
-- `multi_company`이면 `subject_security_ids`는 2개 이상이어야 한다.
-- `mentioned_security_ids`와 `subject_security_ids`를 중복 저장하지 않는다.
-- company-specific Evidence의 사실과 수치는 모두 동일한 대상 종목에 귀속되어야 한다.
-
-### P0 필터
-
-- `company_specific`: target `security_id`가 `subject_security_ids`에 있을 때만 허용한다.
-- `industry_common`: target 종목과 관련된 배경으로만 허용하고 회사 고유 실적·점유율로 재서술하지 않는다.
-- `multi_company`: target 종목이 `subject_security_ids`에 포함될 때만 허용한다.
-- 주체가 불명확한 사실·수치는 P0 답변에 사용하지 않는다.
-- P0에서 종목 간 우열·추천 결론을 생성하지 않는다.
-
-## 4.4 locator 원칙
+## 4.3 locator 원칙
 
 모든 Evidence는 다음 중 하나를 가져야 한다.
 
@@ -498,15 +391,6 @@ M0에서 선택한 각 종목에 대해 M1 종료 시 다음을 목표로 한다
 
 최소 coverage를 만족하지 못하는 종목은 다른 후보로 교체하는 것을 우선한다.
 
-삼성전자·SK하이닉스 공동 등장 문서 처리:
-
-1. 문서 metadata에는 두 회사의 관련 여부를 기록한다.
-2. chunk 또는 Evidence 단위에서 사실·수치의 실제 주체를 기록한다.
-3. 회사명이 같은 문장에 명시된 숫자만 우선 귀속한다.
-4. 인접 문맥으로만 추정되는 수치는 주체가 명확하지 않으면 제외한다.
-5. 산업 공통 문장은 회사 고유 실적이나 점유율로 바꾸어 쓰지 않는다.
-6. 동일 문서를 두 종목에서 재사용할 수 있지만, 질문 종목별 허용 Evidence는 별도로 필터링한다.
-
 실제 시장 상황상 최근 공시가 5건 미만인 경우:
 
 - 검색 기간을 최대 365일까지 확대
@@ -532,8 +416,7 @@ M0에서 선택한 각 종목에 대해 M1 종료 시 다음을 목표로 한다
 ```json
 {
   "document_id": "report-...",
-  "primary_security_ids": ["KRX:005930"],
-  "mentioned_security_ids": [],
+  "security_id": "KRX:...",
   "source_type": "research_report",
   "provider": "manual_manifest",
   "title": "...",
@@ -549,19 +432,11 @@ M0에서 선택한 각 종목에 대해 M1 종료 시 다음을 목표로 한다
     "publisher": "...",
     "analyst": "...",
     "usage_note": "...",
-    "external_llm_processing_allowed": false,
     "file_hash": "..."
   },
   "ingestion_version": "v1"
 }
 ```
-
-LLM 전송 정책:
-
-- `external_llm_processing_allowed`가 없거나 `false`이면 해당 리포트의 text·snippet을 Gemini에 전달하지 않는다.
-- 외부 처리 허용 근거와 제한은 기존 `usage_note`에 기록한다.
-- P0에는 redaction pipeline을 만들지 않으며 redaction이 필요한 자료는 외부 전송 금지로 처리한다.
-- 저장·검색 허용과 외부 LLM 전송 허용을 별도 판단한다.
 
 ## 5.4 provider fallback
 
@@ -665,13 +540,10 @@ GET /api/evidence/{evidence_id}
 | Evidence snippet | 항목당 약 500~800자 |
 | 총 context 기본 제한 | `max_context_tokens = 3000` |
 | tokenizer 미사용 fallback | `max_context_chars = 4500` |
-| 기본 모델 | `gemini/gemini-2.5-flash` |
 | 한 요청의 LLM 호출 | 최대 2회 |
 | router | 규칙 기반 우선, LLM 호출 없음 |
 | composer | 1회 |
-| schema 보정 또는 validator | 규칙 기반 우선, 필요한 경우에만 LLM 1회 |
-| 자동 다른 모델 fallback | 없음 |
-| 유료 모델 전환 | MVP 완성 이후 별도 평가 |
+| validator | 규칙 기반 우선, 필요한 경우에만 LLM 1회 |
 
 top-k·threshold는 M2 golden fixture 결과에 따라 config로 조정한다. 모델별 score를 다른 모델의 threshold와 공유하지 않는다.
 
@@ -788,10 +660,6 @@ A15-M이 승격되면 `price_move_reason` fixture를 최소 4개 추가한다.
 Critical set은 다음 실패 유형의 fixture로 구성한다.
 
 - 다른 종목 Evidence 차단
-- 삼성전자 질문에 SK하이닉스 전용 사실·수치 혼입 금지
-- SK하이닉스 질문에 삼성전자 전용 사실·수치 혼입 금지
-- 산업 공통 Evidence를 기업 고유 실적으로 표현 금지
-- 주체가 불명확한 수치 사용 금지
 - 존재하지 않는 URL·locator 생성 금지
 - ambiguous 종목 임의 확정 금지
 - provider timeout과 no-data 구분
@@ -841,28 +709,29 @@ Langfuse 없이 구조화 JSON log로도 완료 가능하다.
 | CORE01 resolver | M1-02 | M1 | ambiguous·unsupported·wrong-class | 종목 selector·명시 mapping |
 | CORE02 source 3종 | M1-04~07 | M1 | 종목별 뉴스·공시·리포트 locator | recorded fixture·수동 corpus |
 | CORE03 provider 상태 | M1-03 | M1/M4 | no_data·timeout·429·parse_error | typed partial response |
-| CORE04 hard filter | M2-02 | M2 | wrong-company·공동 기사 주체 귀속 100% | 답변 보류·Evidence 주체 필터 |
+| CORE04 hard filter | M2-02 | M2 | wrong-company 100% | 답변 보류·종목별 corpus |
 | CORE05 retrieval | M2-03 | M2 | relevant top-6·low_relevance | lexical baseline 유지 |
 | CORE06 Evidence·locator | M2-04·07 | M2 | snippet·locator·fake locator 0건 | locator 없는 문서 제외 |
 | CORE07 sufficiency·abstention | M2-06 | M2 | 근거 없는 complete 0건 | 보수적 no_evidence |
-| CORE08 단일 응답 API | M3-01 | M3 | 대표 질문 end-to-end | streaming 미사용 |
-| LLM01 LLMClient·Gemini adapter | M3-01 | M3 | mock·structured parse·error mapping·sanitized live smoke | fixed template·보류 |
+| FRAME01 LangChain Runnable 경계 | M3-00·M3-01 | M3 | 실제 prompt→LLMClient→parser sequence·tracing off | project-owned direct LiteLLM adapter 유지 |
+| CORE08 단일 응답 API | M3-01 | M3 | 대표 질문 end-to-end·PublicProcessSummary | streaming 미사용 |
+| LLM01 LLMClient·Gemini adapter | M3-01 | M3 | mock·structured parse·error mapping·permission·sanitized live smoke | fixed template·보류 |
 | CORE09 provider fallback | M1-03, M4-01 | M4 | 일부 source 실패 partial | cache·보류 |
 | CORE10 실행·배포 | M4-04~05 | M4 | clean build·deployment smoke | 로컬 실행 백업 |
 | A01~A04 답변 구조 | M3-02~04 | M3 | 필수 section·불확실성 | 핵심·위험·근거 3영역 |
 | A05-M 상충 자료 제한형 | M3-10 | M3 | 긍정·위험 Evidence 병렬 표시 | 자동 상충 판단 없이 양쪽 Evidence 표시, 공통 결론 미생성 |
 | A06-M 여러 자료 연결 제한형 | M3-11 | M3 | 2~3개 source와 단계별 근거 | 인과 연결 중단 후 자료별 독립 요약 |
-| A07-M | M3-09 | M3 | 숫자·날짜·단위·subject_security 귀속 fixture | 수치 문장 제거 |
+| A07-M | M3-09 | M3 | 숫자·날짜·단위 fixture | 수치 문장 제거 |
 | A08-M | M3-06 | M3 | 종목·기간 유지·reset | 현재 종목만 유지 |
 | A10 | M1-07, M3-05 | M1/M3 | glossary locator·핵심 정의 | 미지원 용어 안내 |
 | A11 | M2-01 | M2 | intent·required source | 규칙 router |
 | A12·A13 | M2-05·07, M3-07 | M2/M3 | stale·citation UI | 보류·상세 카드 축소 |
 | A18·A19·A20-M | M1-03, M2-08, M4-01~03 | M4 | deadline·budget·구조 로그 | 더 작은 context·JSON log |
 | SAFE01 | M3-08 | M3/M4 | prohibited advice 100% | blocked 고정 응답 |
-| UI01 | M3-15 | M3 | 질문→답변→근거 UI smoke | 단일 화면 축소 |
+| UI01 | M3-15 | M3 | 질문→답변→근거·분석 과정 expander UI smoke | 기본 답변·근거만 표시하고 과정 패널 접기 |
 | A17-M 통합 | M3-02~03 | M3 | 계획·조건·위험·이벤트 | 일반 리포트 요약 |
 | A23-M 단일 안전 구조화 답변 | M3-01~04 | M3 | 사실·해석·긍정·위험·불확실성 | A23-H mode toggle 미구현 |
-| A15-M stretch | M1-09, M2-09, M3-12 | stretch | price_move_reason | P1 유지 |
+| A15-M post-M4 extension | M1-09, Stretch M2-09, M5-01 | M5 | price_move_reason·선행/장중/후속 시간 정합성 | 구현 보류·최근 이슈 요약 |
 
 ## 8.6 Step Registry
 
@@ -885,9 +754,10 @@ Task bundle은 **세션 계획 단위이며 branch·PR 단위가 아니다.**
 | B4: M2-01~03 | M1 Gate | Implementation→Review | planner·filters·retrieval | routing·wrong-company·top-6 | R24~R28 | 규칙 router·lexical |
 | B5: M2-04~08 | B4 | Implementation→Review | Evidence·policy·budget | locator·abstention·budget | R26·R29·R32 | no_evidence·작은 context |
 | Stretch M2-09 | M1-09 | Implementation→Review | temporal filter | 선행/장중/후속 | R33·R34 | P1 유지 |
-| B6: M3-01~05·07·15 + 배포 scaffold | M3-00 PASS | Implementation→Review | LLMClient·LiteLLM adapter·ChatService·핵심 UI·glossary·source detail 틀·Docker 초안 | mock·structured parse·error mapping·API·UI smoke·container start | R31·R42·R20·R59~R61 | fixed template·보류·단일 안전 화면 |
+| M3-00 | M2 Gate | Planning→Implementation→Review | LangChain/LiteLLM compatibility·pins·uv.lock | Runnable·async·parser·tracing·clean lock | R59~R61 | Candidate A 유지·live call 금지 |
+| B6: M3-01~05·07·15 + 배포 scaffold | M3-00 PASS | Implementation→Review | ChatService·PublicProcessSummary·핵심 UI·glossary 기본 흐름·source detail 틀·Docker 초안 | API·process summary·section·UI smoke·container start | R31·R42·R20·R56 | 단일 안전 화면·과정 패널 접기·Docker는 초안만 |
 | B7: M3-06·08~11 | B6 | Implementation→Review | session·validator·Composer acceptance | multi-turn·numeric·safety·A05-M·A06-M | R30·R38·R47 | 현재 종목만 유지·수치 제거·자료별 독립 요약 |
-| Stretch M3-12 | M1-09·M2-09 | Implementation→Review | price response | price_move_reason | R33·R34 | P1 유지 |
+| Stretch M3-12 | M1-09·M2-09 | NOT_ACTIVATED | current M3에서는 구현하지 않고 M5-01로 이관 | 없음 | R33·R34 | M5-01 activation gate에서 재평가 |
 | B8: M4-01~03 | M3 Gate | Test/Release | tests·logging | critical 100%·full 90% | R53~R57 | 신규 기능 중단 |
 | B9: M4-04~08 | B8 | Release→Human | CI 최종화·Docker clean build·실제 배포·누적 문서·traceability | clean build·deployment smoke·최종 gate | R20·R58 | 로컬 실행 백업 |
 
@@ -1028,14 +898,8 @@ M1 진입 전:
 완료 기준:
 
 - [ ] core 모델 생성
-- [ ] `FinancialDocument.primary_security_ids`와 `mentioned_security_ids`
-- [ ] Document 종목 합집합 non-empty와 primary/mentioned 중복 금지 validation
-- [ ] `Evidence.subject_security_ids`, `mentioned_security_ids`, `scope`
-- [ ] company_specific·industry_common·multi_company scope 불변조건 validation
-- [ ] 숫자 유무와 관계없이 company-specific Evidence에 정확히 1개 subject 필수
 - [ ] nullable URL과 필수 locator
 - [ ] Provider·Retrieval·Evidence 상태 분리
-- [ ] 삼성전자·SK하이닉스 공동 기사 schema fixture
 - [ ] schema test 통과
 
 위험:
@@ -1221,23 +1085,19 @@ A15-M의 실제 P0 활성화가 아니라 `data-qualified stretch candidate` 자
 순서:
 
 ```text
-target security_id
-→ 문서 primary/mentioned security filter
+security_id
 → source_type
 → date_range
 → document_type
 → retrieval
-→ Evidence subject/scope filter
 ```
 
 완료 기준:
 
 - [ ] 다른 기업 문서 0건
-- [ ] 공동 기사에서 다른 회사 전용 Evidence 0건
-- [ ] 대상 회사에 허용된 industry_common Evidence만 통과
 - [ ] 기간 밖 문서 차단
 - [ ] 요청하지 않은 source 제외
-- [ ] wrong-company·cross-company attribution fixture 100%
+- [ ] wrong-company fixture 100%
 
 ## Step M2-03 — retrieval baseline
 
@@ -1273,9 +1133,6 @@ baseline보다 evidence coverage가 명확히 개선
 - [ ] document ID
 - [ ] source type
 - [ ] published_at
-- [ ] `subject_security_ids`
-- [ ] `mentioned_security_ids`
-- [ ] `scope`
 - [ ] URL 또는 locator
 - [ ] retrieval score
 - [ ] 로컬 절대 경로 없음
@@ -1333,9 +1190,12 @@ baseline보다 evidence coverage가 명확히 개선
 - [ ] 중복 Evidence 제거
 - [ ] budget 초과 시 낮은 우선순위 Evidence 제거
 
-## Step M2-09 — market-session filter
+## Step M2-09 — market-session filter — post-M4 prerequisite
 
-A15-M이 `data-qualified stretch candidate`이고 추가 1세션 버퍼가 확보된 경우에만 수행한다.
+현재 M2에서는 활성화하지 않는다.
+
+M4 Gate 통과 후 `M5-01` activation check에서 market-session temporal filter가
+없으면 `Stretch M2-09`를 M5-01의 선행 안전 Task로 수행한다.
 
 분류:
 
@@ -1348,6 +1208,10 @@ A15-M이 `data-qualified stretch candidate`이고 추가 1세션 버퍼가 확�
 
 - [ ] 가격과 문서 시점 비교
 - [ ] 후속 기사를 선행 원인으로 표시하지 않음
+- [ ] timezone·market status·observed_at 정합성
+- [ ] M5-01 전용 fixture에서 선행/장중/후속 결과 고정
+
+이 Step은 사용자 답변 기능이 아니라 가격 변동 배경의 시간 정합성 gate다.
 
 ### M2 Gate
 
@@ -1367,65 +1231,120 @@ A15-M이 `data-qualified stretch candidate`이고 추가 1세션 버퍼가 확�
 > 실행 작업량: 2개 세션  
 > 목표: Evidence를 누락 없이 이해하기 쉬운 답변으로 변환하고 사용자 화면에서 출처와 제한을 확인하게 한다.
 
-## Step M3-00 - LangChain/LiteLLM compatibility and dependency lock
+## Step M3-00 — LangChain/LiteLLM compatibility와 dependency lock
 
 - predecessor: M2 Gate PASS
-- selected boundary: `langchain-core==1.5.1` `RunnableSequence` with a
+- implementation SHA:
+  `a3cb8e6de5309bc68ac6856648d275883ec9407f`
+- selected boundary:
+  `langchain-core==1.5.1`의 실제 `RunnableSequence`와
   project-owned direct `litellm==1.83.7` adapter
-- required artifact: `uv.lock` and
-  `tests/unit/test_m3_langchain_stack.py`
-- runtime chain: `ChatPromptTemplate` -> project-owned async model boundary
-  through `RunnableLambda` -> Pydantic parser
-- tracing: explicitly disabled, `callbacks=[]`, zero unexpected network calls
-- exclusions: live Gemini, ChatService, API/UI, LangGraph, agents, retrievers,
-  Router, Proxy, fallback
-- entry gate: M3-01 implementation starts only after M3-00 independent PASS
+- required artifact:
+  - repository `uv.lock`
+  - `tests/unit/test_m3_langchain_stack.py`
+- runtime chain:
+  `ChatPromptTemplate → RunnableLambda(project-owned async model boundary) → PydanticOutputParser`
+- tracing:
+  explicitly disabled, `callbacks=[]`, zero unexpected network calls
+- exclusions:
+  live Gemini, ChatService, API/UI, LangGraph, agents, retrievers, Router,
+  Proxy, fallback
+- M3-01 entry gate:
+  M3-00 independent implementation review PASS
 
 Traceability:
 
 ```text
 FRAME01 LangChain Runnable boundary
--> M3-00 compatibility fixture
--> M3-01 actual ChatService path
+→ M3-00 compatibility fixture
+→ M3-01 actual ChatService path
 ```
 
-## Step M3-01 — answer schema와 ChatService
+M3-01은 이 경계를 소비하며 package·architecture 선택을 반복하지 않는다.
+
+## Step M3-01 — answer schema·PublicProcessSummary·ChatService
 
 단일 orchestration:
 
 ```text
-resolve
-→ plan
-→ provider/repository
-→ retrieve
-→ evidence policy
-→ compose
-→ validate
-→ serialize
+ChatRequest
+→ QueryPlanner
+→ injected SourceGateway
+→ normalize·hard filter·freshness·retrieval
+→ EvidencePolicy·context budget
+→ permission/prompt gate
+→ LangChain RunnableSequence
+→ project-owned LLMClient·direct LiteLLM SDK
+→ structured draft·citation validation
+→ ChatResponse + PublicProcessSummary
 ```
+
+구현 checkpoint:
+
+```text
+Checkpoint A
+→ tzdata clean lock
+→ LLM contract·config
+→ LiteLLM adapter
+→ AnswerComposer·LangChain chain
+→ permission·prompt·fallback
+
+Checkpoint B
+→ SourceGateway·explicit unconfigured default
+→ ChatService
+→ ChatRequest·ChatResponse
+→ PublicProcessSummary
+→ /api/chat·integration phase slice
+```
+
+`PublicProcessSummary`는 chain-of-thought가 아니라 다음 실제 단계의
+상태·개수·고정 판정만 반환한다.
+
+- 종목 식별 상태와 canonical security ID
+- intent·required source·요청 기간
+- source별 ProviderStatus·문서 수·cache 여부
+- normalization·hard-filter·freshness 전후 개수
+- RetrievalStatus와 선택 개수
+- EvidenceDecisionStatus와 satisfied/missing/no-data/failed source
+- dedupe·source cap·count/context drop과 예상 context
+- citation 생성·거부 개수
+- `llm | fixed_template | blocked | not_called`
+- LLMStatus·model·live verification
+- `recorded | live | mixed | unconfigured` data mode
+
+금지:
+
+- chain-of-thought
+- rendered prompt
+- raw 질문 복제
+- full document·snippet·Evidence ID
+- URL·locator·provider raw payload
+- credential·permission note·local path·raw exception
+
+SourceGateway 기본 동작:
+
+- runtime source가 구성되지 않았으면 test fixture를 숨겨 사용하지 않음
+- 모든 required source key 유지
+- typed `provider_unavailable`
+- `data_mode=unconfigured`
+- stable fixed fallback
+- 실제 recorded/live gateway는 M3-15 또는 M4 demo Task에서 별도 승인
 
 완료 기준:
 
 - [ ] `/api/chat`
-- [ ] project-owned `LLMClient` interface와 별도 `LLMStatus`
-- [ ] LiteLLM Python SDK를 사용하는 Gemini adapter
-- [ ] 기본 모델 `gemini/gemini-2.5-flash`를 config에서 주입
-- [ ] `LLM_THINKING_BUDGET`, `LLM_MAX_OUTPUT_TOKENS`, `LLM_TIMEOUT_SECONDS`
-- [ ] thinking budget 0·1024 fixture 비교 후 가장 작은 통과값 pin
-- [ ] LiteLLM·Gemini raw 객체가 API schema까지 누출되지 않음
-- [ ] structured output compatibility fixture와 Pydantic validation
-- [ ] schema parse 실패를 정상 답변으로 채택하지 않음
-- [ ] `external_llm_processing_allowed=true`인 리포트 Evidence만 LLM 전송
-- [ ] 질문·선택 Evidence snippet만 전송하고 전체 세션·원문 전체 전송 금지
-- [ ] 승인된 credential로 sanitized live smoke 최소 1회
-- [ ] fixture 성공과 live API 성공을 구분하고 무료 quota·model·usage 확인
-- [ ] billing 자동 연결·유료 fallback 없음
-- [ ] `litellm` version·license·lock diff·배포 영향 기록
-- [ ] 안정적인 sync 응답
+- [ ] project-owned `LLMClient`·별도 `LLMStatus`
+- [ ] selected M3-00 LangChain RunnableSequence 실제 경로
+- [ ] direct LiteLLM SDK adapter와 stable model
+- [ ] 구조화 draft·citation fail-closed
+- [ ] 외부 처리 permission과 prompt 최소화
+- [ ] blocked·no_evidence·provider_failed·LLM failure fixed fallback
 - [ ] provider 일부 실패에서도 partial
-- [ ] 내부 진단과 사용자 메시지 분리
-- [ ] provider 호출은 전체 deadline 안에서 병렬 수행
-- [ ] 남은 deadline이 부족하면 retry 없이 cache·partial·provider_failed 전환
+- [ ] 전체 monotonic deadline과 cancellation
+- [ ] `PublicProcessSummary` 정확성·결정성·비밀정보 미노출
+- [ ] explicit unconfigured runtime mode
+- [ ] fixture/recorded/live/unconfigured 구분
+- [ ] Gemini live는 별도 승인 전 `NOT_RUN`
 
 ## Step M3-02 — 초보자 설명
 
@@ -1539,9 +1458,6 @@ glossary 미검색 시:
 
 - 답변 숫자가 Evidence에 존재
 - 날짜·종목 일치
-- 해당 숫자의 `subject_security_ids`가 질문 종목과 일치
-- 산업 공통 수치를 기업 고유 수치로 변환하지 않음
-- 주체가 불명확한 숫자는 사용하지 않음
 - 원문 단위 유지
 - `%`와 `%p` 혼동 금지
 
@@ -1573,18 +1489,29 @@ P0 범위:
 - 시간 순서 확인
 - 근거가 끊기면 인과 설명 중단
 
-## Step M3-12 — `A15-M` 가격 배경 — stretch
+## Step M3-12 — `A15-M` 가격 배경 — NOT_ACTIVATED
 
-2주 기본 P0에서는 구현하지 않는다. M1 데이터 gate와 M3 핵심 gate를 모두 통과하고 1개 전체 세션이 남을 때만 구현한다.
+현재 M3에서는 구현하지 않는다.
 
-답변:
+멘토링 결정에 따라 A15-M의 구현 소유자는 post-M4 `M5-01`이다.
 
-- 실제 상승·하락
-- 선행 자료
-- 장중 자료
-- 후속 배경
-- 누락된 해외 요인 경고
-- “원인 후보” 표현
+현재 M3에서 금지:
+
+- price response schema 선행 추가
+- MarketSnapshot tool 연결
+- 가격 원인 prompt
+- 가격 변동 UI
+- M2-09 우회 구현
+
+M4 Gate 후 activation check에서 다음을 확인한다.
+
+- M1-09 MarketSnapshot 상태
+- timezone·market status·observed_at
+- 상승·하락·no-data·timeout fixture
+- news/disclosure published_at
+- market-session temporal filter
+- 품질·배포 gate
+- 발표 전 회귀 버퍼
 
 ## Step M3-14 — `A17-M` 리포트 요약 통합 criterion
 
@@ -1596,7 +1523,11 @@ P0 범위:
 - 예정 이벤트
 - 미래 가격·실적 확정 예측 금지
 
-## Step M3-15 — 실제 UI 통합
+## Step M3-15 — 실제 UI 통합과 처리 과정 가시화
+
+M3-01의 stable `ChatResponse + PublicProcessSummary`를 소비한다.
+
+backend와 UI contract를 동시에 임의 변경하지 않는다.
 
 완료 기준:
 
@@ -1608,6 +1539,15 @@ P0 범위:
 - [ ] 오류·누락·stale
 - [ ] reset
 - [ ] 대표 질문 end-to-end
+- [ ] 기본 화면은 답변·위험·근거 중심
+- [ ] 접힌 상태의 `분석 과정 보기` expander
+- [ ] 종목 식별→계획→source→filter→freshness→retrieval→decision→budget→citation→generation 단계 표시
+- [ ] provider·retrieval·EvidenceDecision·LLMStatus 시각적 분리
+- [ ] stage별 입력·출력 개수와 누락·실패 source
+- [ ] recorded·live·mixed·unconfigured mode와 live verification 표시
+- [ ] chain-of-thought·prompt·secret·raw exception·local path 미노출
+- [ ] UI가 backend count/status를 재계산하지 않음
+- [ ] wrong-company·stale·low relevance·provider failure·budget·LLM fallback 데모
 
 ### M3 Gate
 
@@ -1618,17 +1558,13 @@ P0 범위:
 - [ ] A05-M·A06-M
 - [ ] SAFE01
 - [ ] UI01
+- [ ] PublicProcessSummary fixture와 process expander UI smoke
+- [ ] provider·retrieval·decision·LLM 상태 분리 표시
+- [ ] chain-of-thought·prompt·secret·raw exception 노출 0건
 - [ ] A17-M 통합 criterion 확인
-- [ ] LiteLLM→Gemini compatibility fixture와 structured/JSON parse 실패 처리
-- [ ] LiteLLM·Gemini raw 객체 비노출
-- [ ] `LLMStatus`별 fixed template·보류 처리
-- [ ] Gemini 실패 시 유효 Evidence를 이용한 fixed template 경로
-- [ ] 외부 처리 허용 Evidence만 Gemini에 전송
-- [ ] 승인된 credential의 sanitized live smoke와 AI Studio 활성 quota 확인
-- [ ] fixture 성공과 live API 성공을 구분해 기록
 - [ ] full golden set 80% 이상
 - [ ] Critical set 100%
-- [ ] A15-M stretch를 활성화한 경우 price response test
+- [ ] M3-12 `NOT_ACTIVATED` 상태 확인; 현재 M3 Gate에는 price response를 요구하지 않음
 
 ---
 
@@ -1657,7 +1593,7 @@ P0 범위:
 ## Step M4-02 — golden set regression
 
 - 24개 이상
-- A15-M 승격 시 4개 추가
+- 현재 MVP golden set에는 A15-M을 포함하지 않음; M5-01 activation 후 별도 4개 fixture 추가
 - Critical set 100%
 - full golden set 90% 이상
 
@@ -1719,7 +1655,8 @@ install
 4. 금융 용어
 5. 멀티턴 후속 질문
 6. 근거 부족·provider 실패
-7. A15-M stretch를 활성화한 경우 상승·하락 배경
+7. `분석 과정 보기`에서 wrong-company·stale·low relevance·provider failure·budget·fallback 확인
+8. M5-01을 실제 구현한 경우에만 상승·하락 배경
 
 각 질문에:
 
@@ -1770,12 +1707,6 @@ install
 - [ ] 사용자가 핵심 흐름 설명 가능
 - [ ] P0 추적 gate 통과
 
-- [ ] LLMStatus와 데이터 provider 상태가 분리됨
-- [ ] raw provider 응답·exception·prompt 원문 비노출
-- [ ] 외부 LLM 처리 미허용 리포트 전송 0건
-- [ ] Gemini sanitized live smoke 결과 또는 `NOT_RUN/BLOCKED` 상태 명시
-- [ ] 무료 quota 실패 시 자동 billing·유료 fallback 없음
-
 ---
 
 # 10. 2주 10세션 실행 일정
@@ -1790,7 +1721,7 @@ install
 | 4 | B3 | 수동 리포트·glossary ingest·health·README 누적 | source 3종·glossary·M1 Gate·실행법 |
 | 5 | B4 | planner·hard filter·retrieval baseline | routing·wrong-company·top-6 |
 | 6 | B5 | Evidence·freshness·policy·citation·budget | M2 Gate |
-| 7 | B6 | ChatService·단일 안전 답변·핵심 UI·glossary 기본 흐름·source detail 틀·Docker 초안 | 질문→답변→근거 end-to-end·container start |
+| 7 | B6 | ChatService·PublicProcessSummary·단일 안전 답변·핵심 UI·glossary 기본 흐름·source detail 틀·Docker 초안 | 질문→답변→근거·분석 과정 end-to-end·container start |
 | 8 | B7 | 멀티턴·safety·numeric·A05-M·A06-M acceptance | M3 Gate |
 | 9 | B8 | provider failure·Critical/full regression·구조 로그 | 품질 결과 |
 | 10 | B9 | CI 최종화·Docker clean build·실제 배포 smoke·누적 문서 확인·traceability | 최종 MVP |
@@ -1805,7 +1736,7 @@ install
 - UI Streamlit 고정
 - lexical retrieval baseline 고정
 - LangGraph·dense·streaming·Langfuse 미도입
-- A15-M은 P1 기본, 전체 1세션 버퍼가 있을 때만 stretch
+- A15-M은 현재 M3에서 비활성화하고 M4 이후 M5-01 activation gate에서만 재평가
 - A23-H 별도 mode toggle은 P1, P0는 단일 안전 구조화 답변
 - A17-M은 리포트 요약에 통합
 - A05-M·A06-M은 AnswerComposer 규칙으로 최소 구현
@@ -1822,7 +1753,7 @@ install
 - Critical set 실패 없음
 - 남은 필수 Task bundle 수보다 남은 MVP 세션 수가 같거나 많음
 
-A15-M은 `data-qualified stretch candidate`이고 별도 1세션 버퍼가 있을 때만 활성 범위에 포함한다.
+A15-M은 현재 M3 활성 범위에 포함하지 않는다. M4 Gate 이후 M5-01 activation 조건과 회귀·발표 버퍼가 모두 있을 때만 시작한다.
 
 ## 12.2 Yellow
 
@@ -1842,7 +1773,7 @@ Yellow 대응:
 3. 새로운 retrieval 실험·reranker 금지
 4. streaming·외부 관측 도구 도입 금지
 5. 카드 단순화
-6. A15-M stretch·A23-H·추가 UI 고도화 재평가
+6. A23-H와 비필수 UI 고도화 재평가; A15-M은 M5-01 gate 전까지 비활성 유지
 7. 리포트 자동화 금지, 수동 corpus 유지
 
 ## 12.3 Red
@@ -1880,7 +1811,7 @@ Human Owner 승인
 
 # 13. P1 결정과 구현
 
-M4 완료 후 최소 3개 세션 이상 남을 때만 P1을 시작한다.
+멘토링 결정에 따라 M4 완료 후에는 먼저 `M5-01` activation을 검토한다. M5-01을 완료하거나 Human Owner가 명시적으로 생략한 뒤, 최종 회귀·문서화·발표 버퍼 1개 세션을 제외하고 최소 3개 전체 세션 이상이 남을 때만 P1을 시작한다.
 
 ## 13.1 P1 선택 기준
 
@@ -1962,28 +1893,45 @@ MVP에서 미완료된 조건부 기능
 → 선택적 기술 고도화
 ```
 
-단, `A15-M`의 MarketSnapshot·시간 정합성 기반이 이미 M1~M2에서 준비된 경우에는 `M5-01`로 먼저 완성할 수 있다.
+멘토링 결정에 따라 `M5-01`은 post-M4 첫 확장 후보다. MarketSnapshot과 시간 정합성 기반이 준비되면 P1보다 먼저 수행한다. market-session filter가 없으면 `Stretch M2-09`를 선행 Task로 수행한다.
 
 ## 14.3 확장 구현 큐
 
-### M5-01 — `A15-M` 국내 상승·하락 배경 완성
+### M5-01 — `A15-M` 국내 상승·하락 배경 완성 — mentor-selected first extension
 
 - 예상: 1~2세션
 - 시작 조건:
-  - MarketSnapshot adapter·fixture 존재
+  - M4 Gate PASS
+  - Critical set 100%
+  - full golden set 90% 이상
+  - deployment smoke PASS
+  - 공개 익명 MVP 정상
+  - M1-09 MarketSnapshot 상태 검수
+  - 가격·전일 종가·변동률·observed_at·timezone·market status
+  - 상승·하락·no-data·timeout fixture
+  - news/disclosure published_at 비교 가능
   - market-session temporal filter 존재
+  - feature 이후 회귀·문서화·발표 버퍼 최소 1세션
+- 선행:
+  - temporal filter가 없으면 `Stretch M2-09`
 - 구현:
-  - 실제 가격 방향
+  - 실제 가격 방향과 기준 시각
   - 선행·장중·후속 자료 구분
   - 국내 근거 범위 경고
+  - 원인 **후보**와 불확실성
+  - MarketSnapshot source/time
+  - 전용 UI process/source detail
   - `price_move_reason` fixture
 - 완료:
   - 상승·하락 각각 정상 fixture
   - 후속 기사를 선행 원인으로 표시하지 않음
-  - 해외 자료 미지원 경고
+  - 해외·거시 요인 미지원 경고
+  - 단일 원인 확정·미래 예측·투자 조언 0건
+  - Critical/full/deployment regression 유지
 - fallback:
-  - P1 상태 유지
+  - 구현 보류
   - 최근 이슈 요약으로 대체
+  - P1 후보 상태 유지
 
 ### M5-02 — `A16` 분기별 실적 추세
 
@@ -2190,7 +2138,7 @@ RAG가 충분히 안정되고 제품 시연성을 높이고 싶음
 
 # 15. Git·에이전트 운영
 
-## 15.1 branch
+## 14.1 branch
 
 ```text
 task/m0-01-scope-lock
@@ -2202,7 +2150,7 @@ task/m4-08-release-gate
 
 한 branch 한 목적.
 
-## 15.2 정식 절차 대상
+## 14.2 정식 절차 대상
 
 - core model·interface
 - provider
@@ -2223,7 +2171,7 @@ TASK_CARD
 → regression
 ```
 
-## 15.3 간소 절차 대상
+## 14.3 간소 절차 대상
 
 - UI 문구
 - CSS
@@ -2240,7 +2188,7 @@ TASK_CARD
 결과
 ```
 
-## 15.4 매일 5시간 운영
+## 14.4 매일 5시간 운영
 
 | 시간 | 활동 |
 |---|---|
@@ -2253,7 +2201,7 @@ TASK_CARD
 | 4:15~4:40 | merge·회귀 |
 | 4:40~5:00 | HANDOFF·발표 노트 |
 
-## 15.5 Human Owner 확인
+## 14.5 Human Owner 확인
 
 merge 전 5문장으로 설명:
 
@@ -2282,7 +2230,7 @@ merge 전 5문장으로 설명:
 | R26 low relevance | M2-03, M2-06 |
 | R29 citation support | M2-07 |
 | R30 숫자 변형 | M3-09 |
-| R33 사후 기사 인과 | M2-09, M3-12 |
+| R33 사후 기사 인과 | Stretch M2-09, M5-01 |
 | R38 투자 조언 | M3-08 |
 | R42 UI 정보 과다 | M3-04, M3-15 |
 | R47 잘못된 멀티턴 | M3-06 |
@@ -2382,11 +2330,11 @@ merge 전 5문장으로 설명:
 
 아래 항목만 M0 종료 시 실제 값으로 잠근다.
 
-1. 지원 종목 3개 — 삼성전자·SK하이닉스·현대자동차
+1. 지원 종목 3개
 2. 뉴스 provider
 3. MarketSnapshot provider의 feasibility와 A15-M stretch 후보 유지 여부
 4. Streamlit 실행 구조
-5. Gemini 2.5 Flash 무료 등급 우선 + LiteLLM Python SDK (`gemini/gemini-2.5-flash`), 실제 가용성은 M3 live smoke 전까지 미검증
+5. 단일 LLM provider
 6. 배포 위치
 7. 리포트 사용 가능 목록
 8. lexical retrieval baseline 구현체
@@ -2404,7 +2352,6 @@ M0 이후 새로운 기술·기능을 추가하려면 기존 P0 완료 일정에
 모든 Phase에서 작은 전체 흐름을 유지한다.
 외부 API가 실패해도 전체 앱을 실패시키지 않는다.
 검색 결과가 있다고 무조건 답하지 않는다.
-Gemini의 구조화 출력도 의미 정확성의 증거로 간주하지 않는다.
 근거 없는 숫자·URL·투자 조언을 차단한다.
 P0 완료 전 로그인과 고도화 기능을 시작하지 않는다.
 MVP를 조기에 완료하면 남은 세션을 M5 확장 큐에 순차 투자한다.

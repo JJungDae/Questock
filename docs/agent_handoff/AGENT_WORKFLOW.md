@@ -1,8 +1,6 @@
 # AGENT_WORKFLOW.md
 
 > 작성일: 2026-07-20  
-> 개정일: 2026-07-21  
-> 개정 사유: P0 지원 종목 확정과 공동 기사 Evidence 귀속 계약 정합성 보완  ; LiteLLM·Gemini LLMClient 결정 문서 연결; M3 LLM 작업을 M3-01에 통합하고 dependency 산출물 명시
 > 프로젝트: 증권 AI 투자 어시스턴트 프로토타입 개발  
 > 목적: 여러 AI 코딩·문서 에이전트를 사용하더라도 프로젝트 범위, 코드 구조, 테스트 기준, Git 이력을 일관되게 유지하고, 사용자가 핵심 흐름을 직접 이해할 수 있도록 표준 작업 절차를 정의한다.  
 > 기준 문서: `EXTENSION_COMPATIBILITY.md`, `RISK_RESPONSE_MATRIX.md`, `FINANCIAL_CAPABILITY_BASELINE.md`, `REFERENCE_SYNTHESIS.md`, `EVALUATION_TAXONOMY_DRAFT.md`
@@ -99,7 +97,6 @@ M4: 배포 환경의 대표 질문 end-to-end
 | 2 | `EXTENSION_COMPATIBILITY.md` | P0·P1·P2·P3·X 기능 범위 |
 | 3 | `RISK_RESPONSE_MATRIX.md` | 위험, fallback, 제거·중단 기준 |
 | 4 | `FINANCIAL_CAPABILITY_BASELINE.md` | 코어 모델·인터페이스·상태 계약 |
-| 4-1 | `LLM_STACK_DECISION.md` | LiteLLM·Gemini 모델·adapter 경계·제외 범위 |
 | 5 | `EVALUATION_TAXONOMY_DRAFT.md` | 테스트 범주와 실패 조건 |
 | 6 | `REFERENCE_SYNTHESIS.md` | 외부 저장소 참고·반면교사 |
 | 7 | `IDEA_BACKLOG.md` | 아직 채택되지 않은 아이디어 |
@@ -740,7 +737,7 @@ Handoff 없이 “완료했습니다”만 반환한 작업은 완료로 인정�
 
 작업:
 
-- 삼성전자·SK하이닉스·현대자동차 3개 보통주 확정
+- 지원 종목 3~5개 확정
 - provider 후보 결정
 - 리포트와 glossary 목록
 - intent 범위
@@ -766,7 +763,7 @@ Handoff 없이 “완료했습니다”만 반환한 작업은 완료로 인정�
 권장 Task 순서:
 
 ```text
-M1-01 core models — multi-company document/Evidence attribution fields 포함
+M1-01 core models
 M1-02 security resolver
 M1-03 provider result·error taxonomy
 M1-04 news adapter
@@ -785,9 +782,9 @@ M1-09 MarketSnapshot adapter·timezone·market session fixture — A15-M 조건�
 
 ```text
 M2-01 intent routing
-M2-02 hard filter — document 관련 종목과 Evidence 주체 종목을 단계적으로 검증
+M2-02 hard filter
 M2-03 retrieval baseline
-M2-04 Evidence normalization — subject_security_ids·mentioned_security_ids·scope
+M2-04 Evidence normalization
 M2-05 freshness
 M2-06 EvidencePolicy와 low_relevance→partial/no_evidence 매핑
 M2-07 citation validation
@@ -802,27 +799,46 @@ hybrid·reranker는 baseline이 안정된 후 별도 실험 Task로 둔다.
 권장 Task:
 
 ```text
-M3-00 introduces and locks the LangChain/LiteLLM framework boundary.
-M3-01 consumes that approved boundary to implement ChatService and
-AnswerComposer.
-
-M3-01 answer schema, project-owned LLMClient, LiteLLM Gemini adapter와 안정적인 단일 응답
+M3-00 LangChain/LiteLLM framework boundary·exact pins·uv.lock
+M3-01 answer schema·project-owned LLMClient·LiteLLM adapter·PublicProcessSummary·stable response
 M3-02 beginner explanation
 M3-03 fact·interpretation·inference
 M3-04 positive·risk·uncertainty cards
 M3-05 glossary answer
 M3-06 anonymous multi-turn
-M3-07 source detail·error·missing-source UI
+M3-07 source detail·error·missing-source UI contract
 M3-08 policy validator
 M3-09 basic numeric·date·unit·subject-security attribution validation
 M3-10 conflicting evidence minimal view
 M3-11 multi-source explanation minimal flow
-M3-12 price-move background response — A15-M 승격 시
-M3-13 second viewpoint mode
-M3-14 business outlook limited card
+M3-12 NOT_ACTIVATED — post-M4 M5-01 owns A15-M
+M3-13 second viewpoint mode — current M3 제외, P1 `M5-06`
+M3-14 business outlook integrated criterion
+M3-15 actual UI·source details·process visibility
 ```
 
-UI와 backend contract를 동시에 임의 변경하지 않는다. 먼저 API response schema를 고정하고 UI가 이를 소비한다.
+M3-00 introduces and locks the LangChain/LiteLLM framework boundary.
+M3-01 consumes the approved boundary and must not repeat dependency or
+architecture selection.
+
+M3-01 first fixes:
+
+```text
+ChatResponse
++ PublicProcessSummary
+```
+
+M3-15 consumes those stable contracts.
+
+UI와 backend contract를 동시에 임의 변경하지 않는다. 먼저 API response
+schema를 고정하고 UI가 이를 소비한다.
+
+`PublicProcessSummary` is observable provenance, not chain-of-thought. The UI
+must not display prompts, hidden reasoning, raw exceptions, secrets, local
+paths, full documents, or provider raw payloads.
+
+M3-15 may visualize only project-owned status, counts, warnings, and selected
+source information returned by the API. It must not recompute backend decisions.
 
 ## 11.5 Phase M4 — 안정화·배포
 
@@ -841,7 +857,35 @@ M4-08 active P0 traceability gate review
 
 M4에서는 새로운 P0 기능을 추가하지 않는다.
 
-## 11.6 Phase A1 — P1 추가 구현
+## 11.6 Post-M4 mentor-selected extension
+
+M4 Gate PASS 후 다음 순서로 확장을 검토한다.
+
+```text
+A15-M activation check
+→ market-session temporal filter가 없으면 Stretch M2-09
+→ M5-01 국내 가격 변동 배경
+→ 남은 전체 세션이 3개 이상일 때만 P1
+```
+
+M5-01은 다음을 만족할 때만 시작한다.
+
+- Critical set 100%
+- full golden set 90% 이상
+- deployment smoke PASS
+- 공개 익명 MVP 정상
+- MarketSnapshot과 timezone·market status 검증
+- news/disclosure 시각 비교 가능
+- 후속 기사를 선행 원인으로 표시하지 않는 temporal fixture
+- 기능 이후 회귀·문서화·발표 버퍼 최소 1개 세션
+
+M3-12는 현재 M3에서 활성화하지 않는다. M3 application code, response
+schema, prompt, UI에 price-move 기능을 선행 추가하지 않는다.
+
+M5-01 완료 또는 Human Owner의 명시적 생략 후에도 최소 3개 전체 세션이
+남지 않으면 P1을 시작하지 않고 demo 안정화·회귀·문서·발표에 집중한다.
+
+## 11.7 Phase A1 — P1 추가 구현
 
 P0가 완성된 후 두 묶음 중 하나를 먼저 선택한다.
 
@@ -911,6 +955,8 @@ model/interface
 ```
 
 UI가 필요하다는 이유로 backend model을 임의 생성하지 않는다.
+`PublicProcessSummary`와 같은 공개 provenance schema는 backend Task에서 먼저 고정하고, UI는 해당 schema만 소비한다.
+UI용 공개 요약과 내부 observability log model을 동일 객체로 합치지 않는다.
 
 ## 12.3 Migration 순서
 
@@ -931,15 +977,6 @@ DB migration은 한 branch에서 순차적으로 관리한다.
 - 배포 영향
 - 제거 방법
 - lock file 변화
-
-LiteLLM을 구현하는 M3-01에서는 다음을 필수 산출물로 남긴다.
-
-- `pyproject.toml`과 lock file diff
-- `litellm` exact version과 license 확인
-- 실제 값이 없는 `.env.example`의 `GEMINI_API_KEY`, `LLM_MODEL`, thinking/output/timeout 변수
-- adapter mock과 compatibility fixture
-- sanitized live smoke 또는 `NOT_RUN/BLOCKED` 기록
-- removal path와 이미지 크기·startup 영향
 
 ---
 
@@ -1109,7 +1146,7 @@ fallback
 다음 Step 진입 조건
 ```
 
-모든 활성 P0 코어·아이디어 기능은 `EXTENSION_COMPATIBILITY.md`의 두 추적 표에 따라 하나 이상의 Step·gate·taxonomy에 연결되어야 한다. 연결되지 않은 P0 기능은 계획 확정 상태로 보지 않는다.
+모든 활성 P0 기능은 `EXTENSION_COMPATIBILITY.md`의 추적 표에 따라 하나 이상의 Step·gate·taxonomy에 연결되어야 한다. 연결되지 않은 P0 기능은 계획 확정 상태로 보지 않는다.
 
 예시:
 
@@ -1143,11 +1180,10 @@ fallback
 
 ```text
 계획 문서가 범위를 정한다.
-TASK_CARD 또는 간소 기록이 이번 작업의 범위를 정한다.
+TASK_CARD가 이번 작업을 정한다.
 한 에이전트는 한 Task만 수행한다.
 구현 에이전트와 리뷰 에이전트를 분리한다.
-모든 작업에는 검증 기록이 필요하다.
-정식 절차 작업에는 HANDOFF가 필요하다.
+테스트와 HANDOFF가 없는 작업은 완료가 아니다.
 P0 완료 전 P1을 시작하지 않는다.
 사용자가 설명하지 못하는 코드는 merge하지 않는다.
 ```

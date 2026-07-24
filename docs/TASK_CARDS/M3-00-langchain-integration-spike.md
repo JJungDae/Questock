@@ -24,17 +24,25 @@
   `PASS WITH REQUIRED MINIMUM EDITS`
 - M3-00 final plan approval: `APPROVED by user`
 - M3-00 implementation:
-  `IMPLEMENTED - local regression PASS; independent review pending`
+  `PASS / complete`
+- M3-00 implementation SHA:
+  `a3cb8e6de5309bc68ac6856648d275883ec9407f`
+- M3-00 implementation commit:
+  `Implement m3-00`
+- M3-00 main push:
+  `complete`
+- M3-00 independent implementation review:
+  `PASS - confirmed by user`
 - Package-index access: `APPROVED / used for isolated evaluation`
 - Dependency installation:
   `APPROVED / isolated comparison plus selected pins in project .venv`
 - Lock generation: `PASS - uv.lock generated and checked`
 - Gemini live call: `OUT_OF_SCOPE / NOT_APPROVED`
 - Repository M3-01 draft:
-  `DRAFT / implementation and dependency installation NOT_APPROVED`
+  `APPROVED plan / local implementation review pending`
 - M3-01 implementation:
-  `BLOCKED pending M3-00 independent PASS and clean-Windows tzdata decision`
-- Commit, push, PR, merge, deploy: `NOT_APPROVED`
+  `ALLOWED subject to approved M3-01 plan and Gate 0/1 PASS`
+- Further commit, push, PR, merge, deploy: `NOT_APPROVED`
 
 This is a framework-and-dependency compatibility Task only. It does not
 implement ChatService, `/api/chat`, AnswerComposer, a live LLM call, or M3
@@ -55,7 +63,8 @@ repository edit, Gate 0 must confirm:
 The repository draft
 `docs/TASK_CARDS/M3-01-answer-schema-chat-service.md` is planning input only.
 Its framework, package, version, lock, and tracing decisions are superseded by
-the final M3-00 result. M3-01 implementation remains blocked until M3-00 PASS.
+the final M3-00 result. The M3-00 review block was closed by the user-confirmed
+independent PASS recorded above.
 
 ---
 
@@ -658,7 +667,7 @@ LangChain/LangSmith variables such as:
 
 ```text
 LANGSMITH_TRACING=true
-LANGSMITH_API_KEY=dummy
+LANGSMITH_API_KEY=${M3_TEST_FAKE_LANGSMITH_KEY}
 LANGSMITH_ENDPOINT=http://127.0.0.1:9
 LANGSMITH_PROJECT=questock-m3-00-test
 LANGCHAIN_TRACING_V2=true
@@ -1470,10 +1479,15 @@ Never use:
 - Repository implementation: `COMPLETE for approved M3-00 files`
 - Local regression: `PASS`
 - Clean-lock Windows M2 regression: `BLOCKED by pre-existing deferred tzdata`
-- Independent implementation review: `NOT_RUN`
-- M3-00 final status: `IMPLEMENTED / independent review pending`
-- M3-01 implementation: `BLOCKED`
-- Commit/push/PR/merge/deploy: `NOT_RUN`
+- Implementation SHA:
+  `a3cb8e6de5309bc68ac6856648d275883ec9407f`
+- Implementation commit: `Implement m3-00`
+- Implementation main push: `complete`
+- Independent implementation review: `PASS - confirmed by user`
+- Independent pytest rerun: `NOT_RUN`
+- M3-00 final status: `PASS / complete`
+- M3-01 implementation: `ALLOWED subject to approved plan and preflight PASS`
+- Further commit/push/PR/merge/deploy: `NOT_APPROVED`
 
 ---
 

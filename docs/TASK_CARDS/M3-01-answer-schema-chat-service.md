@@ -1,4 +1,4 @@
-# TASK CARD - M3-01 Answer Schema, LangChain Boundary, and ChatService
+# TASK CARD - M3-01 Answer Schema, Public Process Summary, LangChain Boundary, and ChatService
 
 ## 1. Status and Approval
 
@@ -8,84 +8,170 @@
 - Planning date: `2026-07-24`
 - Planning branch: `main`
 - Planning base SHA:
-  `866dbb2a349e54b59f8dec1f9b770bc4ee68729b`
-- Planning base commit: `add m2 test`
-- Planning base main push: `complete`
+  `a3cb8e6de5309bc68ac6856648d275883ec9407f`
+- Planning base commit: `Implement m3-00`
 - M2 individual capabilities: `PASS`
 - M2 integrated phase slice: `PASS`
 - M2 Gate: `PASS`
-- M2-09:
-  `NOT_STARTED / not required without separate A15-M gate`
-- M1-09:
-  `mandatory supplement implemented - final independent review pending`
-- M3-01 planning: `DRAFT - user review required`
-- M3-01 implementation: `NOT_APPROVED`
-- Dependency installation or lock generation: `NOT_APPROVED`
-- Gemini live call: `NOT_APPROVED`
-- Commit, push, PR, merge, deploy: `NOT_APPROVED`
+- M3-00 implementation:
+  `IMPLEMENTED AND PUSHED`
+- M3-00 independent implementation review:
+  `PASS - confirmed by user`
+- Selected architecture:
+  `Candidate A - langchain-core plus project-owned direct LiteLLM adapter`
+- Selected direct pins:
+  - `langchain-core==1.5.1`
+  - `litellm==1.83.7`
+- Existing lock:
+  `uv.lock`
+- Clean Windows timezone follow-up:
+  `PASS - tzdata==2026.3 locked and clean-environment verified`
+- M3-01 plan review:
+  `CONDITIONAL PASS - required mentoring and integration corrections incorporated in this file`
+- M3-01 final plan approval:
+  `APPROVED by user`
+- M3-01 implementation:
+  `IMPLEMENTED - local verification PASS; independent review pending`
+- Package-index access for the exact `tzdata` addition:
+  `APPROVED / used only for exact tzdata lock update`
+- Gemini live call:
+  `SEPARATE APPROVAL / NOT INCLUDED`
+- Commit, push, PR, merge, deploy:
+  `NOT_APPROVED`
+- M3-12 price-move stretch:
+  `NOT_ACTIVATED - post-M4 M5-01 owns the mentor-selected extension`
+- UI implementation:
+  `OUT_OF_SCOPE - M3-01 creates only the stable API and PublicProcessSummary contract`
 
-Before this card was created, the working tree contained only the user-approved
-M2 closure status updates in:
+This Task Card supersedes the framework, package-selection, lock-selection,
+tracing, response-diagnostics, and source-gateway portions of all earlier
+M3-01 drafts.
 
-- `docs/TASK_CARDS/M2-INTEGRATION-CLOSURE.md`
-- `docs/TASK_CARDS/M2-08-context-budget.md`
+M3-00 already selected and pinned the framework boundary. M3-01 must not:
 
-No M3 application code or dependency has been changed. Approval of this Task
-Card may authorize only the exact M3-01 implementation and verification scope
-listed below. Git operations, live API calls, paid usage, and later M3 steps
-remain separate approvals.
+- repeat candidate comparison
+- change the selected LangChain/LiteLLM versions
+- introduce `langchain-litellm`
+- generate a second lock
+- add LangGraph, agents, retrievers, or vector stores
 
-## 2. Goal
+Approval of this plan may authorize only:
 
-Implement the first non-streaming answer vertical slice:
+- the exact `tzdata==2026.3` dependency and existing `uv.lock` update
+- the listed M3-01 application, schema, and test files
+- the two implementation checkpoints in this Task Card
+- fixture, mock, clean-lock, and regression verification
+- factual Task Card and approved architecture-document synchronization after
+  tests pass
+
+Approval does not authorize:
+
+- live Gemini or credential use
+- paid usage or automatic billing
+- another model or provider
+- Streamlit or another UI implementation
+- M3-02 or later behavior
+- M3-12 or M5-01 price-move behavior
+- commit, push, PR, merge, or deploy
+
+---
+
+## 2. Why M3-01 Exists
+
+M3-00 proved the minimum framework boundary:
+
+```text
+project-owned Evidence/context adapter
+→ ChatPromptTemplate
+→ RunnableLambda(project-owned async LLMClient call)
+→ PydanticOutputParser
+→ project-owned validators
+```
+
+M3-01 turns that compatibility boundary into the first non-streaming answer
+vertical slice:
 
 ```text
 POST /api/chat
--> ChatService
--> existing M1/M2 pipeline
--> permission-limited prompt construction
--> LangChain prompt and structured-output boundary
--> project-owned LLMClient
--> LiteLLM Python SDK adapter
--> Gemini API
--> Pydantic parse
--> existing citation validation
--> stable public response
+→ ChatService
+→ completed M1/M2 pipeline
+→ final selected Evidence
+→ external-processing and prompt-safety gate
+→ real LangChain RunnableSequence
+→ project-owned LLMClient
+→ direct LiteLLM Python SDK adapter
+→ structured Pydantic draft
+→ existing citation validation
+→ stable public JSON response
 ```
 
-The implementation must preserve all completed M1 and M2 contracts. It must
-also keep model/provider SDK objects, raw exceptions, prompts, credentials,
-local paths, and unapproved source content outside the public API.
+The mentoring direction adds one presentation-critical requirement:
 
-M3-01 establishes a safe extractive answer baseline. Beginner explanation,
-multi-turn memory, full answer acceptance rules, numeric validation, advice
-validation, source-detail UI, and context UI remain their assigned later M3
-steps.
+```text
+The UI must later be able to show the observable M1/M2 processing stages
+without exposing chain-of-thought, raw prompts, secrets, or internal exceptions.
+```
 
-## 3. Verified Current State
+M3-01 therefore also defines `PublicProcessSummary`, a sanitized and
+deterministic public provenance contract. M3-15 will render that contract; it
+does not invent another diagnostics schema.
 
-| Area | Verified file | Current state |
-|---|---|---|
-| API app | `app/api/main.py` | only the health router is registered |
-| public health route | `app/api/routes_health.py` | async route with sanitized fallback |
-| provider config | `app/config.py` | `ProviderConfig` only; credentials are private |
-| LLM code | `app/llm/` | does not exist |
-| answer service | `app/services/` | does not exist |
-| current answer model | `app/core/models.py` | `FinancialAnswer` has the M2 fixed-answer surface |
-| planner | `app/planning/query_planner.py` | deterministic `QueryPlanner` |
-| M2 pipeline | `app/evidence/**`, `app/retrieval/**` | normalization through context budget is implemented |
-| citation boundary | `app/evidence/citations.py` | validates caller claims only against selected Evidence |
-| call budget | `app/evidence/budget.py` | request-scoped maximum of two LLM calls |
-| report permission | `app/ingest/reports.py` | document metadata carries `external_llm_processing_allowed` |
-| current dependencies | `pyproject.toml` | Pydantic, FastAPI, Uvicorn; no LLM or LangChain package |
-| lock artifact | repository root | no package lock file currently exists |
-| environment template | `.env.example` | generic LLM placeholders exist but M3 variables are incomplete |
-| production source repository | `app/repositories/` | does not exist |
-| live Gemini status | project decision document | credential, quota, and live call are unverified |
+M3-01 remains an extractive answer baseline. Beginner explanation, multi-turn,
+numeric validation, policy validation, advanced source-detail UI, and final
+visual styling remain later M3 Steps.
 
-The M2 integration test proves the internal phase slice with synthetic inputs.
-It does not prove production source loading, actual 365-day source coverage, a
-live provider, or a live LLM.
+---
+
+## 3. Normative Sources and Current Repository State
+
+### 3.1 Normative documents
+
+Use the latest project copies of:
+
+- `docs/agent_handoff/README_AGENT_RULES.md`
+- `docs/agent_handoff/PROJECT_PLAN_FINAL_PASS.md`
+- `docs/agent_handoff/AGENT_WORKFLOW.md`
+- `docs/agent_handoff/LLM_STACK_DECISION.md`
+- `docs/agent_handoff/FINANCIAL_CAPABILITY_BASELINE.md`
+- `docs/agent_handoff/RISK_RESPONSE_MATRIX.md`
+- `docs/agent_handoff/EXTENSION_COMPATIBILITY.md`
+- `docs/agent_handoff/EVALUATION_TAXONOMY_DRAFT.md`
+- `docs/agent_handoff/MENTORING_SCOPE_DECISION_2026-07-24.md`
+- `docs/TASK_CARDS/M2-INTEGRATION-CLOSURE.md`
+- `docs/TASK_CARDS/M2-08-context-budget.md`
+- `docs/TASK_CARDS/M3-00-langchain-integration-spike.md`
+
+Older same-name copies must not be used when a 2026-07-24 revised copy exists.
+
+### 3.2 Verified planning-base state
+
+At planning base `a3cb8e6de5309bc68ac6856648d275883ec9407f`:
+
+| Area | Current state |
+|---|---|
+| API app | health router only |
+| provider policy | M1 owns timeout, retry, cache, and typed ProviderResult |
+| config | ProviderConfig exists; LLMConfig does not |
+| answer package | does not exist |
+| LLM package | does not exist |
+| service package | does not exist |
+| M2 pipeline | normalization through citation/context budget implemented |
+| M2 phase slice | persistent integration test exists |
+| report permission | linked document metadata carries `external_llm_processing_allowed` |
+| framework pins | `langchain-core==1.5.1`, `litellm==1.83.7` |
+| lock | `uv.lock` exists |
+| persistent framework test | `tests/unit/test_m3_langchain_stack.py` |
+| clean Windows timezone | blocked because `tzdata` is not declared |
+| existing project `.venv` | local tzdata is present |
+| live Gemini | not run and not verified |
+| production source gateway | does not exist |
+| UI | not implemented |
+
+The M2 integration test proves the internal pipeline with synthetic inputs. It
+does not prove production source coverage, live provider access, a live LLM, or
+a deployed UI.
+
+---
 
 ## 4. Locked Architecture
 
@@ -93,74 +179,141 @@ live provider, or a live LLM.
 
 ```text
 validate ChatRequest
--> resolve and plan
--> fetch required sources through an injected source gateway
--> normalize documents
--> hard filter
--> freshness
--> retrieval
--> EvidencePolicy
--> final context budget
--> EvidenceDecision gate
--> external-processing and prompt-safety gate
--> compose one structured LLM request
--> parse and validate the structured draft
--> validate citations against the final selected Evidence
--> serialize ChatResponse
+→ QueryPlanner
+→ injected SourceGateway
+→ normalize documents
+→ hard filter
+→ freshness
+→ retrieval
+→ EvidencePolicy
+→ context budget
+→ EvidenceDecision gate
+→ external-processing and prompt-safety gate
+→ one structured LLM request when allowed
+→ parse and validate structured draft
+→ validate citations against transmitted final Evidence
+→ build ChatResponse and PublicProcessSummary
 ```
 
-The exact completed M2 order is not changed. Permission is not a retrieval,
-IDF, scoring, freshness, or policy signal. It is checked only after final
-Evidence selection and before external transmission.
+M1/M2 order and responsibilities do not change.
 
-### 4.2 LLM boundary
-
-The project-owned boundary remains:
+### 4.2 Selected LLM boundary
 
 ```text
 AnswerComposer
--> LLMClient
--> LiteLLMClient
--> LiteLLM Python SDK
--> Gemini API
+→ LangChain RunnableSequence
+   ├─ ChatPromptTemplate
+   ├─ RunnableLambda(project-owned LLMClient call)
+   └─ PydanticOutputParser
+→ project-owned LLMClient
+→ LiteLLMClient
+→ LiteLLM Python SDK
+→ Gemini API
+→ project-owned validators
 ```
 
-`AnswerComposer` and `ChatService` must not import or consume LiteLLM or Gemini
-response classes. Only `LiteLLMClient` may import the LiteLLM SDK.
+Only `LiteLLMClient` may import LiteLLM. LangChain and provider raw objects
+remain internal.
 
-### 4.3 LangChain application
+### 4.3 Fixed exclusions
 
-M3-01 will use `langchain-core` only for:
-
-- a local, version-controlled `ChatPromptTemplate`
-- deterministic formatting instructions for the Pydantic draft schema
-- parsing the normalized `LLMResult.content` into the Pydantic draft
-
-The project-owned `LLMClient` remains the only model-call interface. LangChain
-must not call Gemini directly or replace the current retrieval and evidence
-pipeline.
-
-The following are excluded:
-
-- `create_agent`
+- full `langchain`
+- `langchain-litellm`
 - LangGraph
-- LangChain retrievers or vector stores
-- LangChain memory or session persistence
-- LangChain tools
-- LangChain Hub or runtime prompt downloads
-- provider routing or automatic model fallback
-- hidden parser retries or hidden additional LLM calls
+- agents and tools
+- LangChain retriever/vector store/memory
+- prompt hub or remote prompt
+- Router, Proxy, model fallback
+- hidden retry
+- tracing or callback logging
+- streaming
+- paid model or billing
+- M1/M2 rewrites
 
-If the selected `langchain-core` version cannot operate behind the project
-`LLMClient` without bypassing this boundary, implementation stops. Replacing
-the boundary, adding full `langchain`, or dropping LangChain requires a revised
-plan and user approval.
+### 4.4 Tracing and import safety
 
-## 5. Public and Internal Contracts
+Before importing LiteLLM in the adapter:
 
-### 5.1 Public request
+```text
+LITELLM_LOCAL_MODEL_COST_MAP=True
+```
 
-`POST /api/chat` accepts:
+For every chain invocation:
+
+```text
+LANGSMITH_TRACING=false
+LANGCHAIN_TRACING_V2=false
+callbacks=[]
+```
+
+No direct LangSmith import is added. Hostile ambient tracing tests must prove
+zero unexpected tracing/callback network calls.
+
+---
+
+## 5. Two Implementation Checkpoints
+
+M3-01 remains one Task Card and receives one final implementation review, but
+the implementation must be divided into two internal checkpoints.
+
+## Checkpoint A - Runtime and generation core
+
+Scope:
+
+- `tzdata==2026.3` clean-lock correction
+- `LLMStatus`
+- `LLMRequest`, `LLMResult`, `LLMClient`
+- `LLMConfig`
+- `LiteLLMClient`
+- structured draft models
+- `AnswerComposer`
+- real LangChain RunnableSequence
+- external-processing eligibility
+- prompt minimization and sanitizer
+- citation-bound draft acceptance
+- deterministic fixed fallback
+
+Exit gate:
+
+- all Checkpoint A targeted tests pass
+- M3-00 compatibility test passes unchanged
+- M2 phase slice passes unchanged
+- secret scan and compile pass
+- no M1/M2 or API/UI changes
+
+## Checkpoint B - Chat vertical slice
+
+Scope:
+
+- `SourceGateway` protocol
+- `ExplicitUnconfiguredSourceGateway`
+- `ChatService`
+- `ChatRequest`
+- `ChatResponse`
+- `PublicProcessSummary`
+- `/api/chat`
+- request deadline and cancellation
+- M3 chat integration phase slice
+
+Entry:
+
+- Checkpoint A exit gate passes
+
+No separate plan review occurs between A and B. Stop only when:
+
+- core/shared contract change is required
+- M1/M2 code must change
+- a new dependency is required
+- the approved file scope materially expands
+
+If Git commits are later approved, A and B should be separate semantic commits.
+This statement does not authorize commits.
+
+---
+
+## 6. Public Request and Response
+
+## 6.1 ChatRequest
 
 ```json
 {
@@ -169,19 +322,17 @@ plan and user approval.
 }
 ```
 
-Contract:
+Rules:
 
-- `message` is a required, trimmed, non-blank string with a fixed upper bound.
-- `session_id` is a required, trimmed, non-blank opaque identifier with a fixed
-  upper bound.
-- M3-01 does not persist or replay session history.
-- Unknown fields are rejected.
-- Invalid input returns a sanitized validation response without echoing the raw
-  message, credential-like text, or internal exception.
+- both fields are required nonblank strings
+- fixed maximum lengths
+- trim outer whitespace
+- reject unknown fields
+- M3-01 does not persist or replay session history
+- validation errors do not echo raw message, credential-like content, or raw
+  exception
 
-### 5.2 Public response
-
-The non-streaming response is one stable JSON object:
+## 6.2 ChatResponse
 
 ```text
 status
@@ -194,7 +345,9 @@ missing_sources
 diagnostics_public
 ```
 
-`answer_sections` contains:
+`diagnostics_public` is exactly one `PublicProcessSummary`.
+
+`answer_sections`:
 
 ```text
 summary
@@ -206,37 +359,176 @@ risk_factors
 uncertainty
 ```
 
-M3-01 keeps interpretation and inference empty unless their text passes the
-same extractive citation boundary as facts. Later M3 steps may expand these
-sections only with their own approved validators.
+M3-01 accepts only extractive claims that pass the existing M2 citation
+contract. Unsupported sections remain empty.
 
-The existing `FinancialAnswer`, `EvidenceDecisionStatus`, `ProviderStatus`,
-`RetrievalStatus`, `ProviderResult`, `Evidence`, and `QueryPlan` contracts are
-not modified.
+Existing M1/M2 core models and enums are not modified.
 
-### 5.3 Structured draft
+---
 
-The LLM returns a project-owned Pydantic draft containing only:
+## 7. PublicProcessSummary Contract
 
-- a bounded sequence of claims
-- for each claim:
-  - stable claim ID
-  - allowed section label
-  - claim text
-  - one or more Evidence IDs
+`PublicProcessSummary` is public provenance, not model chain-of-thought.
 
-Each claim text must be an extractive substring supported by every referenced
-Evidence snippet because that is the existing M2-07 contract. Unknown Evidence
-IDs, malformed schema, unsupported claims, and any citation rejection fail the
-LLM answer as a whole. M3-01 then uses a deterministic local fallback; it does
-not return partially accepted free text.
+### 7.1 Top-level fields
 
-No model-supplied URL, title, locator, security, source, date, status, warning,
-or diagnostic field is accepted.
+```text
+trace_version
+data_mode
+live_connectivity_checked
+security
+query_plan
+sources
+evidence_pipeline
+decision
+context_budget
+citation
+generation
+```
 
-### 5.4 LLM interface
+### 7.2 Allowed values
 
-Add a separate project-owned `LLMStatus` with exactly:
+```text
+data_mode:
+recorded | live | mixed | unconfigured
+
+generation.mode:
+llm | fixed_template | blocked | not_called
+```
+
+### 7.3 Security summary
+
+```text
+resolution_status
+security_id
+```
+
+No candidate aliases or raw resolver diagnostics.
+
+### 7.4 Query-plan summary
+
+```text
+intent
+required_sources
+date_start
+date_end
+```
+
+Do not echo the raw user question.
+
+### 7.5 Source summaries
+
+One entry per required source in request order:
+
+```text
+source_type
+provider_status
+document_count
+from_cache
+```
+
+Do not include provider messages, raw payloads, query strings, credentials, or
+internal error text.
+
+### 7.6 Evidence-pipeline summary
+
+```text
+normalized_count
+hard_filtered_count
+freshness_retained_count
+freshness_warning_codes
+retrieval_status
+retrieval_selected_count
+```
+
+Warning codes are stable project codes only.
+
+### 7.7 Decision summary
+
+```text
+evidence_decision_status
+satisfied_sources
+missing_sources
+no_data_sources
+failed_sources
+```
+
+### 7.8 Context-budget summary
+
+```text
+input_count
+unique_count
+selected_count
+duplicate_drop_count
+source_cap_drop_count
+count_cap_drop_count
+context_drop_count
+estimated_context_tokens
+estimated_context_chars
+```
+
+### 7.9 Citation summary
+
+```text
+claim_count
+citation_count
+rejection_count
+```
+
+No claim text or rejected raw ID detail.
+
+### 7.10 Generation summary
+
+```text
+mode
+llm_status
+model
+live_verified
+```
+
+Rules:
+
+- no call: `llm_status=None`, `model=None`
+- fixture/mock call is never marked live
+- `live_verified=true` only after a separately approved sanitized live smoke
+- fallback does not change provider or EvidenceDecision status
+
+### 7.11 Public safety
+
+The summary must never expose:
+
+- LLM chain-of-thought or hidden reasoning
+- rendered prompt or format instructions
+- raw user question
+- full document or snippet text
+- Evidence IDs
+- URL or locator
+- provider raw response or raw message
+- credentials
+- permission notes
+- local path
+- raw exception
+- private diagnostics
+- SDK or LangChain objects
+
+### 7.12 Determinism
+
+- stage order is fixed
+- required source order follows QueryPlan
+- counts match actual stage outputs
+- equal fixture input produces equal JSON
+- returned nested collections are fresh and isolated
+
+M3-15 must consume this contract and must not recreate counts from raw internal
+objects.
+
+---
+
+## 8. LLM Contracts
+
+## 8.1 LLMStatus
+
+Exactly:
 
 ```text
 ok
@@ -248,7 +540,10 @@ invalid_response
 content_blocked
 ```
 
-The project-owned `LLMResult` carries only:
+It remains separate from ProviderStatus, RetrievalStatus, and
+EvidenceDecisionStatus.
+
+## 8.2 LLMResult
 
 ```text
 content
@@ -262,22 +557,16 @@ status
 
 Invariants:
 
-- `ok` requires non-blank content and a sanitized usage mapping.
-- failure statuses have no usable content.
-- `invalid_response` covers schema or parse failure.
-- `content_blocked` remains distinct from parse failure.
-- no provider exception text or raw SDK object is stored in any field.
-- `LLMStatus` never changes provider status, `missing_sources`, or
-  `EvidenceDecision`.
-- inputs and outputs are deep-copied at public boundaries.
+- `ok` requires nonblank content
+- failure statuses have no usable content
+- usage is numeric, finite, sanitized, and deep-copied
+- raw provider response and exception are never stored
+- `invalid_response` covers parse/schema failure
+- `content_blocked` remains distinct
+- LLM status never changes `missing_sources`, ProviderStatus, or
+  EvidenceDecision
 
-The interface is async internally so it can respect cancellation and remaining
-deadline. "Sync response" means a single completed HTTP JSON response, not SSE,
-WebSocket, or token streaming.
-
-### 5.5 Config
-
-Add a separate `LLMConfig` without changing `ProviderConfig`.
+## 8.3 LLMConfig
 
 Environment names:
 
@@ -291,148 +580,197 @@ LLM_TIMEOUT_SECONDS
 
 Rules:
 
-- default model is exactly `gemini/gemini-2.5-flash`
-- preview, `latest`, paid fallback, and runtime user model selection are rejected
-- thinking budget is explicit; no dynamic provider default
-- fixture evaluation compares `0` and `1024`
-- the smallest value that passes the approved compatibility and quality fixture
-  is pinned
-- timeout is finite and positive
-- max output tokens is a bounded positive integer
-- fake and unit environments load without a credential
-- constructing the live adapter requires a configured credential
-- secret value is absent from `repr`, `str`, serialization, safe summary,
-  exceptions, logs, and test output
-- invalid environment values produce fixed sanitized messages without the raw
-  value
+- default model exactly `gemini/gemini-2.5-flash`
+- reject preview/latest aliases and user-selected models
+- explicit thinking budget only
+- compare fixture values `0` and `1024`
+- pin the smallest passing value
+- bounded finite timeout and output-token count
+- fake/unit mode loads without credential
+- live adapter construction requires credential
+- no secret appears in repr, str, JSON, summary, exception, log, or test output
+- existing generic `LLM_API_KEY` is not a second credential source
 
-`.env.example` contains names with empty values only. Existing generic
-`LLM_API_KEY` must not become a second credential source.
+`.env.example` contains names with empty values only.
 
-### 5.6 LiteLLM mapping
+## 8.4 LiteLLM mapping
 
-`LiteLLMClient` will:
+- Python SDK only
+- exactly one reserved call in M3-01 baseline
+- explicit model, timeout, max output tokens, thinking, response format, and
+  retry-zero mapping
+- normalize usage and finish reason
+- normalize supported exceptions to LLMStatus
+- no Router, Proxy, fallback model, hidden retry, or billing
+- exactly one SDK operation per call
+- cancellation produces no second operation
+- raw SDK object never leaves adapter
 
-- use the Python SDK, not Proxy or Router
-- make at most the call reserved by `LLMCallBudget`
-- pass the configured stable model, timeout, max output tokens, explicit
-  thinking setting, and structured-output request
-- normalize supported SDK responses into `LLMResult`
-- normalize timeout, rate limit, authentication, provider availability,
-  blocked content, and malformed responses to `LLMStatus`
-- use project-owned fixed messages only
-- never perform an automatic model switch, paid fallback, or billing action
+---
 
-The exact LiteLLM option names and response shape must be proven by focused
-compatibility tests for the selected version. They must not be guessed from a
-different SDK or older release.
+## 9. Structured Draft and Composer
 
-## 6. Source and Permission Boundary
+The LLM draft contains only a bounded sequence of:
 
-### 6.1 Source gateway
+```text
+claim_id
+section
+text
+evidence_ids
+```
 
-`ChatService` receives an injected project-owned source gateway that returns:
+Rules:
 
-- requested documents
-- provider results keyed by the existing required source names
-- the document index needed by M2 filters and permission checks
+- unknown fields rejected
+- only allowed section labels
+- claim text must pass existing extractive citation validation
+- every referenced ID must be among externally transmitted selected Evidence
+- any malformed JSON, wrong type, unknown ID, unsupported claim, or citation
+  rejection invalidates the whole draft
+- no partially accepted free text
+- no model-supplied URL, locator, title, security, date, status, warning, or
+  diagnostic
+- parse/citation failure produces no second model call
+- fallback is deterministic and local
 
-The gateway must preserve all requested source keys. It may delegate external
-calls to the existing M1-03 policy helper and local corpus reads to existing
-ingest outputs. M3-01 does not reimplement provider retry, cache, or attempt
-timeout.
+The prompt contains only:
 
-No application module may import `tests/fixtures` or treat synthetic fixtures
-as production corpus. Unit and integration tests inject a fake gateway.
-Production source loading and live source coverage remain separately recorded
-if no approved runtime corpus or live adapter is available.
+- current user question
+- externally eligible selected Evidence IDs
+- required snippets
+- local parser format instructions
 
-### 6.2 External processing eligibility
+It must not contain session history, full documents, URLs, locators, metadata,
+permission notes, provider payloads, raw exceptions, credentials, or paths.
 
-The prompt may contain only:
+---
 
-- the current user question
-- opaque selected Evidence IDs
-- the selected Evidence snippets needed for the answer
+## 10. SourceGateway Contract
 
-It must not contain:
+## 10.1 SourceGateway protocol
 
-- session history
-- full documents or report files
-- source URLs or locator payloads
-- provider raw responses or exceptions
-- manifest notes
-- credentials or credential-like values
-- local absolute paths
+`ChatService` receives an injected project-owned gateway returning:
 
-For `research_report` Evidence, the linked `FinancialDocument.metadata` value
-`external_llm_processing_allowed` must be the literal boolean `true`.
-Missing, false, malformed, or unavailable linked metadata excludes that report
-Evidence from the external prompt. It remains available only to a deterministic
-local fixed-template path.
+```text
+documents
+provider_results_by_source
+documents_by_id
+data_mode
+live_connectivity_checked
+```
 
-This eligibility check occurs after M2 context selection and does not alter
-retrieval score, freshness, EvidenceDecision, or the public Evidence record.
-LLM-generated claims may cite only Evidence actually sent to the LLM. Local
-fixed-template claims may cite any final selected Evidence without transmitting
-it externally. If no selected Evidence is externally eligible, no LLM call
-occurs.
+It must preserve every source key required by QueryPlan.
 
-### 6.3 Prompt safety
+The gateway may call existing provider policy helpers and existing local ingest
+outputs. It must not reimplement retry, cache, deadline, or provider status
+normalization.
 
-Before the call, a project-owned sanitizer checks the exact rendered messages.
-A credential-like key/value, local absolute path, internal exception text, raw
-URL/locator, or unsupported payload type fails closed. It is not silently sent
-or written to logs.
+## 10.2 ExplicitUnconfiguredSourceGateway
 
-## 7. Decision and Fallback Rules
+M3-01 must provide an explicit safe default.
 
-| Evidence decision | LLM call | Result |
+When runtime data sources are not configured:
+
+- do not import `tests/fixtures`
+- do not silently treat synthetic fixtures as application data
+- return every required source key
+- return typed `provider_unavailable` results with stable sanitized errors
+- return no documents
+- set `data_mode="unconfigured"`
+- set `live_connectivity_checked=false`
+- allow ChatService to produce the existing provider-failed/fixed response
+- expose only count/status summary through `PublicProcessSummary`
+
+This permits a safe API process to exist without falsely claiming source
+coverage.
+
+## 10.3 Fake gateway in tests
+
+Unit/integration tests inject a fake gateway explicitly.
+
+Fake/recorded/live/unconfigured results must remain distinguishable. Test
+fixtures do not become production source loaders.
+
+## 10.4 Later demo/runtime gateway
+
+A recorded demonstration gateway and application-owned demo corpus are deferred
+to M3-15 or M4 demo preparation.
+
+Requirements when later added:
+
+- use an application-owned path such as `data/demo/**`
+- do not read `tests/fixtures/**` from app code
+- label the mode `recorded`
+- preserve provider and Evidence contracts
+- receive a separate plan and review
+
+M3-01 completion does not claim meaningful live or recorded source coverage.
+
+---
+
+## 11. External Processing Eligibility
+
+For `research_report` Evidence:
+
+```text
+linked FinancialDocument.metadata["external_llm_processing_allowed"] is True
+```
+
+must be proven.
+
+Missing, false, malformed, or unavailable metadata excludes the Evidence from
+the external prompt.
+
+Rules:
+
+- permission check occurs after context selection
+- it does not alter retrieval score, freshness, or EvidenceDecision
+- externally generated claims cite only transmitted Evidence
+- local fixed templates may use final selected Evidence without transmitting it
+- no eligible Evidence means zero LLM calls
+- a project sanitizer audits the exact rendered messages
+- unsafe content fails closed
+
+---
+
+## 12. Decision and Fallback
+
+| Evidence decision / condition | LLM call | Public behavior |
 |---|---:|---|
-| `blocked` | no | fixed blocked response |
-| `no_evidence` | no | fixed no-evidence response |
-| `provider_failed` | no | fixed provider-failed response |
-| `complete` or `partial`, empty budget | no | public `no_evidence` fixed response; original decision retained internally |
-| `complete` or `partial`, no externally eligible Evidence | no | local extractive fixed response |
-| `complete` or `partial`, eligible Evidence | at most one initial call | structured composition path |
-| any LLM failure | no additional call in the baseline | local extractive fixed response |
-| invalid schema or citation rejection | no additional call in the baseline | local extractive fixed response |
+| blocked | no | fixed blocked response |
+| no_evidence | no | fixed no-evidence response |
+| provider_failed | no | fixed provider-failed response |
+| complete/partial with empty budget | no | public no-evidence fallback; internal decision retained |
+| complete/partial with no external-eligible Evidence | no | local extractive fixed response |
+| complete/partial with eligible Evidence | at most one | structured LangChain path |
+| any LLM failure | no second call | local extractive fixed response |
+| parse/citation failure | no second call | local extractive fixed response |
 
-M3-01 reserves one call per request. The existing maximum of two remains
-unchanged, leaving a later explicitly approved correction call possible. No
-hidden retry is allowed in LangChain or LiteLLM.
+Public status continues to reflect EvidenceDecision when selected Evidence
+exists. LLM failure adds only a stable degradation warning.
 
-For a nonempty final budget, public `status` continues to reflect
-`EvidenceDecision`, not LLM availability. An empty final budget always
-abstains with public `no_evidence`; the original decision object is retained
-unchanged for safe internal diagnostics. An LLM failure adds only a stable
-user-safe degradation warning; it does not fabricate provider failure or
-missing sources. Internal diagnostics retain the separate `LLMStatus` without
-exposing exception text.
+Generation mode in `PublicProcessSummary` must match the actual path.
 
-The fixed path is deterministic and extractive. It may use the selected
-Evidence snippets locally, but it may not invent facts, numbers, URLs, causes,
-or investment advice.
+---
 
-## 8. Deadline Contract
+## 13. Deadline Contract
 
-- One monotonic request deadline bounds the complete chat operation.
-- Default total chat deadline remains 20 seconds.
-- independent providers execute concurrently through the source gateway
-- each provider policy receives no more than the remaining request time
-- the LLM timeout is capped by the remaining request time
-- retry is not started when the remaining time cannot accommodate it
-- pending cancellable work is cancelled at deadline
-- one source failure does not discard completed source results
-- completed Evidence can produce `partial` or a fixed response
-- no operation waits indefinitely after timeout
+- one monotonic 20-second request deadline
+- providers execute concurrently through SourceGateway
+- each operation receives no more than remaining time
+- LLM timeout capped by remaining time
+- no retry when remaining time is insufficient
+- pending cancellable work cancelled at deadline
+- completed source results preserved
+- one source failure does not discard other results
+- no operation waits after deadline
+- tests use injected clocks/tasks, not real long sleeps
 
-Tests use injected clocks and cancellable tasks. They do not sleep for the real
-8- or 20-second limits.
+---
 
-## 9. Allowed Files
+## 14. Allowed Files
 
-Expected new files:
+### New application files
 
 - `app/api/schemas.py`
 - `app/api/routes_chat.py`
@@ -443,314 +781,488 @@ Expected new files:
 - `app/llm/base.py`
 - `app/llm/litellm_client.py`
 - `app/services/__init__.py`
+- `app/services/source_gateway.py`
 - `app/services/chat_service.py`
+
+### New tests
+
 - `tests/unit/test_llm_config.py`
 - `tests/unit/test_llm_base.py`
 - `tests/unit/test_litellm_client.py`
 - `tests/unit/test_answer_composer.py`
+- `tests/unit/test_source_gateway.py`
+- `tests/unit/test_public_process_summary.py`
 - `tests/unit/test_chat_service.py`
 - `tests/unit/test_api_chat.py`
 - `tests/integration/test_m3_chat_phase_slice.py`
 - focused structured-output fixtures under `tests/fixtures/llm/`
-- this Task Card
 
-Expected modified files:
+### Modified
 
 - `app/api/main.py`
 - `app/config.py`
 - `.env.example`
 - `pyproject.toml`
-- one separately approved deterministic dependency lock artifact
+- `uv.lock`
+- this Task Card
+- M3-00 Task Card status only after independent review result is known
+- `LLM_STACK_DECISION.md` only for `tzdata` and factual implementation status
+- `PROJECT_PLAN_FINAL_PASS.md` and `AGENT_WORKFLOW.md` only through the approved
+  mentoring update bundle
 
-An `app/services/source_gateway.py` file may be added only if keeping the source
-protocol in `chat_service.py` would create a circular import or mix orchestration
-with source contracts. No provider or repository implementation is added under
-that allowance.
+No UI file is modified in M3-01.
 
-## 10. Forbidden Changes
+---
+
+## 15. Forbidden Changes
 
 - M1/M2 core models or status enums
 - provider, ingest, planner, retrieval, freshness, policy, citation, or budget
   behavior
 - provider retry/cache/deadline reimplementation
-- live NAVER or OpenDART adapters
-- M1-09, M2-09, price-move logic
-- M3-02 or later answer features
-- session memory or persistence
-- API streaming, WebSocket, SSE
-- UI
-- dense/vector retrieval or reranking
-- LangGraph, agents, tools, or model routing
-- paid model selection or automatic billing
+- live NAVER/OpenDART adapters
+- production use of test fixtures
+- M1-09 or M2-09 code
+- M3-12/M5-01 price logic or schema
+- M3-02 or later answer behavior
+- session persistence
+- Streamlit or other UI
+- streaming/WebSocket/SSE
+- dense/vector retrieval
+- LangGraph, agent, tools, routing
+- paid model or automatic billing
 - logging framework integration
 - deployment
 
-## 11. Implementation Sequence
+---
 
-### Gate 0 - approved-base preflight
+## 16. Implementation Sequence
 
-1. Confirm `HEAD` and `origin/main` are the expected planning base.
-2. Confirm the only pre-existing changes are the approved M2 status-sync docs
-   and this approved Task Card.
-3. Run the M2 integration, M2 regression, full test suite, import smoke, secret
-   scan, compile, and `git diff --check`.
-4. Stop before M3 code if any code assertion fails or unrelated changes appear.
+## Gate 0 - Approved base and M3-00 closure
 
-### Gate 1 - dependency compatibility
+1. Confirm `HEAD == origin/main`.
+2. Confirm current latest main includes `a3cb8e6...` or inspect any newer commit.
+3. Confirm M3-00 independent implementation review is `PASS`.
+4. Confirm working tree contains only approved planning files.
+5. Run:
+   - M3-00 targeted compatibility
+   - M2 phase slice
+   - M2 unit+integration
+   - full tests
+   - import smoke
+   - secret scan
+   - compile
+   - `git diff --check`
+6. Stop on code assertion failure or unrelated changes.
 
-1. Obtain explicit approval for dependency installation and lock generation.
-2. Check Python 3.14 compatibility for candidate `litellm` and
-   `langchain-core` versions.
-3. Verify imports, license metadata, transitive dependency diff, startup/import
-   impact, and structured-output APIs in an isolated environment.
-4. Select exact versions and produce the approved lock artifact.
-5. Stop if the SDK option mapping, wheel support, or lock process is
-   incompatible. Do not silently add another model SDK or package manager.
+## Gate 1 - Clean Windows timezone dependency
 
-### Stage 2 - contracts and config
+After plan and package-index approval:
 
-1. Add `LLMStatus`, `LLMResult`, request protocol, and central invariant
-   factory.
-2. Add `LLMConfig` with private credential handling.
-3. Add API and structured-draft schemas.
-4. Add exhaustive serialization, invariants, secret non-disclosure, and invalid
-   config tests.
+1. add exact `tzdata==2026.3`
+2. update existing `uv.lock`
+3. prove no unrelated direct pin changes
+4. `uv lock --check`
+5. clean `uv sync --locked --extra dev`
+6. force `PYTHONTZPATH=""`
+7. prove `ZoneInfo("Asia/Seoul")`
+8. rerun M2 phase slice and full suite in the clean lock environment
 
-### Stage 3 - composer and adapter
+Do not begin application code until Gate 1 passes.
 
-1. Add the local LangChain prompt template and Pydantic parser.
-2. Add prompt eligibility and sanitizer checks.
-3. Add `LiteLLMClient` with a mocked SDK transport boundary.
-4. Verify all SDK statuses and raw-object non-leakage.
-5. Compare thinking budgets `0` and `1024` with the same structured fixtures and
-   pin the smallest passing value.
+## Checkpoint A
 
-### Stage 4 - ChatService and API
+1. add LLMStatus, request/result/client contracts
+2. add LLMConfig
+3. add structured draft and answer models
+4. add LiteLLMClient
+5. add LangChain composer
+6. add permission and prompt safety
+7. add fixed fallback
+8. run Checkpoint A exit gate
 
-1. Add the injected source gateway and request deadline.
-2. Compose the existing M1/M2 functions in their locked order.
-3. Add EvidenceDecision and fixed-response gates.
-4. Call the composer only for externally eligible selected Evidence.
-5. Validate claims with the existing M2-07 function.
-6. Add the non-streaming route and sanitized error mapping.
+## Checkpoint B
 
-### Stage 5 - verification and report
+1. add SourceGateway protocol and explicit unconfigured default
+2. add ChatService
+3. add API request/response and PublicProcessSummary
+4. add `/api/chat`
+5. add deadline/cancellation
+6. add integration phase slice
+7. run full M3-01 verification
 
-1. Run targeted M3-01 tests.
-2. Run the M2 integration and regression unchanged.
-3. Run the full unit/integration suite.
-4. Run import smoke, secret scan, compile, and diff checks.
-5. Record fixture and live outcomes separately.
-6. Report changed files and actual results; do not commit or push.
+## Final documentation
 
-### Separate live gate
+After tests pass:
 
-Only after explicit approval and local `.env` credential setup:
+- record actual results
+- synchronize factual M3-00 status
+- record selected pins and `tzdata`
+- update approved mentoring decision references
+- do not mark live Gemini verified when not run
+- do not commit or push without separate approval
 
-- make one sanitized Gemini free-tier smoke call
-- confirm actual model ID, structured parse, timeout, and normalized usage
-- record only configured state, status, model ID, latency, and numeric usage
-- never print request content, response content, credential, or raw exception
-- do not enable billing or switch to a paid model
+## Separate live gate
 
-Without this approval or credential, record:
+Only under separate explicit approval and local credential setup:
+
+- one sanitized free-tier Gemini call
+- verify actual model ID, structured parse, timeout, numeric usage
+- print no prompt, response content, credential, raw exception, URL, or locator
+- no billing and no model switch
+
+Otherwise record:
 
 ```text
-Gemini live smoke: NOT_RUN - approval or credential unavailable
+Gemini live smoke: NOT_RUN
 Gemini live integration: NOT_VERIFIED
 ```
 
-## 12. Test Plan
+---
 
-### Contract and config
+## 17. Test Plan
 
-- all `LLMStatus` values and state invariants
-- JSON round-trip for new Pydantic models
-- caller input and returned nested payload mutation isolation
-- fake/unit config without credential
-- live adapter rejection without credential
-- invalid, blank, negative, NaN, Infinity, and out-of-range config
-- secret absent from repr, str, JSON, safe summary, exception, and captured output
+### 17.1 Timezone and lock
 
-### LiteLLM adapter
+- exact `tzdata==2026.3`
+- exact installed metadata
+- LangChain/LiteLLM pins unchanged
+- lock includes tzdata and hashes
+- no unrelated lock movement
+- `uv lock --check`
+- clean `uv sync --locked --extra dev`
+- forced empty timezone path
+- Seoul ZoneInfo
+- clean M2 phase slice and full suite
 
-- stable model and explicit option mapping
-- successful structured content and normalized usage
-- timeout
-- rate limit
-- authentication error
-- provider unavailable
-- content blocked
-- malformed response
-- raw exception and sentinel secret non-disclosure
-- no fallback model, Router, Proxy, retry, or extra call
-- cancellation at timeout
+### 17.2 LLM contracts/config
 
-### LangChain and composer
+- every LLMStatus
+- success/failure invariants
+- strict exact types and finite numbers
+- JSON round-trip
+- deep-copy isolation
+- fake config without credential
+- live client rejection without credential
+- exact stable model
+- explicit thinking `0` and `1024`
+- no secret/raw invalid value exposure
 
-- direct structured parser compatibility
-- exact rendered prompt contains only question, Evidence IDs, and snippets
-- no session history, full document, URL, locator, metadata, or provider payload
-- report permission true inclusion
-- report permission false, missing, malformed, and missing-document exclusion
-- mixed eligible and ineligible Evidence
-- no eligible Evidence skips LLM
-- local-path and credential sentinel fail closed
-- valid extractive claims
-- invalid JSON and wrong schema become `invalid_response`
-- unknown Evidence ID and unsupported claim cause whole-draft fallback
-- deterministic fixture output
-- thinking budget `0` and `1024` comparison with separate latency and pass record
+### 17.3 LiteLLM adapter
 
-### ChatService and API
+- exact installed version
+- no import-time network
+- exact option mapping
+- success and normalized usage
+- authentication/rate-limit/timeout/unavailable/blocked/malformed
+- exactly one SDK operation
+- no retry/router/proxy/fallback
+- cancellation
+- no raw object or sentinel exposure
 
-- supported resolved question complete path
-- partial path preserves completed source results
-- no-data and provider-failure distinction
-- blocked and no-evidence paths make zero LLM calls
-- LLM failure uses Evidence-backed fixed output
-- `missing_sources` is not changed by LLM status
-- source gateway key completeness
-- hard filter and wrong-company regression
-- M2 context-selected Evidence only
-- citation validation only against transmitted Evidence
-- total deadline, provider concurrency, pending cancellation, and no late wait
-- request sequence and intermediate object immutability
-- identical fixture input produces identical public JSON
-- malformed request receives sanitized response
-- LiteLLM, Gemini, LangChain, prompt, and exception objects absent from public JSON
-- route returns one non-streaming JSON response
+### 17.4 LangChain/composer
 
-### Regression and smoke
+- exact chain step types
+- async ainvoke
+- callbacks empty
+- hostile tracing environment and zero trace network
+- one invoke equals one LLMClient call
+- deterministic result
+- prompt projection contains only allowed fields
+- permission true/false/missing/malformed cases
+- no eligible Evidence means zero calls
+- malformed output fails closed
+- unknown ID and unsupported claim reject whole draft
+- no retry after parser/citation failure
 
-- M2 targeted integration remains `5 passed` or higher without weakening tests
-- M2 unit plus integration remains `659 passed` or higher
-- full suite remains `1420 passed` or higher
-- imports include new `LLMConfig`, `LiteLLMClient`, `AnswerComposer`,
-  `ChatService`, and API app
-- secret scan reports no findings
-- compile exits zero
-- `git diff --check` exits zero
+### 17.5 SourceGateway
 
-Passed counts are evidence only after the commands are actually run. Existing
-counts are pre-M3 baselines, not predicted M3 results.
+- required keys always present
+- fake gateway explicit injection
+- unconfigured gateway returns typed unavailable results
+- unconfigured mode never reads tests/fixtures
+- no raw provider messages in public output
+- recorded/live/unconfigured labels exact
+- caller inputs unmodified
 
-## 13. Verification Commands
+### 17.6 PublicProcessSummary
 
-Preflight reuses the exact M2 closure commands:
+- exact top-level fields
+- fixed stage/source order
+- counts equal actual outputs
+- complete/partial/provider_failed/no_evidence/blocked
+- LLM/fixed/blocked/not_called modes
+- fixture is never marked live
+- live_verified false without live smoke
+- equal input equal JSON
+- nested output isolation
+- no question/snippet/Evidence ID/URL/locator/prompt/secret/path/raw exception
+- no chain-of-thought field or text
+
+### 17.7 ChatService/API
+
+- complete path
+- partial source path
+- no-data vs provider failure
+- blocked/no-evidence make zero LLM calls
+- no external-eligible Evidence uses local fallback
+- LLM failure preserves EvidenceDecision and source state
+- selected/transmitted Evidence only for citation
+- deadline and cancellation
+- intermediate object immutability
+- identical fixture input identical public JSON
+- malformed request sanitized
+- one non-streaming response
+- unconfigured default returns stable safe response and process summary
+
+### 17.8 Regression
+
+Pre-M3 baselines are evidence, not predicted results:
+
+- M2 integration: at least current unweakened tests
+- M2 unit plus integration: at least current unweakened tests
+- full suite: at least current unweakened tests
+- M3-00 compatibility unchanged
+- import smoke
+- secret scan
+- compile
+- diff check
+
+---
+
+## 18. Verification Commands
+
+Use the existing locked environment tooling. Exact commands must be recorded in
+the result log.
+
+Minimum preflight:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest tests/integration/test_m2_phase_slice.py -q
+git status --short
+git branch --show-current
+git rev-parse HEAD
+git rev-parse origin/main
 
-.\.venv\Scripts\python.exe -m pytest `
-  tests/unit/test_query_planner.py `
-  tests/unit/test_retrieval_filters.py `
-  tests/unit/test_retrieval_baseline.py `
-  tests/unit/test_evidence_normalization.py `
-  tests/unit/test_evidence_freshness.py `
-  tests/unit/test_evidence_policy.py `
-  tests/unit/test_citation_validation.py `
-  tests/unit/test_context_budget.py `
-  tests/integration/test_m2_phase_slice.py `
+$python = ".\.venv\Scripts\python.exe"
+
+& $python -m pytest tests/unit/test_m3_langchain_stack.py -q
+& $python -m pytest tests/integration/test_m2_phase_slice.py -q
+& $python -m pytest tests -q
+& $python scripts/secret_scan.py
+& $python -m compileall app tests scripts -q
+git diff --check
+```
+
+Checkpoint A:
+
+```powershell
+& $python -m pytest `
+  tests/unit/test_llm_config.py `
+  tests/unit/test_llm_base.py `
+  tests/unit/test_litellm_client.py `
+  tests/unit/test_answer_composer.py `
   -q
+```
 
-.\.venv\Scripts\python.exe -m pytest tests -q
+Checkpoint B:
 
-.\.venv\Scripts\python.exe -c "from app.core.models import FinancialAnswer; from app.planning.query_planner import QueryPlanner; from app.retrieval import filter_evidence, retrieve_evidence; from app.evidence.normalizer import normalize_financial_documents; from app.evidence.freshness import evaluate_freshness; from app.evidence.policy import EvidencePolicy; from app.evidence.budget import select_evidence_context; from app.evidence.citations import validate_citations; print('m2-phase-slice-import-ok')"
+```powershell
+& $python -m pytest `
+  tests/unit/test_source_gateway.py `
+  tests/unit/test_public_process_summary.py `
+  tests/unit/test_chat_service.py `
+  tests/unit/test_api_chat.py `
+  tests/integration/test_m3_chat_phase_slice.py `
+  -q
+```
 
-.\.venv\Scripts\python.exe scripts/secret_scan.py
-.\.venv\Scripts\python.exe -m compileall app tests scripts -q
+Final:
+
+```powershell
+& $python -m pytest tests/unit/test_m3_langchain_stack.py tests/integration/test_m2_phase_slice.py tests/integration/test_m3_chat_phase_slice.py -q
+& $python -m pytest tests -q
+& $python -c "from app.llm.base import LLMStatus; from app.llm.litellm_client import LiteLLMClient; from app.answer.composer import AnswerComposer; from app.services.chat_service import ChatService; from app.api.main import app; print('m3-01-import-ok')"
+& $python scripts/secret_scan.py
+& $python -m compileall app tests scripts -q
 git diff --check
 git diff --name-status
+git diff --stat
 git status --short
 ```
 
-Final targeted commands will name only the approved M3-01 test files plus the
-same M2 and full-suite regression commands. Exact dependency inspection and
-lock commands must be added after the lock mechanism is approved.
+Clean-lock commands and actual pass counts must be added to the result log after
+execution.
 
-## 14. Stop Conditions
+---
 
-Stop and report evidence before further edits if:
+## 19. Completion Criteria
 
+### Checkpoint A
+
+- [x] M3-00 independent PASS
+- [x] clean tzdata lock PASS
+- [x] LLM contracts and config PASS
+- [x] LiteLLM adapter PASS
+- [x] real LangChain RunnableSequence PASS
+- [x] prompt permission/safety PASS
+- [x] citation-bound structured draft PASS
+- [x] fixed fallback PASS
+- [x] M2/M3-00 regression PASS
+
+### Checkpoint B
+
+- [x] SourceGateway protocol PASS
+- [x] ExplicitUnconfiguredSourceGateway PASS
+- [x] stable ChatRequest/ChatResponse
+- [x] PublicProcessSummary exact contract PASS
+- [x] `/api/chat` non-streaming response PASS
+- [x] deadline/cancellation PASS
+- [x] complete/partial/failure/blocked paths PASS
+- [x] process summary safety/determinism PASS
+- [x] full regression/smoke/hygiene PASS
+
+### Final state
+
+- [x] existing M1/M2 contracts unchanged
+- [x] no UI or price-move implementation
+- [x] live Gemini either separately passed or accurately NOT_RUN
+- [x] fixture/recorded/live/unconfigured states separated
+- [ ] user reviews result
+- [x] commit/push remain NOT_RUN until separate approval
+
+M3-02 implementation is blocked until M3-01 receives implementation review
+PASS.
+
+---
+
+## 20. Stop Conditions
+
+Stop and report if:
+
+- M3-00 review is not PASS
 - preflight code regression fails
-- the working tree contains unapproved code, fixture, or dependency changes
-- a core model/status or completed M1/M2 contract change appears necessary
-- LangChain requires direct provider access or bypasses `LLMClient`
-- LiteLLM structured output or thinking configuration cannot be proven for the
-  selected version
-- Python 3.14 compatibility or deterministic lock generation fails
-- an SDK response cannot be sanitized without retaining raw provider data
-- report permission cannot be resolved from the linked document
-- a secret, local path, full source document, or unapproved report would enter
-  the prompt
-- total deadline requires changing provider retry/cache behavior
-- representative fixture flow requires importing `tests/fixtures` from app code
-- live verification requires billing, paid fallback, or unapproved network use
-- M3-02 or later behavior is required to make M3-01 pass
-- expected file or test scope grows materially
+- working tree contains unapproved code/dependency changes
+- core or completed M1/M2 contract changes are needed
+- new dependency beyond exact tzdata is needed
+- LangChain bypasses LLMClient
+- selected LiteLLM mapping cannot be proven
+- clean lock cannot reproduce timezone
+- raw SDK data cannot be contained
+- report permission cannot be resolved
+- unsafe prompt content would be sent
+- application code needs tests/fixtures
+- actual source gateway requires unapproved provider work
+- UI is required to make backend tests pass
+- M3-12/M5-01 behavior is required
+- file scope grows materially
+- live test requires billing or unapproved network
 
-## 15. Risks and Fallback
+---
 
-| Risk | M3-01 control | Fallback |
+## 21. Risks and Fallback
+
+| Risk | Control | Fallback |
 |---|---|---|
-| `R31` fact, interpretation, inference mixing | typed section labels and extractive claims | empty unsupported sections |
-| `R32` answer forced without evidence | EvidenceDecision gate before composer | fixed no-evidence response |
-| `R38` investment advice | preserve QueryPlanner blocked route; no new advice generation | fixed blocked response |
-| `R59` LiteLLM/Gemini option drift | exact-version compatibility fixture and live gate | stop before adapter claim |
-| `R60` schema-valid unsupported facts | existing citation validator against transmitted Evidence | reject whole draft |
-| `R61` unapproved or sensitive external transmission | linked-document permission and prompt sanitizer | local fixed template |
-| provider or LLM timeout | monotonic deadline and cancellation | partial or fixed response |
-| dependency expansion | `langchain-core` only and adapter isolation | remove adapter without changing core service contracts |
+| R31 fact/interpretation/inference mixing | typed extractive draft | leave unsupported sections empty |
+| R32 answer without evidence | EvidenceDecision before composer | fixed no-evidence |
+| R38 investment advice | preserve blocked plan | fixed blocked |
+| R42 UI information overload | concise PublicProcessSummary + later expander | show answer/source only |
+| R56 observability overdesign | public count/status schema only | omit optional process rows |
+| R59 SDK option drift | exact-version mocked transport | stop adapter claim |
+| R60 unsupported structured claim | citation validation | reject whole draft |
+| R61 external transmission | permission + prompt sanitizer | local fixed template |
+| no runtime source | explicit unconfigured gateway | safe provider-failed response |
+| provider/LLM timeout | monotonic deadline | partial/fixed response |
 
-## 16. Completion Criteria
+---
 
-M3-01 can be marked implementation-complete only when:
+## 22. Deferred and Not Run
 
-- [ ] approved preflight passes
-- [ ] dependency and lock change is separately reviewed
-- [ ] `/api/chat` returns the stable non-streaming schema
-- [ ] existing M1/M2 contracts remain unchanged
-- [ ] project-owned `LLMClient`, `LLMResult`, and separate `LLMStatus` pass tests
-- [ ] LiteLLM/Gemini raw objects never cross the adapter
-- [ ] LangChain remains limited to local prompt and structured parsing
-- [ ] structured-output parse and citation failures fail closed
-- [ ] report external-processing permission is enforced before prompt creation
-- [ ] only question and selected snippets are sent
-- [ ] blocked, no-evidence, provider-failed, and LLM-failure fixed paths pass
-- [ ] provider partial and deadline behavior passes deterministically
-- [ ] thinking budget `0` and `1024` fixture results are recorded and a value is pinned
-- [ ] targeted, M2 regression, full suite, smoke, secret scan, compile, and diff checks pass
-- [ ] live Gemini smoke is either approved and passed, or M3-01 remains
-      `CONDITIONAL / LIVE NOT_VERIFIED`
-- [ ] fixture and live evidence are reported separately
-- [ ] no automatic billing or paid fallback exists
-- [ ] user reviews the implementation result
+- Gemini credential/quota/live behavior
+- recorded application demo gateway
+- live NAVER/OpenDART gateway
+- Streamlit UI
+- M3-02~11 answer enhancements
+- M3-12 price-move behavior
+- M5-01
+- M4 clean Docker/deploy
+- GitHub CI
+- commit/push/PR/merge/deploy
 
-M3-02 implementation is not allowed until M3-01 receives its required review.
+---
 
-## 17. Decisions Required Before Implementation
+## 23. Result Log
 
-- approve or revise this M3-01 scope
-- approve adding `litellm` and `langchain-core`
-- choose and approve a deterministic lock mechanism; `uv.lock` is recommended
-  only if `uv` is already available or its installation is separately approved
-- decide whether dependency installation may access the package index
-- separately approve any Gemini live smoke after local credential setup
-- separately approve commit and push after implementation review
-
-## 18. Result Log
-
-- Plan created: `2026-07-24`
-- M3 code changes: `NOT_RUN`
-- Dependency changes: `NOT_RUN`
-- Preflight: `NOT_RUN`
-- Targeted tests: `NOT_RUN`
-- M2 regression: `NOT_RUN`
-- Full suite: `NOT_RUN`
-- Import smoke: `NOT_RUN`
-- Secret scan: `NOT_RUN`
-- Compile: `NOT_RUN`
+- Planning base SHA:
+  `a3cb8e6de5309bc68ac6856648d275883ec9407f`
+- M3-00 implementation SHA:
+  `a3cb8e6de5309bc68ac6856648d275883ec9407f`
+- M3-00 independent review: `PASS - confirmed by user`
+- Final plan approval: `APPROVED by user`
+- Gate 0: `PASS`
+  - M3-00 targeted: `13 passed`
+  - M2 phase slice: `5 passed`
+  - M2 unit/integration regression: `659 passed`
+  - pre-implementation full suite after scanner closure: `1433 passed`
+  - import smoke, secret scan, compile, and diff check: `PASS`
+  - initial secret scan found two direct fixture credential literals in
+    committed M3-00 test/document examples
+  - user approved the minimal fixture-only remediation
+  - no scanner rule was weakened
+- Gate 1 tzdata lock: `PASS`
+  - exact dependency: `tzdata==2026.3`
+  - lock tool: task-local `uv==0.11.32`
+  - lock diff: only project tzdata reference and tzdata package/hashes
+  - clean locked environment ZoneInfo smoke:
+    `tzdata 2026.3 / Asia/Seoul / PASS`
+  - clean M2 phase slice: `5 passed`
+  - clean pre-implementation full suite: `1433 passed`
+  - task-created temporary environment cleanup: `PASS`
+- Checkpoint A: `PASS`
+- Checkpoint A targeted: `56 passed`
+- Checkpoint B: `PASS`
+- Checkpoint B targeted: `23 passed`
+- M3 integration: `1 passed`
+- M3-00 + M2 phase + M3 phase composition: `19 passed`
+- M2 regression: `659 passed during Gate 0`
+- Full suite: `1512 passed`
+- Clean locked M3-01 targeted: `78 passed`
+- PublicProcessSummary tests: `4 passed within Checkpoint B`
+- Unconfigured gateway tests: `PASS within Checkpoint B`
+- Import smoke:
+  `PASS - m3-01-import-ok`
+- Secret scan: `PASS - []`
+- Compile: `PASS`
+- Git diff check: `PASS`
+- Known non-failing warnings:
+  `LangChain Core Pydantic V1 compatibility warning on Python 3.14;
+  Starlette TestClient httpx deprecation warning`
 - Gemini live smoke: `NOT_RUN`
 - GitHub CI: `NOT_RUN`
-- Commit/push: `NOT_RUN`
+- UI: `NOT_STARTED`
+- M3-12/M5-01: `NOT_STARTED`
+- M3-01 implementation SHA: `NOT_CREATED`
+- Independent implementation review: `NOT_RUN`
+- Independent pytest rerun: `NOT_RUN`
+- Commit/push/PR/merge/deploy: `NOT_RUN / NOT_APPROVED`
+
+---
+
+## 24. Approval Request
+
+Requested:
+
+- approval of this corrected M3-01 plan
+- approval of exact `tzdata==2026.3` package-index access and lock update
+- approval of Checkpoint A then B implementation
+- approval of listed local tests and clean-lock verification
+- approval of factual document synchronization after tests pass
+
+Not requested:
+
+- live Gemini or credential use
+- UI
+- recorded/live source implementation
+- M3-02 or later behavior
+- M3-12 or M5-01
+- commit, push, PR, merge, deploy

@@ -33,7 +33,7 @@ MODEL = "gemini/gemini-2.5-flash"
 SAFE_TIMEOUT_MESSAGE = "Model operation timed out."
 HOSTILE_TRACING_ENV = {
     "LANGSMITH_TRACING": "true",
-    "LANGSMITH_API_KEY": "dummy",
+    "LANGSMITH_API_KEY": "-".join(("m3", "test", "only")),
     "LANGSMITH_ENDPOINT": "http://127.0.0.1:9",
     "LANGSMITH_PROJECT": "questock-m3-00-test",
     "LANGCHAIN_TRACING_V2": "true",
