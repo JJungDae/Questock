@@ -11,7 +11,7 @@
 - Planning base commit: `m2-07 conditional pass updates`
 - Planning base main push: `complete`
 - GitHub latest main SHA at review:
-  `0711d62cd62f86d71c4a712b6205f7643f5f9209`
+  `03d2f982ddada67c767a02fad380b85a2980a8a3`
 - M2-07 first implementation SHA:
   `7e952d10eb29eebf29f2c0ac657a484914b53ae7`
 - M2-07 supplement SHA:
@@ -19,27 +19,33 @@
 - M2-07 independent final closure review: `PASS`
 - M2-07 code status: `PASS / complete`
 - M2-07 Task Card closure synchronization:
-  `COMPLETE LOCALLY - GIT OPERATION NOT_RUN`
+  `COMPLETE - included in M2-08 implementation commit and main push`
 - M2-08 first plan review:
   `CONDITIONAL PASS - corrected final plan supplied`
 - M2-08 corrected final plan approval:
   `APPROVED by user on 2026-07-24`
 - M2-08 preflight: `PASS`
-- M2-08 implementation:
-  `IMPLEMENTED LOCALLY - INDEPENDENT FIRST REVIEW PENDING`
+- M2-08 implementation SHA:
+  `03d2f982ddada67c767a02fad380b85a2980a8a3`
+- M2-08 implementation commit: `Implement m2-08`
+- M2-08 implementation main push: `complete`
+- M2-08 independent implementation review: `PASS`
+- M2-08 current status: `PASS / complete`
 - M2 integrated review:
-  `NOT_STARTED - required after M2-08 closure and before M3 implementation`
+  `ALLOWED - required before M3 implementation`
 - M2-09 implementation:
   `NOT_ALLOWED without separate A15-M gate`
 - M3 implementation:
-  `BLOCKED pending M2-08 closure and M2 integrated review PASS`
+  `BLOCKED pending M2 integrated review PASS`
 - M1-09:
   `mandatory supplement implemented - final independent review pending`
-- Further commit/push/PR/merge/deploy: `NOT_APPROVED`
+- M2-08 status synchronization commit/push:
+  `APPROVED by user on 2026-07-24`
+- Further PR/merge/deploy: `NOT_APPROVED`
 
-The corrected final plan was approved and its isolated local implementation and
-verification are complete. Dependency changes, external calls, actual logging
-integration, and Git operations remain unapproved.
+The corrected final plan, isolated implementation, verification, main push, and
+independent implementation review are complete. Dependency changes, external
+calls, actual logging integration, PR, merge, and deploy remain unapproved.
 
 ## 2. Goal
 
@@ -1062,7 +1068,8 @@ Do not commit or push without separate user approval.
 - actual LLM call integration: `NOT_RUN`
 - application structured log emission: `NOT_RUN`
 - permission and external-transmission gate: `NOT_IMPLEMENTED`
-- M2 integrated review: `NOT_STARTED - required after M2-08 closure`
+- M2 integrated review:
+  `NOT_RUN - ALLOWED and required before M3 implementation`
 - production orchestration: `NOT_RUN - required before M2 milestone close`
 - actual 365-day disclosure candidate completeness:
   `NOT_RUN - required before M2 milestone close`
@@ -1136,14 +1143,15 @@ Do not commit or push without separate user approval.
 
 Requested:
 
-- independent first implementation review of the local M2-08 result
+- no further M2-08 implementation or implementation review
+- M2 integrated review only under a separate user instruction
 
 Not requested:
 
 - dependency installation or change
 - actual logging integration
 - live API, provider, URL, permission, or LLM work
-- M2 integrated review before M2-08 closure
+- M2 integrated review in this synchronization task
 - M2-09 or M3 implementation
 - commit
 - push
@@ -1234,25 +1242,27 @@ implementation. No destructive Git operation was used.
 
 - Planning/implementation base SHA:
   `0711d62cd62f86d71c4a712b6205f7643f5f9209`
-- Implementation SHA: `NOT_CREATED`
-- Implementation commit/push/PR/merge/deploy: `NOT_RUN`
+- Implementation SHA:
+  `03d2f982ddada67c767a02fad380b85a2980a8a3`
+- Implementation commit: `Implement m2-08`
+- Implementation main push: `complete`
+- Implementation PR/merge/deploy: `NOT_RUN`
 - GitHub CI: `NOT_RUN`
 - Independent pytest rerun: `NOT_RUN`
-- Independent first implementation review: `PENDING`
-- Current M2-08 status:
-  `IMPLEMENTED LOCALLY - INDEPENDENT FIRST REVIEW PENDING`
+- Independent implementation review: `PASS`
+- Current M2-08 status: `PASS / complete`
 - M2 integrated review:
-  `BLOCKED until M2-08 closure`
+  `ALLOWED - required before M3 implementation`
 - M3 implementation:
   `BLOCKED pending M2 integrated review PASS`
 - M1-09:
   `mandatory supplement implemented - final independent review pending`
 
-Final changed files:
+Implementation commit files:
 
 ```text
-M  docs/TASK_CARDS/M2-07-citation-validation.md
-?? app/evidence/budget.py
-?? docs/TASK_CARDS/M2-08-context-budget.md
-?? tests/unit/test_context_budget.py
+A app/evidence/budget.py
+M docs/TASK_CARDS/M2-07-citation-validation.md
+A docs/TASK_CARDS/M2-08-context-budget.md
+A tests/unit/test_context_budget.py
 ```
