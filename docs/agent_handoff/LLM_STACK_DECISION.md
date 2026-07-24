@@ -9,9 +9,13 @@
 
 ```text
 AnswerComposer
-→ LLMClient
+→ project-owned Evidence/context adapter
+→ ChatPromptTemplate
+→ RunnableLambda(project-owned LLMClient)
 → LiteLLM Python SDK
 → Gemini API
+→ Pydantic structured parser
+→ project-owned validators
 ```
 
 - 기본 model: `gemini/gemini-2.5-flash`
@@ -118,6 +122,25 @@ LLM_TIMEOUT_SECONDS
 
 
 ## LiteLLM dependency 승인 기록
+
+### M3-00 LangChain composition boundary
+
+- Selected architecture: LangChain Core `RunnableSequence` around the
+  project-owned direct LiteLLM adapter boundary.
+- Direct runtime pins: `langchain-core==1.5.1`, `litellm==1.83.7`.
+- Composition ownership: `ChatPromptTemplate` -> project-owned async
+  `LLMClient` boundary through `RunnableLambda` -> Pydantic parser.
+- LangChain does not own retrieval, Evidence policy, permission checks,
+  context budgeting, citation validation, numeric validation, or public status
+  contracts.
+- `langsmith` remains a locked transitive dependency. Production code and
+  persistent tests do not import it directly.
+- Runtime must set `LITELLM_LOCAL_MODEL_COST_MAP=True` before importing
+  LiteLLM, explicitly set `LANGSMITH_TRACING=false` and
+  `LANGCHAIN_TRACING_V2=false`, and invoke chains with `callbacks=[]`.
+- No full `langchain`, `langchain-litellm`, Router, Proxy, model fallback,
+  callback logging, remote prompt, or live Gemini call is part of M3-00.
+- Deterministic dependency source: repository `uv.lock`.
 
 - package: `litellm`
 - 필요한 이유: Gemini 호출을 project-owned `LLMClient` 뒤에서 정규화하고 향후 adapter 교체 범위를 제한

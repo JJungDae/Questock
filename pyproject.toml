@@ -7,6 +7,8 @@ dependencies = [
     "pydantic>=2.7,<3",
     "fastapi>=0.115,<1",
     "uvicorn>=0.30,<1",
+    "langchain-core==1.5.1",
+    "litellm==1.83.7",
 ]
 
 [project.optional-dependencies]

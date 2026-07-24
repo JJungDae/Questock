@@ -802,6 +802,10 @@ hybrid·reranker는 baseline이 안정된 후 별도 실험 Task로 둔다.
 권장 Task:
 
 ```text
+M3-00 introduces and locks the LangChain/LiteLLM framework boundary.
+M3-01 consumes that approved boundary to implement ChatService and
+AnswerComposer.
+
 M3-01 answer schema, project-owned LLMClient, LiteLLM Gemini adapter와 안정적인 단일 응답
 M3-02 beginner explanation
 M3-03 fact·interpretation·inference
