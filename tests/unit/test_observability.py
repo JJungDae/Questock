@@ -99,12 +99,44 @@ def test_in_memory_sink_preserves_immutable_observations() -> None:
 
 
 @pytest.mark.parametrize(
+    "retrieval_strategy",
+    [
+        "lexical-bm25-m2-03-v1",
+        "glossary-direct-m3-05-v1",
+    ],
+)
+def test_observation_allows_approved_safe_tokens(
+    retrieval_strategy: str,
+) -> None:
+    observation = _observation(
+        request_id="request-001",
+        intent="recent_issue",
+        security_id="KRX:005930",
+        provider_statuses=(
+            ("news", "ok"),
+            ("research_report", "no_data"),
+        ),
+        retrieval_strategy=retrieval_strategy,
+    )
+
+    assert observation.request_id == "request-001"
+    assert observation.intent == "recent_issue"
+    assert observation.security_id == "KRX:005930"
+    assert observation.retrieval_strategy == retrieval_strategy
+
+
+@pytest.mark.parametrize(
     "updates",
     [
         {"request_id": "bad request"},
         {"provider_statuses": (("news", "unknown"),)},
         {"provider_statuses": (("news", "ok"), ("news", "no_data"))},
         {"evidence_count": True},
+        {"request_id": "C:/private/file"},
+        {"retrieval_strategy": "/home/user/file"},
+        {"intent": "https://private.example/file"},
+        {"security_id": "file://private/file"},
+        {"provider_statuses": (("//server/share", "ok"),)},
         {"retrieval_strategy": "C:\\private\\strategy"},
         {"evidence_decision": "unknown"},
         {"total_latency_ms": float("nan")},

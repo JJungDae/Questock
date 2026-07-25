@@ -48,9 +48,31 @@
 - B8 plan review:
   `PASS WITH REQUIRED FOLLOW-UP`
 - B8 implementation:
-  `IMPLEMENTED - local verification PASS - user review pending`
-- B8 implementation review:
-  `NOT_RUN`
+  `PASS WITH REQUIRED FOLLOW-UP / complete`
+- B8 independent implementation review:
+  `CONDITIONAL PASS`
+- B8 focused closure fix:
+  `PASS`
+- Closed finding:
+  `observability forward-slash path/URL validation`
+- M4-01:
+  `PASS`
+- M4-02:
+  `PASS`
+- M4-03:
+  `PASS`
+- B8 code blockers:
+  `CLOSED`
+- M4 Gate quality:
+  `34/34 = 100%`
+- M4 Gate Critical:
+  `17/17 = 100%`
+- M4 Gate public exposure:
+  `0`
+- B9 planning:
+  `ALLOWED`
+- B9 implementation:
+  `ALLOWED after approved B9 plan and preflight PASS`
 - Dependency or lock change:
   `NOT_APPROVED / NOT_EXPECTED`
 - Live provider or live Gemini work:
@@ -868,12 +890,42 @@ Implement B8 quality stabilization
 Implementation main push:
 complete
 
+B8 independent implementation review:
+CONDITIONAL PASS
+
+B8 focused closure fix:
+PASS
+Closed finding: observability forward-slash path/URL validation
+Regex: ^[A-Za-z0-9._:/-]{1,128}$ -> ^[A-Za-z0-9._:-]{1,128}$
+Initial sandbox focused run: environment failure - 68 passed, 3 errors
+All three errors: pytest tmp_path setup PermissionError
+Approved out-of-sandbox focused rerun: PASS - 71 passed, 1 warning
+Full regression: PASS - 1802 passed, 2 warnings
+Direct M3 Gate: PASS - 34/34 = 100%
+Critical: 17/17 = 100%
+Public exposure: 0
+M3-12: NOT_ACTIVATED
+Secret scan: PASS - []
+Compile: PASS - exit code 0
+Diff check: PASS - exit code 0; CRLF conversion warnings only
+Independent pytest rerun: NOT_RUN
+GitHub CI: NOT_RUN
+
+B8 final implementation status:
+PASS WITH REQUIRED FOLLOW-UP / complete
+B8 code blockers: CLOSED
+Required follow-up: B9 CI, Docker, deployment, documentation, and
+traceability work only; no further B8 code correction is currently required.
+
 Commit/push/PR/merge/deploy:
 B8 implementation commit/main push complete
 PR/merge/deploy NOT_RUN / NOT_APPROVED
 
 B9 planning:
-BLOCKED until B8 implementation review PASS
+ALLOWED
+
+B9 implementation:
+ALLOWED after approved B9 plan and preflight PASS
 ```
 
 ---

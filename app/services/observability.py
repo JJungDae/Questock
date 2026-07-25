@@ -10,7 +10,7 @@ from typing import Protocol, runtime_checkable
 from app.core.status import EvidenceDecisionStatus, ProviderStatus
 
 _LOGGER_NAME = "questock.observability"
-_SAFE_TOKEN_RE = re.compile(r"^[A-Za-z0-9._:/-]{1,128}$")
+_SAFE_TOKEN_RE = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
 _PROVIDER_STATUSES = frozenset(status.value for status in ProviderStatus)
 _DECISION_STATUSES = frozenset(
     status.value for status in EvidenceDecisionStatus
