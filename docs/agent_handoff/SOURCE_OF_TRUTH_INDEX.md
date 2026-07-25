@@ -2,8 +2,8 @@
 
 > 기준일: 2026-07-25
 > 기준 branch: `main`
-> 기준 SHA: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
-> 기준 commit: `m3-01 conditional pass2 updates`
+> Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
+> Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
 > 상태: `POST-M3-01 FLOW DOCUMENTATION UPDATE`
 
 ## 1. 목적
@@ -57,7 +57,7 @@
 M3-01:
 PASS / complete
 코드 BLOCKER 전부 CLOSED
-Task Card 사실 동기화만 B6-0에서 수행
+Task Card 사실 동기화 완료, B6-0에서 상태 확인
 
 다음 공식 bundle:
 B6-REMAINDER

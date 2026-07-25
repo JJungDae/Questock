@@ -1,7 +1,8 @@
 # M3-15 DIRECTION AND SPLIT ADDENDUM
 
 > canonical Task Card: `docs/TASK_CARDS/M3-15-process-visibility-ui.md`
-> 기준 SHA: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
+> Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
+> Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
 > M3-01 schema blob: `c10da0270e00105a4f375ba79a2aac5451730a4a`
 > trace version: `m3-01-v1`
 
@@ -12,10 +13,11 @@ M3-01 prerequisite:
 PASS / complete
 
 M3-15 planning base:
-d937d625e26495a3ee8c5a5b2c327dfbd2512ea9
+f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4
 
 M3-15 plan:
-B6-REMAINDER plan review pending
+B6-REMAINDER initial plan review CONDITIONAL PASS
+corrected plan closure review pending
 
 M3-15 implementation:
 BLOCKED pending B6 plan approval, Streamlit dependency approval, and preflight

@@ -2,7 +2,8 @@
 
 > 기준일: 2026-07-25
 > 적용 범위: M3-01 완료 이후 B6·B7·M3 Gate·B8·B9·M4 Gate·M5/P1
-> 기준 SHA: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
+> Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
+> Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
 > 우선 참조: `POST_M3_01_EXECUTION_FLOW_DECISION_2026-07-25.md`
 
 ## 1. Addendum 효력
@@ -20,7 +21,7 @@
 | M3-00 | PASS / complete |
 | M3-01 | PASS / complete |
 | M3-01 코드 BLOCKER | CLOSED |
-| M3-01 남은 작업 | B6-0 factual sync |
+| M3-01 남은 작업 | factual sync 완료 / B6-0 확인 |
 | M3-15 | direction locked / B6 plan pending |
 | M3-12 | NOT_ACTIVATED |
 | 다음 bundle | B6-REMAINDER |
@@ -40,7 +41,7 @@
 
 ### B6-0
 
-- M3-01 Task Card 사실 동기화
+- M3-01 Task Card 사실 동기화 상태 확인
 - M3-01 `PASS / complete`
 - `ChatResponse + PublicProcessSummary` freeze
 - golden/Critical inventory

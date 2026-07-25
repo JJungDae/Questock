@@ -31,7 +31,7 @@
 - M3-01 final plan approval:
   `APPROVED by user`
 - M3-01 implementation:
-  `FIRST IMPLEMENTATION PUSHED / CONDITIONAL PASS`
+  `PASS / complete`
 - First implementation SHA:
   `9b92d1b9923b74a2f3ea55f51c82fc2c731e83fc`
 - First implementation commit:
@@ -46,15 +46,25 @@
   `m3-01 conditional pass updates`
 - First supplement main push:
   `complete`
-- Closure review:
+- First supplement closure review:
   `CONDITIONAL PASS - timeout status regression correction required`
-- Second supplement:
-  `complete locally / final closure pending`
+- Second supplement SHA:
+  `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
+- Second supplement commit:
+  `m3-01 conditional pass2 updates`
+- Second supplement main push:
+  `complete`
+- Final closure review:
+  `PASS WITH REQUIRED FOLLOW-UP`
+- Code blockers:
+  `CLOSED`
+- Required follow-up:
+  `factual synchronization complete`
 - Package-index access for the exact `tzdata` addition:
   `APPROVED / used only for exact tzdata lock update`
 - Gemini live call:
   `SEPARATE APPROVAL / NOT INCLUDED`
-- Second supplement commit, push, PR, merge, deploy:
+- Further M3-01 code commit, push, PR, merge, deploy:
   `NOT_RUN / NOT_APPROVED`
 - M3-12 price-move stretch:
   `NOT_ACTIVATED - post-M4 M5-01 owns the mentor-selected extension`
@@ -1205,11 +1215,15 @@ execution.
 - [x] fixture/recorded/live/unconfigured states separated
 - [x] first implementation review completed with CONDITIONAL PASS
 - [x] first supplement closure review completed with CONDITIONAL PASS
-- [ ] second supplement receives final closure review
-- [x] second supplement commit/push remain NOT_RUN until separate approval
+- [x] second supplement final closure review completed with PASS WITH REQUIRED
+  FOLLOW-UP
+- [x] second supplement commit and main push complete
+- [x] M3-01 code blockers closed
+- [x] required factual synchronization complete
+- [x] M3-01 status recorded as PASS / complete
 
-M3-02 implementation is blocked until M3-01 receives implementation review
-PASS.
+M3-02 and B6 planning are allowed. B6 implementation remains governed by its
+separate plan approval and Gate 0/1 requirements.
 
 ---
 
@@ -1366,7 +1380,7 @@ Stop and report if:
 - First supplement closure review:
   `CONDITIONAL PASS - timeout status regression correction required`
 - Second supplement:
-  `complete locally / final closure pending`
+  `complete and pushed`
 - Second supplement targeted:
   - source gateway, public process summary, ChatService, M3 chat phase slice:
     `exit code 0 - 62 passed`
@@ -1389,13 +1403,20 @@ Stop and report if:
 - GitHub CI: `NOT_RUN`
 - UI: `NOT_STARTED`
 - M3-12/M5-01: `NOT_STARTED`
-- Second supplement SHA: `NOT_CREATED`
-- Second supplement commit/push: `NOT_RUN / NOT_APPROVED`
+- Second supplement SHA:
+  `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
+- Second supplement commit:
+  `m3-01 conditional pass2 updates`
+- Second supplement main push:
+  `complete`
 - Independent implementation review:
-  `CONDITIONAL PASS for first supplement / second supplement final closure
-  pending`
+  `PASS WITH REQUIRED FOLLOW-UP`
+- Code blockers: `CLOSED`
+- Required follow-up: `factual synchronization complete`
+- M3-01 status: `PASS / complete`
 - Independent pytest rerun: `NOT_RUN`
-- Further commit/push/PR/merge/deploy: `NOT_RUN / NOT_APPROVED`
+- Further M3-01 code commit/push/PR/merge/deploy:
+  `NOT_RUN / NOT_APPROVED`
 
 ---
 

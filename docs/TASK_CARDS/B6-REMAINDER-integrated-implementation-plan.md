@@ -15,10 +15,17 @@
   - `M3-04` answer-card projection
   - `M3-07` source / error / stale projection
 - Planning date: `2026-07-25`
-- Planning-base candidate SHA:
+- Pre-B6 code baseline:
   `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
-- Planning-base commit:
+- Pre-B6 code baseline commit:
   `m3-01 conditional pass2 updates`
+- Docs update and plan-review base:
+  `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
+- Final approved-plan document SHA:
+  `resolved after the corrected plan is committed and pushed`
+- B6 implementation base:
+  `the latest origin/main containing the final approved plan, resolved and
+  recorded at Gate 0`
 - M2 Gate:
   `PASS`
 - M3-00:
@@ -28,9 +35,11 @@
 - M3-01 final independent closure:
   `PASS WITH REQUIRED FOLLOW-UP`
 - M3-01 remaining follow-up:
-  `Task Card factual synchronization only`
+  `factual Task Card synchronization completed in this correction`
 - B6 plan review:
-  `PENDING`
+  `CONDITIONAL PASS - five required corrections incorporated locally`
+- B6 plan closure:
+  `NOT_RUN`
 - Total-agent re-review:
   `REQUIRED because B6 adds a permanent Streamlit dependency and updates uv.lock`
 - User final plan approval:
@@ -73,14 +82,14 @@ these repository documents after approval.
 Gate 0
 latest main / clean tree / M3-01 regression / evaluation-asset inventory
 
+B6-0
+confirm M3-01 factual status sync
+→ freeze ChatResponse and PublicProcessSummary
+
 Gate 1
 streamlit==1.60.0 dependency and uv.lock
 → clean Python 3.14 install
 → import / AppTest / startup smoke
-
-B6-0
-M3-01 factual status sync
-→ freeze ChatResponse and PublicProcessSummary
 
 B6-A
 M3-15A Streamlit shell
@@ -193,11 +202,13 @@ No Streamlit extra is approved.
 
 ## 4. Verified Current Repository State
 
-At planning base `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`:
+At pre-B6 code baseline
+`d937d625e26495a3ee8c5a5b2c327dfbd2512ea9` and docs update/review base
+`f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`:
 
 | Area | Verified state |
 |---|---|
-| latest main | `d937d625...` |
+| docs update/review main | `f5b3c646...` |
 | direct runtime dependencies | Pydantic, FastAPI, Uvicorn, LangChain Core, LiteLLM, tzdata |
 | Streamlit dependency | absent |
 | `app/ui/` | absent |
@@ -404,12 +415,25 @@ Stop and report rather than accepting the lock when:
 - Pydantic or FastAPI direct constraints change
 - another direct dependency is proposed
 - a Streamlit extra appears
-- an unrelated package family appears
-- more than five already-locked packages move versions without a clear
-  Streamlit resolver reason
+- an existing package outside Streamlit's declared dependency closure moves
+  version
+- an existing package inside Streamlit's declared dependency closure moves
+  without a recorded package-specific resolver reason
+- any package movement remains unexplained, regardless of count
+- an exact pin or additional dependency differs from the reviewed plan
 - clean Python 3.14 install fails
 - `AppTest` import fails
 - full M3-01 regression fails
+
+Lock acceptance occurs only after the actual diff and clean-environment tests
+pass. Record:
+
+```text
+existing locked packages moved:
+per-package resolver reason:
+outside declared closure:
+lock accepted:
+```
 
 ### 7.6 Removal and rollback
 
@@ -504,13 +528,20 @@ Production implementation:
 HttpChatTransport
 ```
 
+Fixed limit:
+
+```text
+MAX_CHAT_RESPONSE_BYTES = 1_048_576
+```
+
 Rules:
 
 - default endpoint:
   `http://127.0.0.1:8000/api/chat`
 - endpoint may be overridden only through one B6-owned environment variable
-- only HTTP or HTTPS
-- embedded credentials rejected
+- endpoint scheme is HTTP or HTTPS only
+- embedded username or password is rejected
+- query string, fragment, and empty host are rejected
 - finite positive timeout
 - default UI timeout:
   `21 seconds`
@@ -519,8 +550,23 @@ Rules:
   - `session_id`
 - response is validated with `ChatResponse.model_validate`
 - unknown or invalid schema fails safely
-- unexpected redirect, invalid content type, oversized response, invalid JSON,
-  HTTP error, and socket error use fixed user messages
+- automatic redirects are disabled with an explicit no-redirect handler or
+  equivalent standard-library boundary
+- every 3xx response, including 301, 302, 307, and 308, uses a fixed sanitized
+  failure
+- `Content-Type` is required; its case-insensitive media type must be exactly
+  `application/json`
+- the only allowed optional content-type parameter is case-insensitive
+  `charset=utf-8`; unknown or duplicate parameters are rejected
+- when `Content-Length` exists and exceeds `MAX_CHAT_RESPONSE_BYTES`, reject
+  before reading the body
+- streamed reading always stops at `MAX_CHAT_RESPONSE_BYTES + 1`, so absent or
+  inaccurate `Content-Length` cannot bypass the cap
+- exactly `MAX_CHAT_RESPONSE_BYTES` is allowed; any larger body uses a fixed
+  sanitized failure
+- invalid content type, oversized response, invalid JSON, invalid
+  `ChatResponse`, HTTP error, and socket error use fixed user messages
+- partial or oversized response bodies are never logged or shown
 - raw URL, response body, exception, path, or request data is not displayed
 - no retry
 - no background polling
@@ -569,9 +615,12 @@ Rules:
 
 Synchronize M3-01 facts and freeze the contract before UI and answer changes.
 
+Run B6-0 only after Gate 0 passes. The section order in this document does not
+authorize B6-0 before the baseline check.
+
 ## 11.2 Required document updates
 
-Update `docs/TASK_CARDS/M3-01-answer-schema-chat-service.md` with:
+Confirm `docs/TASK_CARDS/M3-01-answer-schema-chat-service.md` already records:
 
 ```text
 Second supplement SHA:
@@ -590,7 +639,7 @@ Code blockers:
 CLOSED
 
 Required follow-up:
-factual Task Card synchronization completed in B6-0
+factual synchronization complete
 
 M3-01 status:
 PASS / complete
@@ -602,7 +651,7 @@ ALLOWED
 Update `docs/TASK_CARDS/M3-15-process-visibility-ui.md` with:
 
 - planning base:
-  `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
+  the final approved-plan document SHA
 - M3-01 prerequisite:
   `PASS / complete`
 - frozen schema file blob:
@@ -615,6 +664,13 @@ Update `docs/TASK_CARDS/M3-15-process-visibility-ui.md` with:
   `BLOCKED pending B6 plan approval and Gate 0/1`
 
 Do not mark M3-15 complete.
+
+At B6-0, also record the Gate 0-resolved B6 implementation base in:
+
+- the Gate 0 result
+- the B6 result log
+- the first checkpoint HANDOFF
+- the relevant Task Card status
 
 ## 11.3 Evaluation-asset inventory
 
@@ -650,6 +706,7 @@ Rules:
 - M3-01 factual state synchronized locally
 - M3-15 canonical path confirmed
 - schema blob unchanged
+- Gate 0-resolved B6 implementation base recorded
 - evaluation inventory recorded
 - no application code change yet
 
@@ -676,8 +733,6 @@ A smaller equivalent split is allowed when ownership remains clear.
 
 ## 12.3 Expected modified files
 
-- `pyproject.toml`
-- `uv.lock`
 - `.env.example`
 - `docs/TASK_CARDS/M3-15-process-visibility-ui.md`
 - the approved B6 Task Card/result log
@@ -779,7 +834,16 @@ Do not display:
 - embedded credential URL rejection
 - invalid JSON
 - invalid ChatResponse
-- response size cap
+- response exactly at `MAX_CHAT_RESPONSE_BYTES`
+- response at `MAX_CHAT_RESPONSE_BYTES + 1`
+- oversized `Content-Length`
+- no-`Content-Length` streamed overflow
+- redirect 301, 302, 307, and 308
+- endpoint URL with query string
+- endpoint URL with fragment
+- endpoint URL with userinfo
+- invalid content type
+- raw response body, endpoint URL, and exception non-exposure
 - secret/raw exception non-exposure
 - projection exact field consumption
 - unknown trace version safe failure
@@ -975,34 +1039,74 @@ Use existing validation:
 
 Do not import `tests/fixtures`.
 
-## 14.3 Glossary source boundary
+## 14.3 M3-owned security-free glossary boundary
 
-Add a project-owned recorded glossary source gateway or equivalent adapter.
-
-It must:
-
-- consume the approved corpus
-- validate the approved fingerprint before use
-- convert approved entries into existing `FinancialDocument` occurrences
-- use `source_type="glossary"`
-- use `provider="manual_glossary"`
-- keep security IDs empty
-- use stable document IDs
-- preserve entry ID, version, and section in the locator
-- expose no local path
-- set only approved external-processing metadata
-- return typed `ProviderResult`
-- use `data_mode="recorded"`
-- perform no network request
-- remain deterministic
-
-Recommended document granularity:
+`financial_term` does not enter the generic `FinancialDocument` pipeline.
 
 ```text
-one FinancialDocument per available glossary section
+financial_term QueryPlan
+→ approved data/glossary.json load and fingerprint validation
+→ canonical or alias direct lookup
+→ existing Evidence objects constructed directly
+→ M3-owned internal glossary result
+→ existing citation validation
+→ answer composition
+→ existing ChatResponse + PublicProcessSummary
 ```
 
-Sections:
+The branch must:
+
+- consume only the approved corpus
+- load and index once per glossary service/helper instance
+- perform no per-section repeated file I/O
+- validate the approved fingerprint before lookup
+- use `lookup_glossary_entry` for canonical and alias matching
+- construct no `FinancialDocument`
+- bypass the generic M2 hard filter, freshness evaluator, and lexical retriever
+- assign no fallback or sentinel security, including `KRX:005930`
+- perform no network request
+- import nothing from `tests/fixtures`
+- remain deterministic
+
+Every direct glossary `Evidence` uses the unchanged core model:
+
+```text
+source_type:
+glossary
+
+scope:
+industry_common
+
+subject_security_ids:
+[]
+
+mentioned_security_ids:
+[]
+
+document_id:
+stable glossary document/section identifier
+
+evidence_id:
+stable glossary evidence/section identifier
+
+locator:
+corpus_id
+entry_id
+version
+section
+source_type
+provider
+ingestion_version
+
+source_url:
+None unless the approved corpus later supplies a safe HTTP(S) URL
+```
+
+IDs are derived deterministically from corpus ID, entry ID, version, and
+section. They do not use a runtime index, execution time, local path, or Python
+hash.
+
+Available sections:
 
 - definition
 - why_it_matters
@@ -1010,21 +1114,87 @@ Sections:
 - formula when present
 - example when present
 
-This lets existing M2 retrieval select exact sections and preserves a precise
-locator.
+## 14.4 Internal result and ChatService integration
 
-## 14.4 Default runtime wiring
+Use an M3-owned internal result such as `GlossaryPipelineResult`, or an
+equivalent private helper contract, containing:
 
-For `financial_term` plans whose required source is exactly `glossary`, the
-default application path may use the approved recorded glossary gateway.
+- glossary `ProviderResult`
+- direct `Evidence` tuple
+- existing `RetrievalStatus`
+- selected count
+- lookup found/not-found state
+- `data_mode="recorded"`
+- `live_connectivity_checked=false`
+- stable fields needed to construct the existing `PublicProcessSummary`
 
-For news, disclosure, and research-report runtime paths, preserve the current
-explicit unconfigured behavior until a later approved source/demo Task.
+The provider result passes the existing centralized ProviderResult contract:
 
-Do not add live external source work to B6.
+- found lookup: `ok`
+- unknown lookup: `no_data`
+- load, fingerprint, or validation failure: an existing typed failure status
+  with a fixed sanitized message
 
-If safe selective default wiring cannot be achieved without changing the
-SourceGateway public contract, stop and request review.
+For policy composition, the M3-owned branch may construct existing internal
+M2 result objects without invoking their security-dependent generic
+evaluators:
+
+- a glossary `FreshnessResult` with one `FreshnessWindow` using
+  `applied_by="none"`, direct Evidence, and no fabricated warning
+- a `RetrievalResult` using existing `OK` for selected Evidence or `EMPTY` for
+  no match, with a stable glossary-direct strategy label
+- an `EvidenceDecision` produced by the existing `EvidencePolicy` from the
+  actual provider, freshness, and retrieval results
+- an existing context-budget result from the decision Evidence
+
+`ChatService` handles `financial_term` in this private M3-owned branch before
+the generic `FinancialDocument` pipeline. Non-glossary plans continue through
+the existing `SourceGateway` path and remain explicitly unconfigured where
+they are unconfigured today.
+
+Do not:
+
+- change the `SourceGateway` public protocol
+- add a new public route or schema
+- change core/shared models
+- add an M1/M2 hard-filter special case
+- change non-glossary provider behavior
+
+The existing public summary fields have these exact meanings for glossary:
+
+```text
+sources.glossary.document_count:
+matched glossary section count
+
+normalized_count:
+directly constructed valid glossary Evidence count
+
+hard_filtered_count:
+security-free glossary eligibility checks passed count
+
+freshness_retained_count:
+count retained by the glossary non-temporal policy
+
+retrieval_selected_count:
+final selected glossary Evidence count
+
+retrieval_status:
+existing OK when selected, otherwise existing EMPTY
+
+EvidenceDecision:
+actual provider, lookup, freshness, and retrieval result
+```
+
+No count is filled with a fabricated zero or success value.
+
+Composer and citation rules:
+
+- pass `documents_by_id={}` for direct glossary Evidence
+- keep the research-report external-processing permission rule unchanged
+- allow only security-free glossary Evidence for `financial_term` citations
+- preserve whole-draft citation fail-closed behavior
+- make no second LLM call
+- return a fixed no-evidence/unsupported response for an unknown term
 
 ## 14.5 Glossary answer behavior
 
@@ -1054,11 +1224,10 @@ Rules:
 
 New or modified, subject to local preflight:
 
-- `app/services/glossary_source_gateway.py`
-- one default-source routing helper under `app/services/` when required
-- `app/services/chat_service.py` only for selective safe wiring
+- one M3-owned glossary service/orchestrator under `app/services/`
+- `app/services/chat_service.py` for the private `financial_term` branch
 - `app/answer/composer.py` or one glossary projector helper
-- `tests/unit/test_glossary_source_gateway.py`
+- one focused glossary service/orchestrator unit test
 - `tests/unit/test_chat_service.py`
 - `tests/unit/test_answer_composer.py`
 - `tests/integration/test_m3_chat_phase_slice.py`
@@ -1070,14 +1239,24 @@ Do not modify the glossary corpus content in B6.
 
 - approved corpus fingerprint
 - 15-entry coverage
-- section document generation
+- no empty-security `FinancialDocument` construction
+- no fallback `KRX:005930` in glossary response or Evidence
+- `scope="industry_common"`
+- empty subject and mentioned security IDs
+- canonical term
+- alias
+- unknown term
 - stable document IDs
-- locator entry/version/section
+- stable Evidence IDs
+- valid locator with corpus/entry/version/section/provider/ingestion version
+- one load/index per service or helper instance
+- actual process-summary counts
+- existing retrieval status and EvidenceDecision mapping
+- citation validation with `documents_by_id={}`
+- whole-draft citation failure remains fail-closed
+- no public schema or route change
 - no local path
 - no test fixture import
-- financial-term routing
-- canonical term and alias query retrieval
-- unknown term no evidence
 - formula absent/present
 - no security required
 - default non-glossary remains unconfigured
@@ -1238,6 +1417,13 @@ The UI transport should not require modification unless a proven bug exists.
 - `docs/TASK_CARDS/M3-15-process-visibility-ui.md`
 - approved B6 Task Card/result log
 
+## Gate 1
+
+- `pyproject.toml`
+- `uv.lock`
+- task-local dependency verification records
+- B6 Task Card/result log
+
 ## B6-A
 
 - `streamlit_app.py`
@@ -1245,8 +1431,6 @@ The UI transport should not require modification unless a proven bug exists.
 - `tests/unit/test_ui_*.py`
 - `tests/integration/test_streamlit_app.py`
 - `.env.example`
-- `pyproject.toml`
-- `uv.lock`
 - M3-15 and B6 Task Cards
 
 ## B6-B
@@ -1258,10 +1442,10 @@ The UI transport should not require modification unless a proven bug exists.
 
 ## B6-C1
 
-- one or two M3-owned glossary/default source-gateway files
+- one or two M3-owned glossary service/orchestrator files
 - `app/services/chat_service.py` when required
 - one glossary answer projector helper when required
-- glossary/source/answer/service tests
+- `tests/unit/test_glossary_service.py` and related answer/service tests
 - B6 result log
 
 ## B6-C2
@@ -1416,20 +1600,25 @@ Confirm:
 
 ```text
 branch = main or approved task branch
-HEAD = origin/main = d937d625e26495a3ee8c5a5b2c327dfbd2512ea9
-latest commit = m3-01 conditional pass2 updates
+HEAD = origin/main
+HEAD contains the final approved B6 plan
+no unreviewed commit exists after the approved-plan SHA
 ```
 
-If main is newer:
+Resolve the B6 implementation base from the current `origin/main` only after
+those checks pass, then record it in the Gate 0 result, B6 result log, first
+checkpoint HANDOFF, and relevant Task Card status.
+
+If commits exist after the approved-plan SHA:
 
 1. inspect every intervening commit
-2. update the planning base
+2. compare their diffs with the approved plan
 3. rerun contract freeze
-4. stop when M3-01 schema, dependency, or Task ownership changed
+4. stop when a material plan, schema, dependency, or ownership change exists
 
 Allowed initial dirty scope:
 
-- this reviewed B6 plan only
+- none; Gate 0 requires a clean working tree
 
 ### Baseline commands
 
@@ -1495,6 +1684,9 @@ tool.
 ---
 
 ## 21. Gate 1 — Streamlit Dependency and Clean Lock
+
+Gate 1 exclusively owns `pyproject.toml`, `uv.lock`, and task-local dependency
+verification records. B6-A must not edit dependency or lock files.
 
 ## 21.1 Approved tool boundary
 
@@ -1653,7 +1845,7 @@ Paths may be adjusted only to match the final approved file names.
 ```powershell
 & $python -m pytest `
   tests/unit/test_glossary_ingest.py `
-  tests/unit/test_glossary_source_gateway.py `
+  tests/unit/test_glossary_service.py `
   tests/unit/test_answer_composer.py `
   tests/unit/test_chat_service.py `
   tests/integration/test_m3_chat_phase_slice.py `
@@ -1677,7 +1869,7 @@ Paths may be adjusted only to match the final approved file names.
   tests/unit/test_m3_langchain_stack.py `
   tests/unit/test_answer_composer.py `
   tests/unit/test_glossary_ingest.py `
-  tests/unit/test_glossary_source_gateway.py `
+  tests/unit/test_glossary_service.py `
   tests/unit/test_source_gateway.py `
   tests/unit/test_public_process_summary.py `
   tests/unit/test_chat_service.py `
@@ -1769,7 +1961,7 @@ B6 implementation is complete only when all conditions pass.
 
 - [ ] approved `data/glossary.json` only
 - [ ] fingerprint verified
-- [ ] recorded glossary gateway
+- [ ] recorded M3-owned glossary service/orchestrator
 - [ ] section locator
 - [ ] term/alias retrieval
 - [ ] unsupported term safe fallback
@@ -1882,11 +2074,29 @@ Report:
 ## 27. Result Log Template
 
 ```text
-Planning base:
+Pre-B6 code baseline:
 d937d625e26495a3ee8c5a5b2c327dfbd2512ea9
 
-Plan review:
-PENDING
+Docs update/review base:
+f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4
+
+Corrected plan:
+complete locally / closure review pending
+
+Final approved-plan SHA:
+NOT_CREATED
+
+B6 implementation base:
+UNRESOLVED until Gate 0
+
+Documentation review:
+PASS WITH REQUIRED FOLLOW-UP
+
+B6 initial plan review:
+CONDITIONAL PASS
+
+B6 plan closure:
+NOT_RUN
 
 User approval:
 PENDING
@@ -1901,7 +2111,7 @@ B7-C required:
 UNDETERMINED
 
 Streamlit metadata:
-1.60.0 / final / non-yanked / Apache-2.0 / Python >=3.10 / Python 3.14 classifier
+PASS - 1.60.0 / final / non-yanked / Apache-2.0 / Python >=3.10 / Python 3.14 classifier
 
 Package-index access:
 NOT_RUN
@@ -1912,14 +2122,29 @@ NOT_RUN
 uv.lock update:
 NOT_RUN
 
+existing locked packages moved:
+NOT_RUN
+
+per-package resolver reason:
+NOT_RUN
+
+outside declared closure:
+NOT_RUN
+
+lock accepted:
+NOT_RUN
+
 Clean Python 3.14 sync:
 NOT_RUN
 
 AppTest import:
 NOT_RUN
 
-B6-0 factual sync:
+Streamlit startup:
 NOT_RUN
+
+B6-0 factual sync:
+PASS - canonical M3-01 factual synchronization completed
 
 B6-A:
 NOT_RUN
@@ -1937,9 +2162,6 @@ B6 focused:
 NOT_RUN
 
 Full suite:
-NOT_RUN
-
-Streamlit startup:
 NOT_RUN
 
 Secret scan:
@@ -1963,11 +2185,14 @@ NOT_RUN
 Independent pytest:
 NOT_RUN
 
-Commit/push:
+B6 implementation commit/push:
 NOT_RUN / NOT_APPROVED
 
 B6 implementation review:
 NOT_RUN
+
+B6 implementation:
+BLOCKED
 
 M3-15A:
 NOT_STARTED
