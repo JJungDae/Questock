@@ -153,7 +153,10 @@ LLM_TIMEOUT_SECONDS
   `tzdata==2026.3`.
 - The smallest fixture-passing explicit thinking budget is `0`; `1024`
   remains an accepted explicit fixture value.
-- M3-01 local implementation and regression: PASS, independent review pending.
+- M3-01 status: PASS / complete.
+- M3-01 final closure: PASS WITH REQUIRED FOLLOW-UP.
+- M3-01 code blockers: CLOSED.
+- M3-01 remaining follow-up: factual Task Card synchronization only.
 - Gemini credential, quota, billing, and sanitized live smoke: NOT_RUN.
 
 - package: `litellm`

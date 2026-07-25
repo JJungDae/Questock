@@ -153,7 +153,7 @@ Forbidden:
 
 ## 6. Document Updates
 
-- `M3-01-answer-schema-chat-service-final-revised.md`
+- `docs/TASK_CARDS/M3-01-answer-schema-chat-service.md`
   - PublicProcessSummary
   - explicit unconfigured source gateway
   - two checkpoints

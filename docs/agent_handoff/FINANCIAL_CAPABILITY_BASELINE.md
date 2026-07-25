@@ -1159,7 +1159,9 @@ LangGraph가 없어도 이 흐름은 구현 가능해야 한다. 분기와 상�
 - reranker
 - LiteLLM Proxy·Router
 - Langfuse
-- React 또는 Streamlit
+- React는 미확정. Streamlit UI framework 방향은 확정되었으나 exact
+  dependency와 lock은 B6 계획 검수·승인 대기이며 구현은
+  `NOT_STARTED / BLOCKED`
 - GCE
 - multi-LLM routing·사용자 모델 선택
 - persistent user profile
