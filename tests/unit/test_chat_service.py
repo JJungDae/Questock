@@ -17,7 +17,10 @@ from app.llm.base import LLMRequest, LLMResult, LLMStatus, create_llm_result
 from app.providers.base import create_provider_result
 from app.services import chat_service as chat_service_module
 from app.services.chat_service import ChatService
-from app.services.source_gateway import SourceGatewayResult
+from app.services.source_gateway import (
+    SourceGatewayResult,
+    SourceGatewayTimeoutDescriptor,
+)
 
 BASIS_AT = datetime(2026, 7, 25, 3, tzinfo=UTC)
 SECURITY_ID = "KRX:005930"
@@ -72,6 +75,10 @@ class FakeGateway:
         self.documents = documents
         self.status = status
         self.data_mode = data_mode
+        self.timeout_descriptor = SourceGatewayTimeoutDescriptor(
+            data_mode=data_mode,  # type: ignore[arg-type]
+            live_connectivity_checked=data_mode == "live",
+        )
         self.delay = delay
         self.after_fetch = after_fetch
         self.calls = 0
@@ -353,24 +360,59 @@ def test_completed_source_result_is_preserved_when_other_sources_fail() -> None:
 def test_gateway_deadline_cancels_pending_and_preserves_source_key() -> None:
     gateway = FakeGateway((news_document(),), delay=1)
     llm = ExtractiveLLM()
+    budgets: list[LLMCallBudget] = []
 
     response = asyncio.run(
         _service(
             gateway,
             llm,
             deadline_seconds=0.01,
+            call_budget_factory=lambda: _track_budget(budgets),
         ).chat(_request())
     )
 
     assert response.status == "provider_failed"
-    assert (
-        response.diagnostics_public.sources[0].provider_status
-        == "provider_unavailable"
-    )
+    assert response.diagnostics_public.sources[0].provider_status == "timeout"
+    assert response.diagnostics_public.data_mode == "recorded"
+    assert response.diagnostics_public.live_connectivity_checked is False
     assert response.diagnostics_public.decision.failed_sources == ["news"]
     assert response.warnings == ["request_deadline_exceeded"]
     assert gateway.cancel_count == 1
     assert llm.calls == 0
+    assert budgets[0].snapshot().calls_used == 0
+    serialized = response.diagnostics_public.model_dump_json()
+    assert "TimeoutError" not in serialized
+    assert "timeout_descriptor" not in serialized
+    assert "total_deadline_exceeded" not in serialized
+
+
+def test_live_gateway_deadline_preserves_live_timeout_state() -> None:
+    gateway = FakeGateway(
+        (news_document(),),
+        data_mode="live",
+        delay=1,
+    )
+    llm = ExtractiveLLM()
+    budgets: list[LLMCallBudget] = []
+
+    response = asyncio.run(
+        _service(
+            gateway,
+            llm,
+            deadline_seconds=0.01,
+            call_budget_factory=lambda: _track_budget(budgets),
+        ).chat(_request())
+    )
+
+    assert response.status == "provider_failed"
+    assert response.diagnostics_public.sources[0].provider_status == "timeout"
+    assert response.diagnostics_public.data_mode == "live"
+    assert response.diagnostics_public.live_connectivity_checked is True
+    assert response.diagnostics_public.decision.failed_sources == ["news"]
+    assert response.warnings == ["request_deadline_exceeded"]
+    assert gateway.cancel_count == 1
+    assert llm.calls == 0
+    assert budgets[0].snapshot().calls_used == 0
 
 
 def test_llm_deadline_cancels_once_and_uses_fixed_template() -> None:
@@ -614,6 +656,10 @@ def test_gateway_non_evidence_result_after_deadline_keeps_decision_fallback(
 
     assert response.status == expected_status
     assert response.evidence == []
+    assert (
+        response.diagnostics_public.sources[0].provider_status
+        == provider_status
+    )
     assert response.diagnostics_public.generation.llm_status is None
     assert response.warnings == ["request_deadline_exceeded"]
     assert llm.calls == 0

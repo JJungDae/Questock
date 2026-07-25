@@ -29,7 +29,7 @@ from app.core.models import (
     RetrievalResult,
 )
 from app.core.resolver import SecurityResolver
-from app.core.status import ProviderStatus, RetrievalStatus
+from app.core.status import RetrievalStatus
 from app.evidence.budget import (
     ContextBudgetResult,
     LLMCallBudget,
@@ -39,7 +39,6 @@ from app.evidence.freshness import FreshnessResult, SEOUL_TZ, evaluate_freshness
 from app.evidence.normalizer import normalize_financial_documents
 from app.evidence.policy import EvidenceDecision, EvidencePolicy
 from app.llm.base import LLMRequest, LLMResult, LLMStatus, create_llm_result
-from app.providers.base import create_provider_result
 from app.retrieval import filter_evidence, retrieve_evidence
 from app.services.planning_observation import (
     PublicResolutionStatus,
@@ -49,6 +48,7 @@ from app.services.source_gateway import (
     ExplicitUnconfiguredSourceGateway,
     SourceGateway,
     SourceGatewayResult,
+    create_source_gateway_timeout_result,
     validate_source_gateway_result,
 )
 
@@ -215,19 +215,13 @@ class ChatService:
                 timeout=remaining,
             )
         except TimeoutError:
-            results = {
-                source: create_provider_result(
-                    status=ProviderStatus.PROVIDER_UNAVAILABLE,
-                    error_code="provider_unavailable",
-                )
-                for source in plan.required_sources
-            }
-            return SourceGatewayResult(
-                documents=(),
-                provider_results_by_source=results,
-                documents_by_id={},
-                data_mode="unconfigured",
-                live_connectivity_checked=False,
+            return create_source_gateway_timeout_result(
+                getattr(
+                    self._source_gateway,
+                    "timeout_descriptor",
+                    None,
+                ),
+                required_sources=plan.required_sources,
             )
         return validate_source_gateway_result(
             value,

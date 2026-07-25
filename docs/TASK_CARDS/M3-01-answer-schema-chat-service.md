@@ -40,13 +40,21 @@
   `complete`
 - First implementation review:
   `CONDITIONAL PASS`
-- Required supplement:
-  `complete locally / independent closure pending`
+- First supplement SHA:
+  `5433616bbf4d61f29fae11c86c770be80d69e750`
+- First supplement commit:
+  `m3-01 conditional pass updates`
+- First supplement main push:
+  `complete`
+- Closure review:
+  `CONDITIONAL PASS - timeout status regression correction required`
+- Second supplement:
+  `complete locally / final closure pending`
 - Package-index access for the exact `tzdata` addition:
   `APPROVED / used only for exact tzdata lock update`
 - Gemini live call:
   `SEPARATE APPROVAL / NOT INCLUDED`
-- Supplement commit, push, PR, merge, deploy:
+- Second supplement commit, push, PR, merge, deploy:
   `NOT_RUN / NOT_APPROVED`
 - M3-12 price-move stretch:
   `NOT_ACTIVATED - post-M4 M5-01 owns the mentor-selected extension`
@@ -698,6 +706,20 @@ Validation also requires:
 - `mixed` remains unavailable until an approved private provenance contract can
   prove both recorded and live document origins
 
+Every gateway declares one immutable M3-owned timeout descriptor. On an elapsed
+ChatService gateway deadline:
+
+- configured `recorded` returns `timeout/total_deadline_exceeded`, keeps
+  `data_mode=recorded`, and keeps `live_connectivity_checked=false`
+- configured `live` returns `timeout/total_deadline_exceeded`, keeps
+  `data_mode=live`, and keeps `live_connectivity_checked=true`
+- explicit `unconfigured` remains `provider_unavailable`, `unconfigured`, and
+  not live-checked
+
+The timeout factory returns zero documents, preserves required source order,
+passes `validate_source_gateway_result()`, and never exposes a raw timeout
+exception or private descriptor.
+
 The gateway may call existing provider policy helpers and existing local ingest
 outputs. It must not reimplement retry, cache, deadline, or provider status
 normalization.
@@ -1182,8 +1204,9 @@ execution.
 - [x] live Gemini either separately passed or accurately NOT_RUN
 - [x] fixture/recorded/live/unconfigured states separated
 - [x] first implementation review completed with CONDITIONAL PASS
-- [ ] supplement receives independent closure review
-- [x] supplement commit/push remain NOT_RUN until separate approval
+- [x] first supplement closure review completed with CONDITIONAL PASS
+- [ ] second supplement receives final closure review
+- [x] second supplement commit/push remain NOT_RUN until separate approval
 
 M3-02 implementation is blocked until M3-01 receives implementation review
 PASS.
@@ -1300,18 +1323,22 @@ Stop and report if:
   `complete`
 - First implementation review:
   `CONDITIONAL PASS`
-- Required supplement:
-  `complete locally / independent closure pending`
-- Supplement targeted:
+- First supplement SHA:
+  `5433616bbf4d61f29fae11c86c770be80d69e750`
+- First supplement commit:
+  `m3-01 conditional pass updates`
+- First supplement main push:
+  `complete`
+- First supplement targeted:
   `PASS - 85 passed`
   - command included answer composer, source gateway, public process summary,
     ChatService, M3-owned security planning observation, and M3 chat phase
     slice tests
-- M3-00 + M2 phase + M3 phase composition after supplement:
+- M3-00 + M2 phase + M3 phase composition after first supplement:
   `PASS - 19 passed`
-- M2/M3 focused regression after supplement:
+- M2/M3 focused regression after first supplement:
   `PASS - 757 passed`
-- Full suite after supplement:
+- Full suite after first supplement:
   `PASS - 1564 passed, 2 warnings`
   - first sandbox run:
     `ENVIRONMENT_BLOCKED - 1461 passed, 103 setup errors`
@@ -1321,29 +1348,52 @@ Stop and report if:
     temporary-directory creation
   - same full command rerun with normal local temp permission:
     `exit code 0 - 1564 passed, 2 warnings`
-- Supplement import smoke:
+- First supplement import smoke:
   `PASS - m3-01-supplement-import-ok`
-- Supplement ZoneInfo smoke:
+- First supplement ZoneInfo smoke:
   `PASS - Asia/Seoul`
-- Supplement secret scan:
+- First supplement secret scan:
   `PASS - []`
   - direct `scan_paths` check for the two new untracked supplement files:
     `PASS - []`
-- Supplement compile:
+- First supplement compile:
   `PASS`
-- Supplement diff check:
+- First supplement diff check:
   `PASS`
-- Supplement clean-lock rerun:
+- First supplement clean-lock rerun:
   `NOT_RUN - prior task-created clean environment was removed after its
   approved verification`
+- First supplement closure review:
+  `CONDITIONAL PASS - timeout status regression correction required`
+- Second supplement:
+  `complete locally / final closure pending`
+- Second supplement targeted:
+  - source gateway, public process summary, ChatService, M3 chat phase slice:
+    `exit code 0 - 62 passed`
+  - answer composer, planning observation, source gateway, public process
+    summary, ChatService, M2 phase slice, M3 phase slice:
+    `exit code 0 - 99 passed`
+- Second supplement full suite:
+  `exit code 0 - 1573 passed, 2 warnings`
+- Second supplement import smoke:
+  `PASS - m3-01-timeout-status-fix-ok`
+- Second supplement secret scan:
+  `PASS - []`
+- Second supplement compile:
+  `PASS`
+- Second supplement diff check:
+  `PASS`
+- Second supplement clean-lock rerun:
+  `NOT_RUN - clean-lock environment not retained`
 - Gemini live smoke: `NOT_RUN`
 - GitHub CI: `NOT_RUN`
 - UI: `NOT_STARTED`
 - M3-12/M5-01: `NOT_STARTED`
-- Supplement SHA: `NOT_CREATED`
-- Supplement commit/push: `NOT_RUN / NOT_APPROVED`
+- Second supplement SHA: `NOT_CREATED`
+- Second supplement commit/push: `NOT_RUN / NOT_APPROVED`
 - Independent implementation review:
-  `CONDITIONAL PASS for first implementation / supplement closure pending`
+  `CONDITIONAL PASS for first supplement / second supplement final closure
+  pending`
 - Independent pytest rerun: `NOT_RUN`
 - Further commit/push/PR/merge/deploy: `NOT_RUN / NOT_APPROVED`
 

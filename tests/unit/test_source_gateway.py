@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import FrozenInstanceError
 from datetime import UTC, datetime
 
 import pytest
@@ -12,7 +13,9 @@ from app.services.source_gateway import (
     ExplicitUnconfiguredSourceGateway,
     SourceGateway,
     SourceGatewayResult,
+    SourceGatewayTimeoutDescriptor,
     SourceGatewayValidationError,
+    create_source_gateway_timeout_result,
     validate_source_gateway_result,
 )
 
@@ -77,6 +80,118 @@ def test_explicit_unconfigured_gateway_preserves_every_required_key() -> None:
     )
     assert result.data_mode == "unconfigured"
     assert result.live_connectivity_checked is False
+    assert gateway.timeout_descriptor == SourceGatewayTimeoutDescriptor(
+        data_mode="unconfigured",
+        live_connectivity_checked=False,
+    )
+
+
+def test_timeout_descriptor_is_immutable() -> None:
+    descriptor = SourceGatewayTimeoutDescriptor(
+        data_mode="recorded",
+        live_connectivity_checked=False,
+    )
+
+    with pytest.raises(FrozenInstanceError):
+        descriptor.data_mode = "live"  # type: ignore[misc]
+
+
+@pytest.mark.parametrize(
+    (
+        "descriptor",
+        "expected_status",
+        "expected_error_code",
+        "expected_mode",
+        "expected_live_checked",
+    ),
+    [
+        (
+            SourceGatewayTimeoutDescriptor(
+                data_mode="recorded",
+                live_connectivity_checked=False,
+            ),
+            ProviderStatus.TIMEOUT,
+            "total_deadline_exceeded",
+            "recorded",
+            False,
+        ),
+        (
+            SourceGatewayTimeoutDescriptor(
+                data_mode="live",
+                live_connectivity_checked=True,
+            ),
+            ProviderStatus.TIMEOUT,
+            "total_deadline_exceeded",
+            "live",
+            True,
+        ),
+        (
+            SourceGatewayTimeoutDescriptor(
+                data_mode="unconfigured",
+                live_connectivity_checked=False,
+            ),
+            ProviderStatus.PROVIDER_UNAVAILABLE,
+            "provider_unavailable",
+            "unconfigured",
+            False,
+        ),
+    ],
+)
+def test_timeout_result_preserves_declared_gateway_state(
+    descriptor: SourceGatewayTimeoutDescriptor,
+    expected_status: ProviderStatus,
+    expected_error_code: str,
+    expected_mode: str,
+    expected_live_checked: bool,
+) -> None:
+    result = create_source_gateway_timeout_result(
+        descriptor,
+        required_sources=["news", "disclosure"],
+    )
+
+    assert result.documents == ()
+    assert result.documents_by_id == {}
+    assert list(result.provider_results_by_source) == [
+        "news",
+        "disclosure",
+    ]
+    assert all(
+        item.status == expected_status
+        and item.error_code == expected_error_code
+        for item in result.provider_results_by_source.values()
+    )
+    assert result.data_mode == expected_mode
+    assert result.live_connectivity_checked is expected_live_checked
+    assert (
+        validate_source_gateway_result(
+            result,
+            required_sources=["news", "disclosure"],
+        )
+        == result
+    )
+
+
+@pytest.mark.parametrize(
+    ("data_mode", "live_checked"),
+    [
+        ("recorded", True),
+        ("live", False),
+        ("unconfigured", True),
+        ("mixed", False),
+    ],
+)
+def test_timeout_descriptor_rejects_invalid_state(
+    data_mode: str,
+    live_checked: bool,
+) -> None:
+    with pytest.raises(
+        SourceGatewayValidationError,
+        match="source gateway timeout descriptor is invalid",
+    ):
+        SourceGatewayTimeoutDescriptor(
+            data_mode=data_mode,  # type: ignore[arg-type]
+            live_connectivity_checked=live_checked,
+        )
 
 
 def test_gateway_validation_returns_deep_copies() -> None:

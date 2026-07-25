@@ -9,7 +9,9 @@ from app.core.status import ProviderStatus
 from app.providers.base import create_provider_result
 
 DataMode = Literal["recorded", "live", "mixed", "unconfigured"]
+TimeoutDataMode = Literal["recorded", "live", "unconfigured"]
 _DATA_MODES = frozenset({"recorded", "live", "mixed", "unconfigured"})
+_TIMEOUT_DATA_MODES = frozenset({"recorded", "live", "unconfigured"})
 
 
 class SourceGatewayValidationError(ValueError):
@@ -25,8 +27,27 @@ class SourceGatewayResult:
     live_connectivity_checked: bool
 
 
+@dataclass(frozen=True)
+class SourceGatewayTimeoutDescriptor:
+    data_mode: TimeoutDataMode
+    live_connectivity_checked: bool
+
+    def __post_init__(self) -> None:
+        if (
+            not isinstance(self.data_mode, str)
+            or self.data_mode not in _TIMEOUT_DATA_MODES
+            or type(self.live_connectivity_checked) is not bool
+            or self.live_connectivity_checked != (self.data_mode == "live")
+        ):
+            raise SourceGatewayValidationError(
+                "source gateway timeout descriptor is invalid"
+            )
+
+
 @runtime_checkable
 class SourceGateway(Protocol):
+    timeout_descriptor: SourceGatewayTimeoutDescriptor
+
     async def fetch(
         self,
         plan: QueryPlan,
@@ -37,6 +58,11 @@ class SourceGateway(Protocol):
 
 
 class ExplicitUnconfiguredSourceGateway:
+    timeout_descriptor = SourceGatewayTimeoutDescriptor(
+        data_mode="unconfigured",
+        live_connectivity_checked=False,
+    )
+
     async def fetch(
         self,
         plan: QueryPlan,
@@ -60,6 +86,39 @@ class ExplicitUnconfiguredSourceGateway:
             data_mode="unconfigured",
             live_connectivity_checked=False,
         )
+
+
+def create_source_gateway_timeout_result(
+    descriptor: object,
+    *,
+    required_sources: Sequence[str],
+) -> SourceGatewayResult:
+    canonical_descriptor = _validate_timeout_descriptor(descriptor)
+    if canonical_descriptor.data_mode == "unconfigured":
+        status = ProviderStatus.PROVIDER_UNAVAILABLE
+        error_code = "provider_unavailable"
+    else:
+        status = ProviderStatus.TIMEOUT
+        error_code = "total_deadline_exceeded"
+    result = SourceGatewayResult(
+        documents=(),
+        provider_results_by_source={
+            source: create_provider_result(
+                status=status,
+                error_code=error_code,
+            )
+            for source in required_sources
+        },
+        documents_by_id={},
+        data_mode=canonical_descriptor.data_mode,
+        live_connectivity_checked=(
+            canonical_descriptor.live_connectivity_checked
+        ),
+    )
+    return validate_source_gateway_result(
+        result,
+        required_sources=required_sources,
+    )
 
 
 def validate_source_gateway_result(
@@ -135,6 +194,19 @@ def validate_source_gateway_result(
     )
 
 
+def _validate_timeout_descriptor(
+    value: object,
+) -> SourceGatewayTimeoutDescriptor:
+    if not isinstance(value, SourceGatewayTimeoutDescriptor):
+        raise SourceGatewayValidationError(
+            "source gateway timeout descriptor is invalid"
+        )
+    return SourceGatewayTimeoutDescriptor(
+        data_mode=value.data_mode,
+        live_connectivity_checked=value.live_connectivity_checked,
+    )
+
+
 def _validate_data_mode(
     *,
     data_mode: DataMode,
@@ -170,6 +242,9 @@ __all__ = [
     "ExplicitUnconfiguredSourceGateway",
     "SourceGateway",
     "SourceGatewayResult",
+    "SourceGatewayTimeoutDescriptor",
     "SourceGatewayValidationError",
+    "TimeoutDataMode",
+    "create_source_gateway_timeout_result",
     "validate_source_gateway_result",
 ]
