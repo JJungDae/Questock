@@ -79,6 +79,9 @@ B7 구현:
 로컬 full tests 1755 passed
 로컬 M3 Gate PASS: full 86.21%, Critical 100%, exposure 0
 독립 구현 검수 NOT_RUN
+
+B7 implementation SHA/main push:
+833336a002b1e02070b35cd4afe9aff279752d61 / complete
 ```
 
 ## 5. 현재 bundle 문서

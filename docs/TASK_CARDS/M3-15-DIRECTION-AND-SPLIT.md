@@ -22,6 +22,9 @@ B6 implementation and supplement review complete
 M3-15 implementation:
 M3-15A COMPLETE / M3-15B IMPLEMENTED and locally verified through B7
 
+B7 implementation SHA/main push:
+833336a002b1e02070b35cd4afe9aff279752d61 / complete
+
 Streamlit:
 streamlit==1.60.0 APPROVED and locked during B6
 

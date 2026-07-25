@@ -20,7 +20,7 @@
 - Streamlit dependency:
   `streamlit==1.60.0 AUTHORIZED in Gate 1`
 - Commit, push, PR, merge, deploy:
-  `B6 M3-15A main push complete; further Git operations NOT_APPROVED`
+  `B6 M3-15A and B7 M3-15B implementation main pushes complete; further PR/merge/deploy NOT_APPROVED`
 - M3-15 final closure:
   `implementation complete; independent B7 closure review pending`
 
@@ -440,7 +440,7 @@ If a recorded demo corpus is approved, it must live under `data/demo/**`, not
 - [x] UI smoke passes
 - [x] M2/M3 regression passes
 - [ ] demo screenshots and presentation flow recorded
-- [ ] commit/push remain separately approved
+- [x] B7 implementation commit/main push separately approved and complete
 
 ---
 
@@ -503,6 +503,8 @@ Stop if:
 - Live source: `NOT_VERIFIED`
 - B6 completion SHA/main push:
   `60e6203b265a967a8b6ba45da2ba3128e1e1bcfe / complete`
-- Further commit/push/PR/merge/deploy: `NOT_RUN / NOT_APPROVED`
+- B7 implementation SHA/main push:
+  `833336a002b1e02070b35cd4afe9aff279752d61 / complete`
+- Further PR/merge/deploy: `NOT_RUN / NOT_APPROVED`
 - M3-15A: `COMPLETE`
-- M3-15B: `PENDING B7`
+- M3-15B: `IMPLEMENTED / local verification PASS / independent B7 closure pending`

@@ -66,7 +66,7 @@
 - Live source provider work:
   `NOT_INCLUDED / NOT_APPROVED`
 - Commit, push, PR, merge, deploy:
-  `NOT_APPROVED`
+  `B7 implementation commit/main push complete; further PR, merge, deploy NOT_APPROVED`
 
 This Task Card is the canonical B7 bundle plan after the completed
 `B6-REMAINDER` bundle.
@@ -1493,7 +1493,13 @@ Independent pytest:
 NOT_RUN - external independent review environment unavailable
 
 B7 implementation SHA:
-not created before separate approval
+833336a002b1e02070b35cd4afe9aff279752d61
+
+B7 implementation commit:
+Implement B7 integrated closure
+
+B7 implementation main push:
+complete
 
 B7 implementation review:
 NOT_RUN - external independent reviewer unavailable
@@ -1510,7 +1516,8 @@ B8 planning:
 BLOCKED until independent B7 implementation closure PASS
 
 Commit/push/PR/merge/deploy:
-NOT_APPROVED until separately requested
+B7 implementation commit/main push complete
+Further PR/merge/deploy NOT_APPROVED
 ```
 
 ---
