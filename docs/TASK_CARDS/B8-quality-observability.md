@@ -45,8 +45,10 @@
   `NOT_ACTIVATED`
 - B8 planning:
   `ALLOWED`
+- B8 plan review:
+  `PASS WITH REQUIRED FOLLOW-UP`
 - B8 implementation:
-  `NOT_APPROVED - allowed only after this plan is approved and B8-0 preflight PASS`
+  `APPROVED after required plan supplement and B8-0 preflight PASS`
 - Dependency or lock change:
   `NOT_APPROVED / NOT_EXPECTED`
 - Live provider or live Gemini work:
@@ -157,7 +159,9 @@ Do not implement:
 - `SecurityResolver` contract changes
 - public `ChatRequest`, `ChatResponse`, or `PublicProcessSummary` changes
 - core model or Evidence model changes
-- M1 or M2 implementation changes
+- M1 or M2 implementation or contract changes, except for the explicitly
+  approved narrow `HBM` candidate-eligibility correction in
+  `app/planning/query_planner.py`
 - new retrieval, ranking, normalization, dedupe, or context-budget behavior
 - LLM model, prompt, validator, or provider changes
 - Langfuse, OpenTelemetry, remote tracing, or a new dependency
@@ -332,6 +336,9 @@ validation, or safety assertions to increase the score.
 
 Required B8 quality result:
 
+- fixture total remains exactly `34`
+- fixture content remains unchanged
+- existing M3 runner threshold remains unchanged
 - full golden at least `31/34` (`>= 90%`)
 - Critical exactly `17/17` (`100%`)
 - public exposure exactly `0`
@@ -367,10 +374,29 @@ One completed-request observation contains only:
 - `security_id`
 - provider status by requested source
 - selected Evidence count
+- `retrieval_strategy`
 - final EvidenceDecision status
 - total latency in milliseconds
 - LLM call count
-- fallback used
+- `fallback_used`
+
+`retrieval_strategy` must be copied directly from the request pipeline's
+validated internal `RetrievalResult.strategy`. Do not infer it from the user
+question, reparse public-summary wording, create a new strategy label, or
+serialize the full retrieval result.
+
+`fallback_used` is fixed as:
+
+```text
+generation_mode == "fixed_template"
+```
+
+| generation mode | fallback_used |
+|---|---|
+| `llm` | `false` |
+| `fixed_template` | `true` |
+| `blocked` | `false` |
+| `not_called` | `false` |
 
 Additional bounded fields are allowed only when needed to distinguish a
 sanitized terminal outcome. Do not log content-bearing fields.
@@ -384,7 +410,28 @@ sanitized terminal outcome. Do not log content-bearing fields.
 - serialize JSON with stable key ordering
 - do not mutate `ChatRequest`, `ChatResponse`, or pipeline inputs
 
-## 9.4 Privacy and failure behavior
+## 9.4 Default sink and terminal emission
+
+`ChatService` defaults to `JsonLogObservationSink` backed by a project-owned
+standard-library logger. The runtime default must not be a no-op sink.
+
+Tests inject `InMemoryObservationSink`. A custom sink remains injectable so
+tests do not depend on process-global log capture.
+
+Exactly one terminal observation is emitted for every returned `ChatResponse`
+with one of these statuses:
+
+- `complete`
+- `partial`
+- `no_evidence`
+- `provider_failed`
+- `blocked`
+
+Requests that fail before a `ChatResponse` can be built are outside the M4-03
+terminal-observation scope. They continue to surface only the existing
+sanitized `ChatServiceError`.
+
+## 9.5 Privacy and failure behavior
 
 The log must never contain:
 
@@ -405,14 +452,17 @@ or exceptions.
 Observation emission failure must not replace an otherwise valid user response.
 It may be swallowed at the sink boundary without logging the raw exception.
 
-## 9.5 Required tests
+## 9.6 Required tests
 
 Verify:
 
 - exact JSON keys and value types
 - provider statuses remain per source
 - `no_data` and provider failures remain distinct
+- `retrieval_strategy` is exactly the internal `RetrievalResult.strategy`
 - EvidenceDecision and fallback are correct
+- `fallback_used` is true only for `fixed_template`
+- `llm`, `blocked`, and `not_called` record `fallback_used=false`
 - LLM call count is `0` or `1` from the request-owned call budget
 - latency is finite and non-negative
 - fixed request ID and clock produce deterministic output
@@ -420,7 +470,11 @@ Verify:
 - sentinel message, session ID, prompt, Evidence text, exception, secret,
   source URL, and local path do not appear
 - sink failure does not crash a completed request
-- one request emits one terminal observation
+- the default runtime sink is `JsonLogObservationSink`, not a no-op
+- each returned complete, partial, no_evidence, provider_failed, or blocked
+  response emits exactly one terminal observation
+- a request that raises before creating `ChatResponse` emits no terminal
+  observation
 
 ---
 
@@ -580,7 +634,9 @@ Stop implementation and report evidence if:
 - the approved B7 or M3 Gate baseline cannot be reproduced
 - a public schema, core model, or status change appears necessary
 - `SecurityResolver` must be weakened to handle `HBM`
-- an M1 provider or M2 Evidence/retrieval change appears necessary
+- an M1 provider change appears necessary
+- an M2 change beyond the single approved QueryPlanner `HBM` domain-token
+  eligibility correction appears necessary
 - a new dependency or lock update appears necessary
 - a golden expected value must be weakened to pass
 - wrong-company or any Critical case regresses
@@ -670,7 +726,11 @@ Rollback proposal:
 - [ ] internal observation model remains separate from public UI schema
 - [ ] minimum fields are emitted once per completed request
 - [ ] request ID and clock are injectable in tests
+- [ ] default runtime sink is project-owned `JsonLogObservationSink`
+- [ ] returned ChatResponse statuses emit exactly one terminal observation
+- [ ] retrieval strategy equals the internal RetrievalResult strategy
 - [ ] LLM call count is bounded and accurate
+- [ ] fallback is true only for fixed-template generation
 - [ ] log output is deterministic apart from injected runtime values
 - [ ] no user content, prompt, secret, raw payload, exception, URL, or path
 - [ ] sink failure does not replace a valid response
@@ -701,10 +761,10 @@ B8 planning base:
 52c015569111493f83ab27983839d18136da5655
 
 B8 plan review:
-NOT_RUN
+PASS WITH REQUIRED FOLLOW-UP
 
 B8 implementation approval:
-NOT_APPROVED
+APPROVED after required plan supplement and B8-0 preflight PASS
 
 B8-0 preflight:
 NOT_RUN
@@ -728,6 +788,10 @@ M3 Gate:
 baseline 30/34 = 88.24%
 baseline Critical 17/17 = 100%
 baseline public exposure 0
+fixture total 34 unchanged
+fixture content unchanged
+runner threshold unchanged
+B8 acceptance 31/34 or better
 B8 rerun NOT_RUN
 
 Import smoke:
