@@ -36,6 +36,7 @@ from app.evidence.budget import (
     select_evidence_context,
 )
 from app.evidence.freshness import FreshnessResult, SEOUL_TZ, evaluate_freshness
+from app.evidence.freshness import FreshnessWindow
 from app.evidence.normalizer import normalize_financial_documents
 from app.evidence.policy import EvidenceDecision, EvidencePolicy
 from app.llm.base import LLMRequest, LLMResult, LLMStatus, create_llm_result
@@ -43,6 +44,11 @@ from app.retrieval import filter_evidence, retrieve_evidence
 from app.services.planning_observation import (
     PublicResolutionStatus,
     build_observed_query_plan,
+)
+from app.services.glossary_service import (
+    GlossaryPipelineResult,
+    GlossaryService,
+    select_glossary_context,
 )
 from app.services.source_gateway import (
     ExplicitUnconfiguredSourceGateway,
@@ -84,6 +90,7 @@ class ChatService:
         source_gateway: SourceGateway | None = None,
         composer: AnswerComposer | None = None,
         resolver: SecurityResolver | None = None,
+        glossary_service: GlossaryService | None = None,
         call_budget_factory: Callable[[], LLMCallBudget] | None = None,
         deadline_seconds: float = _DEFAULT_DEADLINE_SECONDS,
         utc_now: Callable[[], datetime] | None = None,
@@ -101,6 +108,7 @@ class ChatService:
         )
         self._composer = composer or AnswerComposer(_DisabledLLMClient())
         self._resolver = resolver or SecurityResolver()
+        self._glossary_service = glossary_service
         self._call_budget_factory = (
             call_budget_factory
             if call_budget_factory is not None
@@ -123,18 +131,33 @@ class ChatService:
             )
             plan = observed.plan
             call_budget = self._new_call_budget()
-            gateway = await self._source_data(
-                plan,
-                query=request.message,
-                started_at=started_at,
-            )
+            if (
+                plan.intent == "financial_term"
+                and not plan.requires_clarification
+            ):
+                glossary = self._glossary_data(
+                    request.message,
+                    basis_at=basis_at,
+                )
+                gateway = _glossary_gateway(glossary)
+                pipeline = _run_glossary_pipeline(
+                    plan=plan,
+                    result=glossary,
+                    basis_at=basis_at,
+                )
+            else:
+                gateway = await self._source_data(
+                    plan,
+                    query=request.message,
+                    started_at=started_at,
+                )
+                pipeline = _run_evidence_pipeline(
+                    query=request.message,
+                    plan=plan,
+                    gateway=gateway,
+                    basis_at=basis_at,
+                )
             deadline_exhausted = self._deadline_reached(started_at)
-            pipeline = _run_evidence_pipeline(
-                query=request.message,
-                plan=plan,
-                gateway=gateway,
-                basis_at=basis_at,
-            )
             deadline_exhausted = (
                 deadline_exhausted or self._deadline_reached(started_at)
             )
@@ -227,6 +250,22 @@ class ChatService:
             value,
             required_sources=plan.required_sources,
         )
+
+    def _glossary_data(
+        self,
+        query: str,
+        *,
+        basis_at: datetime,
+    ) -> GlossaryPipelineResult:
+        if self._glossary_service is None:
+            self._glossary_service = GlossaryService()
+        value = self._glossary_service.lookup(
+            query,
+            fetched_at=basis_at,
+        )
+        if not isinstance(value, GlossaryPipelineResult):
+            raise ChatServiceError("glossary service unavailable")
+        return value
 
     async def _compose(
         self,
@@ -437,6 +476,86 @@ def _run_evidence_pipeline(
     )
 
 
+def _glossary_gateway(
+    result: GlossaryPipelineResult,
+) -> SourceGatewayResult:
+    return SourceGatewayResult(
+        documents=(),
+        provider_results_by_source={
+            "glossary": result.provider_result.model_copy(deep=True)
+        },
+        documents_by_id={},
+        data_mode=result.data_mode,
+        live_connectivity_checked=result.live_connectivity_checked,
+    )
+
+
+def _run_glossary_pipeline(
+    *,
+    plan: QueryPlan,
+    result: GlossaryPipelineResult,
+    basis_at: datetime,
+) -> _PipelineResult:
+    if (
+        result.selected_count != len(result.evidence)
+        or result.retrieval_status
+        not in {RetrievalStatus.OK, RetrievalStatus.EMPTY}
+        or (
+            result.retrieval_status == RetrievalStatus.OK
+            and not result.evidence
+        )
+        or (
+            result.retrieval_status == RetrievalStatus.EMPTY
+            and result.evidence
+        )
+    ):
+        raise ChatServiceError("glossary service unavailable")
+    freshness_evidence = tuple(
+        item.model_copy(deep=True, update={"retrieval_score": None})
+        for item in result.evidence
+    )
+    freshness = FreshnessResult(
+        basis_at=basis_at,
+        basis_date=basis_at.astimezone(SEOUL_TZ).date(),
+        windows=(
+            FreshnessWindow(
+                source_type="glossary",
+                start=None,
+                end=None,
+                applied_by="none",
+            ),
+        ),
+        evidence=freshness_evidence,
+        warnings=(),
+        latest_effective_disclosure_at=None,
+    )
+    retrieval = RetrievalResult(
+        evidence=[
+            item.model_copy(deep=True) for item in result.evidence
+        ],
+        status=result.retrieval_status,
+        strategy=result.strategy,
+        low_relevance=False,
+        diagnostics={},
+    )
+    decision = EvidencePolicy().evaluate(
+        plan,
+        {"glossary": result.provider_result},
+        freshness,
+        retrieval,
+    )
+    budget = select_glossary_context(decision.evidence)
+    return _PipelineResult(
+        documents_by_id={},
+        normalized=result.evidence,
+        hard_filtered=result.evidence,
+        freshness=freshness,
+        retrieval=retrieval,
+        decision=decision,
+        budget=budget,
+    )
+
+
 def _request_security_id(
     plan: QueryPlan,
     documents: tuple[FinancialDocument, ...],
@@ -500,12 +619,14 @@ def _build_process_summary(
     resolution_status: PublicResolutionStatus,
     resolved_security_id: str | None,
 ) -> PublicProcessSummary:
-    source_counts = {
-        source: sum(
-            1 for item in gateway.documents if item.source_type == source
-        )
-        for source in plan.required_sources
-    }
+    source_counts = {}
+    for source in plan.required_sources:
+        if source == "glossary" and plan.intent == "financial_term":
+            source_counts[source] = len(pipeline.normalized)
+        else:
+            source_counts[source] = sum(
+                1 for item in gateway.documents if item.source_type == source
+            )
     sources = []
     for source in plan.required_sources:
         result = gateway.provider_results_by_source[source]

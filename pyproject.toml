@@ -10,6 +10,7 @@ dependencies = [
     "langchain-core==1.5.1",
     "litellm==1.83.7",
     "tzdata==2026.3",
+    "streamlit==1.60.0",
 ]
 
 [project.optional-dependencies]

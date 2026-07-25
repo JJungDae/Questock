@@ -22,10 +22,9 @@
 - Docs update and plan-review base:
   `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
 - Final approved-plan document SHA:
-  `resolved after the corrected plan is committed and pushed`
+  `cc9ff7e5951330ae34973d48abf0f065ac515576`
 - B6 implementation base:
-  `the latest origin/main containing the final approved plan, resolved and
-  recorded at Gate 0`
+  `cc9ff7e5951330ae34973d48abf0f065ac515576`
 - M2 Gate:
   `PASS`
 - M3-00:
@@ -37,19 +36,19 @@
 - M3-01 remaining follow-up:
   `factual Task Card synchronization completed in this correction`
 - B6 plan review:
-  `CONDITIONAL PASS - five required corrections incorporated locally`
+  `FINAL APPROVED FOR IMPLEMENTATION`
 - B6 plan closure:
-  `NOT_RUN`
+  `NOT_REQUIRED`
 - Total-agent re-review:
-  `REQUIRED because B6 adds a permanent Streamlit dependency and updates uv.lock`
+  `NOT_REQUIRED`
 - User final plan approval:
-  `PENDING after review`
+  `APPROVED`
 - B6 implementation:
-  `BLOCKED pending plan review, user approval, and Gate 0/1 PASS`
+  `AUTHORIZED - Gate 0, B6-0, and Gate 1 PASS; B6-A pending`
 - Package-index access:
-  `NOT_APPROVED`
+  `AUTHORIZED for streamlit==1.60.0 and its declared transitive closure`
 - Dependency installation and lock update:
-  `NOT_APPROVED`
+  `AUTHORIZED in Gate 1`
 - Live Gemini:
   `NOT_INCLUDED / NOT_APPROVED`
 - Live news, disclosure, or research-report provider work:
@@ -1906,105 +1905,105 @@ B6 implementation is complete only when all conditions pass.
 
 ### Governance
 
-- [ ] total-agent plan review complete
-- [ ] user final approval complete
-- [ ] package-index and lock scope approved
-- [ ] no unapproved Git operation
-- [ ] canonical M3-15 path used
+- [x] total-agent plan review complete
+- [x] user final approval complete
+- [x] package-index and lock scope approved
+- [x] no unapproved Git operation
+- [x] canonical M3-15 path used
 
 ### M3-01 sync and freeze
 
-- [ ] second supplement SHA recorded
-- [ ] M3-01 `PASS / complete`
-- [ ] `app/api/schemas.py` unchanged
-- [ ] schema blob/fingerprint recorded
-- [ ] `trace_version="m3-01-v1"` unchanged
+- [x] second supplement SHA recorded
+- [x] M3-01 `PASS / complete`
+- [x] `app/api/schemas.py` unchanged
+- [x] schema blob/fingerprint recorded
+- [x] `trace_version="m3-01-v1"` unchanged
 
 ### Dependency
 
-- [ ] `streamlit==1.60.0` direct pin
-- [ ] no Streamlit extras
-- [ ] existing direct pins unchanged
-- [ ] lock diff reviewed
-- [ ] clean Python 3.14 install
-- [ ] Streamlit import
-- [ ] AppTest import
-- [ ] clean full regression
+- [x] `streamlit==1.60.0` direct pin
+- [x] no Streamlit extras
+- [x] existing direct pins unchanged
+- [x] lock diff reviewed
+- [x] clean Python 3.14 install
+- [x] Streamlit import
+- [x] AppTest import
+- [x] clean full regression
 
 ### M3-15A
 
-- [ ] Streamlit entry point
-- [ ] selector shell
-- [ ] question submit
-- [ ] finite transport timeout
-- [ ] injectable test transport
-- [ ] baseline answer frame
-- [ ] baseline source frame
-- [ ] process expander
-- [ ] status-family separation
-- [ ] no prompt/reasoning/secret/path/raw exception
-- [ ] headless startup smoke
+- [x] Streamlit entry point
+- [x] selector shell
+- [x] question submit
+- [x] finite transport timeout
+- [x] injectable test transport
+- [x] baseline answer frame
+- [x] baseline source frame
+- [x] process expander
+- [x] status-family separation
+- [x] no prompt/reasoning/secret/path/raw exception
+- [x] headless startup smoke
 
 ### M3-02 / M3-03 / M3-14
 
-- [ ] beginner-oriented order
-- [ ] fact / interpretation / inference separation
-- [ ] inference explicitly labeled
-- [ ] unsupported section omitted
-- [ ] citation validation unchanged
-- [ ] report plan/event/condition/risk criterion
-- [ ] no future certainty
-- [ ] no direct investment advice
-- [ ] no second LLM call
+- [x] beginner-oriented order
+- [x] fact / interpretation / inference separation
+- [x] inference explicitly labeled
+- [x] unsupported section omitted
+- [x] citation validation unchanged
+- [x] report plan/event/condition/risk criterion
+- [x] no future certainty
+- [x] no direct investment advice
+- [x] no second LLM call
 
 ### M3-05
 
-- [ ] approved `data/glossary.json` only
-- [ ] fingerprint verified
-- [ ] recorded M3-owned glossary service/orchestrator
-- [ ] section locator
-- [ ] term/alias retrieval
-- [ ] unsupported term safe fallback
-- [ ] default non-glossary remains unconfigured
-- [ ] no local path or permission note
+- [x] approved `data/glossary.json` only
+- [x] fingerprint verified
+- [x] recorded M3-owned glossary service/orchestrator
+- [x] section locator
+- [x] term/alias retrieval
+- [x] unsupported term safe fallback
+- [x] default non-glossary remains unconfigured
+- [x] no local path or permission note
 
 ### M3-04 / M3-07
 
-- [ ] final card order and labels
-- [ ] empty section hidden
-- [ ] inference marker
-- [ ] safe source link
-- [ ] type-specific locator summary
-- [ ] missing/no-data/timeout/stale wording
-- [ ] no raw locator
-- [ ] malicious HTML/Markdown safe
+- [x] final card order and labels
+- [x] empty section hidden
+- [x] inference marker
+- [x] safe source link
+- [x] type-specific locator summary
+- [x] missing/no-data/timeout/stale wording
+- [x] no raw locator
+- [x] malicious HTML/Markdown safe
 
 ### Regression
 
-- [ ] checkpoint targeted tests
-- [ ] B6 focused integration
-- [ ] M2 phase slice
-- [ ] M3-01 phase slice
-- [ ] full suite
-- [ ] AppTest
-- [ ] Streamlit startup
-- [ ] secret scan
-- [ ] compile
-- [ ] diff check
-- [ ] clean-lock result separated
-- [ ] GitHub CI accurately recorded
-- [ ] independent test accurately recorded
-- [ ] live Gemini accurately recorded
+- [x] checkpoint targeted tests
+- [x] B6 focused integration
+- [x] M2 phase slice
+- [x] M3-01 phase slice
+- [x] full suite
+- [x] AppTest
+- [x] Streamlit startup
+- [x] secret scan
+- [x] compile
+- [x] diff check
+- [x] clean-lock result separated
+- [x] GitHub CI accurately recorded
+- [x] independent test accurately recorded
+- [x] live Gemini accurately recorded
 
 ### Final status
 
-- [ ] `M3-15A: complete`
-- [ ] `M3-04: complete`
-- [ ] `M3-05: complete`
-- [ ] `M3-07: complete`
-- [ ] `M3-15B: pending B7`
-- [ ] `M3 Gate: not yet claimed`
-- [ ] `B7-C required` accurately recorded from inventory
+- [x] `M3-15A: complete`
+- [x] `M3-04: complete`
+- [x] `M3-05: complete`
+- [x] `M3-07: complete`
+- [x] `M3-15B: pending B7`
+- [x] `M3 Gate: not yet claimed`
+- [x] `B7-C required` accurately recorded from inventory
 
 ---
 
@@ -2081,13 +2080,13 @@ Docs update/review base:
 f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4
 
 Corrected plan:
-complete locally / closure review pending
+complete and approved
 
 Final approved-plan SHA:
-NOT_CREATED
+cc9ff7e5951330ae34973d48abf0f065ac515576
 
 B6 implementation base:
-UNRESOLVED until Gate 0
+cc9ff7e5951330ae34973d48abf0f065ac515576
 
 Documentation review:
 PASS WITH REQUIRED FOLLOW-UP
@@ -2096,82 +2095,150 @@ B6 initial plan review:
 CONDITIONAL PASS
 
 B6 plan closure:
-NOT_RUN
+NOT_REQUIRED
 
 User approval:
-PENDING
+APPROVED
 
 Gate 0:
-NOT_RUN
+PASS
+
+Gate 0 focused regression:
+89 passed
+
+Gate 0 full regression:
+1573 passed, 2 warnings
+
+Gate 0 schema blob:
+c10da0270e00105a4f375ba79a2aac5451730a4a
+
+Gate 0 Evidence model blob:
+54397337c3b3e152de247e585494ef4a6c92ef1a
+
+Gate 0 AnswerSections model blob:
+660563e4859c6301f709c1e2574828eb143781e0
+
+trace_version:
+m3-01-v1
 
 Golden/Critical inventory:
-NOT_RUN
+24-question draft only in docs/TASK_CARDS/B0-M0-01-03-planning.md;
+no executable golden fixture, Critical subset, runner, or aggregation
 
 B7-C required:
-UNDETERMINED
+REQUIRED
 
 Streamlit metadata:
 PASS - 1.60.0 / final / non-yanked / Apache-2.0 / Python >=3.10 / Python 3.14 classifier
 
 Package-index access:
-NOT_RUN
+PASS - used for task-local uv==0.11.32 and the approved Streamlit closure
 
 pyproject update:
-NOT_RUN
+PASS - added streamlit==1.60.0 only
 
 uv.lock update:
-NOT_RUN
+PASS - resolved 97 packages
 
 existing locked packages moved:
-NOT_RUN
+none
 
 per-package resolver reason:
-NOT_RUN
+not applicable to movement; all 21 added name/version entries are in the
+Streamlit 1.60.0 dependency tree
 
 outside declared closure:
-NOT_RUN
+none
 
 lock accepted:
-NOT_RUN
+yes - actual diff, locked check, clean imports, and clean regression passed
 
 Clean Python 3.14 sync:
-NOT_RUN
+PASS - task-local .deps/b6-streamlit-clean using Python 3.14.3
 
 AppTest import:
-NOT_RUN
+PASS - streamlit-apptest-ok
+
+Gate 1 focused regression:
+89 passed
+
+Gate 1 clean full regression:
+1573 passed, 2 warnings
 
 Streamlit startup:
-NOT_RUN
+PASS - headless health returned HTTP 200 and process was stopped
 
 B6-0 factual sync:
 PASS - canonical M3-01 factual synchronization completed
 
+B6-0 contract freeze:
+PASS - ChatResponse, PublicProcessSummary, Evidence, AnswerSections, and
+trace_version recorded without application-code changes
+
 B6-A:
-NOT_RUN
+PASS - shell, transport, baseline projection, process panel, and AppTest
+
+B6-A targeted:
+57 passed
+
+B6-A full regression:
+1615 passed, 2 warnings
 
 B6-B:
-NOT_RUN
+PASS - beginner section structure, report criterion, and safety validator
+
+B6-B targeted:
+51 passed
+
+B6-B UI regression:
+7 passed
 
 B6-C1:
-NOT_RUN
+PASS - approved glossary direct path, Evidence/citation composition, and
+sanitized provider-state mapping
+
+B6-C1 targeted:
+242 passed, 1 warning
+
+B6-C1 M2/B6-A regression:
+410 passed, 1 warning
 
 B6-C2:
-NOT_RUN
+PASS - ordered answer cards, safe source details, fixed status wording, and
+malicious-content-safe Streamlit projection
+
+B6-C2 targeted:
+54 passed, 1 warning
 
 B6 focused:
-NOT_RUN
+358 passed, 2 warnings
 
 Full suite:
-NOT_RUN
+1641 passed, 2 warnings
 
 Secret scan:
-NOT_RUN
+PASS - []
 
 Compile:
-NOT_RUN
+PASS
 
 Diff check:
-NOT_RUN
+PASS - no whitespace errors; Git emitted existing LF-to-CRLF working-copy
+notices
+
+Lock check:
+PASS - 97 packages resolved, no lock drift
+
+Import smoke:
+PASS - b6-import-ok / streamlit 1.60.0
+
+Local API/UI smoke:
+PASS - API health 200; glossary chat complete with 4 Evidence; Streamlit
+health 200
+
+Pixel screenshot:
+NOT_VERIFIED - Chrome headless captured the Streamlit shell before websocket
+content rendering; AppTest remains the verified UI behavior evidence
 
 Live Gemini:
 NOT_RUN / NOT_APPROVED
@@ -2192,13 +2259,22 @@ B6 implementation review:
 NOT_RUN
 
 B6 implementation:
-BLOCKED
+COMPLETE LOCALLY - ready for user push decision
 
 M3-15A:
-NOT_STARTED
+COMPLETE
 
 M3-15B:
 PENDING B7
+
+M3 Gate:
+NOT_CLAIMED
+
+B7-C:
+REQUIRED
+
+Final local verdict:
+B6 IMPLEMENTATION COMPLETE - READY FOR USER PUSH
 ```
 
 ---

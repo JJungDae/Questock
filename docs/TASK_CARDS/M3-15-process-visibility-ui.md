@@ -6,7 +6,7 @@
 - Step: `M3-15 Actual UI Integration and Process Visibility`
 - Priority: `P0 presentation and usability`
 - Planning date: `2026-07-24`
-- Planning base: `<M3-01 independently reviewed and pushed SHA>`
+- Planning base: `cc9ff7e5951330ae34973d48abf0f065ac515576`
 - M3-01 prerequisite:
   `PASS / complete`
 - Required API contract:
@@ -14,11 +14,11 @@
 - M3-07 source-detail contract:
   `must be available or scaffolded before final M3-15 closure`
 - M3-15 planning:
-  `DIRECTION LOCKED - implementation base pending`
+  `APPROVED through B6-REMAINDER plan`
 - M3-15 implementation:
-  `BLOCKED pending M3-01 PASS and separate plan approval`
+  `M3-15A complete locally; M3-15B pending B7`
 - Streamlit dependency:
-  `NOT_APPROVED until implementation-base audit`
+  `streamlit==1.60.0 AUTHORIZED in Gate 1`
 - Commit, push, PR, merge, deploy:
   `NOT_APPROVED`
 
@@ -422,21 +422,21 @@ If a recorded demo corpus is approved, it must live under `data/demo/**`, not
 
 ## 9. Completion Criteria
 
-- [ ] M3-01 PASS and schema frozen
-- [ ] exact Streamlit dependency and lock approved
-- [ ] support selector
-- [ ] question input
-- [ ] session display and reset
-- [ ] answer cards
-- [ ] source details
-- [ ] collapsed process expander
-- [ ] every process stage rendered
-- [ ] data-mode and live-verification badges
-- [ ] provider/retrieval/decision/LLM statuses separated
-- [ ] no chain-of-thought/prompt/secret/path/raw exception
-- [ ] representative scenarios pass
-- [ ] UI smoke passes
-- [ ] M2/M3 regression passes
+- [x] M3-01 PASS and schema frozen
+- [x] exact Streamlit dependency and lock approved
+- [x] support selector
+- [x] question input
+- [x] session display and reset
+- [x] answer cards
+- [x] source details
+- [x] collapsed process expander
+- [x] every process stage rendered
+- [x] data-mode and live-verification badges
+- [x] provider/retrieval/decision/LLM statuses separated
+- [x] no chain-of-thought/prompt/secret/path/raw exception
+- [x] representative scenarios pass
+- [x] UI smoke passes
+- [x] M2/M3 regression passes
 - [ ] demo screenshots and presentation flow recorded
 - [ ] commit/push remain separately approved
 
@@ -460,13 +460,45 @@ Stop if:
 
 ## 11. Result Log
 
-- Implementation base: `NOT_FIXED`
-- M3-01 prerequisite: `PENDING`
-- Streamlit dependency review: `NOT_RUN`
-- UI implementation: `NOT_STARTED`
-- Process panel: `NOT_STARTED`
-- UI smoke: `NOT_RUN`
-- M2/M3 regression: `NOT_RUN`
+- Implementation base: `cc9ff7e5951330ae34973d48abf0f065ac515576`
+- M3-01 prerequisite: `PASS / complete`
+- Final approved B6 plan:
+  `cc9ff7e5951330ae34973d48abf0f065ac515576`
+- Frozen API schema blob:
+  `c10da0270e00105a4f375ba79a2aac5451730a4a`
+- Frozen Evidence model blob:
+  `54397337c3b3e152de247e585494ef4a6c92ef1a`
+- Frozen AnswerSections model blob:
+  `660563e4859c6301f709c1e2574828eb143781e0`
+- Frozen trace version: `m3-01-v1`
+- Gate 0 focused regression: `89 passed`
+- Gate 0 full regression: `1573 passed, 2 warnings`
+- Golden/Critical inventory:
+  `24-question draft only; executable assets absent; B7-C REQUIRED`
+- Streamlit dependency review:
+  `PASS - streamlit==1.60.0 exact pin; existing package movement none`
+- Clean Python 3.14 sync: `PASS`
+- Streamlit import: `PASS - 1.60.0`
+- AppTest import: `PASS - streamlit-apptest-ok`
+- Gate 1 focused regression: `89 passed`
+- Gate 1 full regression: `1573 passed, 2 warnings`
+- UI implementation:
+  `M3-15A complete - shell, answer cards, source details, and process panel`
+- B6-A targeted: `57 passed`
+- B6-A full regression: `1615 passed, 2 warnings`
+- B6-C2 targeted: `54 passed, 1 warning`
+- B6 focused integration: `358 passed, 2 warnings`
+- Final full regression: `1641 passed, 2 warnings`
+- Process panel: `PASS - nine public-summary stages in fixed order`
+- UI smoke:
+  `PASS - complete/glossary/failure/fallback AppTest and headless health HTTP 200`
+- Local API smoke:
+  `PASS - glossary status complete, 4 Evidence, recorded mode, retrieval ok`
+- Pixel screenshot:
+  `NOT_VERIFIED - Chrome headless captured the Streamlit shell before websocket content rendering`
+- M2/M3 regression: `PASS within full suite`
 - Recorded demo corpus: `NOT_APPROVED`
 - Live source: `NOT_VERIFIED`
 - Commit/push/PR/merge/deploy: `NOT_RUN`
+- M3-15A: `COMPLETE`
+- M3-15B: `PENDING B7`

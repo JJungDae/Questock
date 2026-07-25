@@ -546,3 +546,228 @@ def test_equal_input_is_deterministic_and_caller_values_are_not_mutated() -> Non
     assert first.citations == second.citations
     assert evidence.model_dump(mode="python") == snapshot
     assert first.answer_sections is not second.answer_sections
+
+
+def test_beginner_sections_are_kept_in_explicit_order() -> None:
+    snippets = (
+        "핵심 결론이다.",
+        "확인된 사실이다.",
+        "자료의 의미다.",
+        "AI 추론이다.",
+        "긍정 조건이다.",
+        "위험 조건이다.",
+        "추가 확인이 필요하다.",
+    )
+    evidence = _evidence(snippet=" ".join(snippets))
+    sections = (
+        "summary",
+        "facts",
+        "interpretation",
+        "inference",
+        "positive_factors",
+        "risk_factors",
+        "uncertainty",
+    )
+    content = json.dumps(
+        {
+            "claims": [
+                {
+                    "claim_id": f"claim-{index}",
+                    "section": section,
+                    "text": text,
+                    "evidence_ids": [evidence.evidence_id],
+                }
+                for index, (section, text) in enumerate(
+                    zip(sections, snippets, strict=True),
+                    start=1,
+                )
+            ]
+        },
+        ensure_ascii=False,
+    )
+
+    result = asyncio.run(
+        AnswerComposer(FakeLLMClient(content)).compose(
+            question="삼성전자 최근 이슈",
+            plan=_plan(),
+            selected_evidence=[evidence],
+            documents_by_id={_document().document_id: _document()},
+            timeout_seconds=2,
+        )
+    )
+
+    assert result.generation_mode == "llm"
+    assert list(result.answer_sections.model_dump()) == list(sections)
+    assert result.answer_sections.inference == ["AI 추론이다."]
+
+
+@pytest.mark.parametrize(
+    "claims",
+    [
+        [
+            {
+                "claim_id": "facts-first",
+                "section": "facts",
+                "text": SNIPPET,
+                "evidence_ids": ["evidence:news:unit"],
+            }
+        ],
+        [
+            {
+                "claim_id": "summary-1",
+                "section": "summary",
+                "text": SNIPPET,
+                "evidence_ids": ["evidence:news:unit"],
+            },
+            {
+                "claim_id": "summary-2",
+                "section": "summary",
+                "text": SNIPPET,
+                "evidence_ids": ["evidence:news:unit"],
+            },
+        ],
+        [
+            {
+                "claim_id": "summary",
+                "section": "summary",
+                "text": SNIPPET,
+                "evidence_ids": ["evidence:news:unit"],
+            },
+            {
+                "claim_id": "facts-late",
+                "section": "facts",
+                "text": SNIPPET,
+                "evidence_ids": ["evidence:news:unit"],
+            },
+        ][::-1],
+    ],
+)
+def test_malformed_beginner_structure_fails_closed_without_retry(
+    claims: list[dict[str, Any]],
+) -> None:
+    client = FakeLLMClient(
+        json.dumps({"claims": claims}, ensure_ascii=False)
+    )
+
+    result = asyncio.run(
+        AnswerComposer(client).compose(
+            question="삼성전자 최근 이슈",
+            plan=_plan(),
+            selected_evidence=[_evidence()],
+            documents_by_id={_document().document_id: _document()},
+            timeout_seconds=2,
+        )
+    )
+
+    assert result.generation_mode == "fixed_template"
+    assert len(client.calls) == 1
+    assert result.citation_rejection_count == 1
+
+
+def test_report_plan_event_condition_and_risk_mapping_is_accepted() -> None:
+    snippets = (
+        "회사는 설비 투자를 확대할 계획이다.",
+        "신규 설비 가동은 4분기로 예정됐다.",
+        "수요 회복은 성장 조건이다.",
+        "원가 상승은 위험 조건이다.",
+        "실제 수요는 추가 확인이 필요하다.",
+    )
+    evidence = _evidence(
+        source_type="research_report",
+        snippet=" ".join(snippets),
+    )
+    claims = [
+        ("summary", snippets[0]),
+        ("facts", snippets[1]),
+        ("positive_factors", snippets[2]),
+        ("risk_factors", snippets[3]),
+        ("uncertainty", snippets[4]),
+    ]
+    content = json.dumps(
+        {
+            "claims": [
+                {
+                    "claim_id": f"report-{index}",
+                    "section": section,
+                    "text": text,
+                    "evidence_ids": [evidence.evidence_id],
+                }
+                for index, (section, text) in enumerate(claims, start=1)
+            ]
+        },
+        ensure_ascii=False,
+    )
+    plan = _plan().model_copy(
+        update={
+            "intent": "research_report_summary",
+            "required_sources": ["research_report"],
+            "required_evidence": ["research_report"],
+        },
+        deep=True,
+    )
+    document = _document(source_type="research_report", permission=True)
+
+    result = asyncio.run(
+        AnswerComposer(FakeLLMClient(content)).compose(
+            question="삼성전자 리포트 요약",
+            plan=plan,
+            selected_evidence=[evidence],
+            documents_by_id={document.document_id: document},
+            timeout_seconds=2,
+        )
+    )
+
+    assert result.generation_mode == "llm"
+    assert result.answer_sections.facts == [snippets[1]]
+    assert result.answer_sections.positive_factors == [snippets[2]]
+    assert result.answer_sections.risk_factors == [snippets[3]]
+    assert result.answer_sections.uncertainty == [snippets[4]]
+
+
+@pytest.mark.parametrize(
+    ("intent", "snippet"),
+    [
+        ("recent_issue", "지금 매수하세요."),
+        ("research_report_summary", "실적 개선이 보장된다."),
+    ],
+)
+def test_direct_advice_or_report_future_certainty_fails_closed(
+    intent: str,
+    snippet: str,
+) -> None:
+    source_type = (
+        "research_report"
+        if intent == "research_report_summary"
+        else "news"
+    )
+    evidence = _evidence(source_type=source_type, snippet=snippet)
+    document = _document(source_type=source_type, permission=True)
+    plan = _plan().model_copy(
+        update={
+            "intent": intent,
+            "required_sources": [source_type],
+            "required_evidence": [source_type],
+        },
+        deep=True,
+    )
+    client = FakeLLMClient(
+        _draft(
+            text=snippet,
+            evidence_id=evidence.evidence_id,
+        )
+    )
+
+    result = asyncio.run(
+        AnswerComposer(client).compose(
+            question="자료 요약",
+            plan=plan,
+            selected_evidence=[evidence],
+            documents_by_id={document.document_id: document},
+            timeout_seconds=2,
+        )
+    )
+
+    assert result.generation_mode == "fixed_template"
+    assert len(client.calls) == 1
+    assert result.citation_rejection_count >= 1
+    assert snippet not in result.answer_sections.model_dump_json()

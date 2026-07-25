@@ -14,7 +14,12 @@ from langchain_core.runnables import (
     RunnableSequence,
 )
 
-from app.answer.models import AnswerSections, DraftClaim, StructuredAnswerDraft
+from app.answer.models import (
+    AnswerSectionName,
+    AnswerSections,
+    DraftClaim,
+    StructuredAnswerDraft,
+)
 from app.core.models import Evidence, FinancialDocument, QueryPlan
 from app.evidence.citations import (
     Citation,
@@ -49,10 +54,36 @@ _CREDENTIAL_VALUE = re.compile(
     r"\s*[:=]\s*\S+"
 )
 _URL = re.compile(r"(?i)\b(?:https?|file)://")
+_DIRECT_ADVICE = re.compile(
+    r"(?:사세요|파세요|"
+    r"(?:매수|매도|손절|익절|목표가).{0,12}"
+    r"(?:하세요|해야|권장|추천|제시))"
+)
+_FUTURE_CERTAINTY = re.compile(
+    r"(?:보장(?:된다|됩니다|한다)|틀림없이|"
+    r"확실히.{0,20}(?:된다|됩니다|할 것이다)|"
+    r"반드시.{0,20}(?:상승|하락|개선|성장|달성))"
+)
 _SAFE_FALLBACKS = {
     "blocked": "요청 범위상 제공할 수 없는 답변입니다.",
     "provider_failed": "자료 제공 상태를 확인하지 못해 답변을 보류합니다.",
     "no_evidence": "답변에 사용할 수 있는 근거를 확인하지 못했습니다.",
+}
+_SECTION_ORDER = {
+    "summary": 0,
+    "facts": 1,
+    "interpretation": 2,
+    "inference": 3,
+    "positive_factors": 4,
+    "risk_factors": 5,
+    "uncertainty": 6,
+}
+_GLOSSARY_SECTION_MAP: dict[str, AnswerSectionName] = {
+    "definition": "summary",
+    "why_it_matters": "interpretation",
+    "caution": "uncertainty",
+    "formula": "facts",
+    "example": "facts",
 }
 
 
@@ -96,12 +127,24 @@ class AnswerComposer:
                 (
                     "system",
                     "Return only the requested JSON. Every claim must be an exact "
-                    "extract from every referenced evidence snippet.\n"
+                    "extract from every referenced evidence snippet. The first "
+                    "claim must be the only summary claim. Keep claims in this "
+                    "section order: summary, facts, interpretation, inference, "
+                    "positive_factors, risk_factors, uncertainty. Omit unsupported "
+                    "sections. Never provide direct investment action or guaranteed "
+                    "future performance. For research_report_summary, place stated "
+                    "plans and scheduled events in facts, growth conditions in "
+                    "positive_factors or interpretation, risk conditions in "
+                    "risk_factors, and missing confirmation in uncertainty. For "
+                    "financial_term, map definition to summary, formula and "
+                    "example to facts, why_it_matters to interpretation, and "
+                    "caution to uncertainty.\n"
                     "{format_instructions}",
                 ),
                 (
                     "human",
-                    "Question:\n{question}\n\nEligible evidence:\n{evidence}",
+                    "Intent:\n{intent}\n\nQuestion:\n{question}\n\n"
+                    "Eligible evidence:\n{evidence}",
                 ),
             ]
         ).partial(format_instructions=self._parser.get_format_instructions())
@@ -142,6 +185,7 @@ class AnswerComposer:
             return _fixed_result(canonical_plan, canonical_evidence)
 
         payload = {
+            "intent": canonical_plan.intent,
             "question": canonical_question,
             "evidence": _prompt_evidence(eligible),
             "timeout_seconds": timeout_seconds,
@@ -159,6 +203,12 @@ class AnswerComposer:
             )
             if not isinstance(parsed, _ParsedOutput):
                 raise AnswerCompositionError("structured generation output is invalid")
+            _validate_draft_structure(
+                parsed.draft,
+                canonical_plan,
+                eligible,
+                parsed.result,
+            )
             claims = _citation_claims(parsed.draft, eligible, parsed.result)
             citations = validate_citations(claims, canonical_plan, eligible)
             if citations.rejections:
@@ -369,10 +419,17 @@ def _external_processing_eligible(
 
 
 def _prompt_evidence(evidence: tuple[Evidence, ...]) -> str:
-    return "\n\n".join(
-        f"Evidence ID: {item.evidence_id}\nSnippet: {item.snippet}"
-        for item in evidence
-    )
+    rendered = []
+    for item in evidence:
+        lines = [
+            f"Evidence ID: {item.evidence_id}",
+            f"Source type: {item.source_type}",
+        ]
+        if item.source_type == "glossary":
+            lines.append(f"Glossary section: {item.locator.get('section')}")
+        lines.append(f"Snippet: {item.snippet}")
+        rendered.append("\n".join(lines))
+    return "\n\n".join(rendered)
 
 
 def _citation_claims(
@@ -396,6 +453,39 @@ def _citation_claims(
             )
         )
     return tuple(claims)
+
+
+def _validate_draft_structure(
+    draft: StructuredAnswerDraft,
+    plan: QueryPlan,
+    evidence: tuple[Evidence, ...],
+    result: LLMResult,
+) -> None:
+    sections = [item.section for item in draft.claims]
+    summary_count = sections.count("summary")
+    ordered = [_SECTION_ORDER[item] for item in sections]
+    unsafe_content = any(_DIRECT_ADVICE.search(item.text) for item in draft.claims)
+    unsafe_report_certainty = (
+        plan.intent == "research_report_summary"
+        and any(_FUTURE_CERTAINTY.search(item.text) for item in draft.claims)
+    )
+    glossary_sections_valid = (
+        plan.intent != "financial_term"
+        or _glossary_claim_sections_valid(draft, evidence)
+    )
+    if (
+        not sections
+        or sections[0] != "summary"
+        or summary_count != 1
+        or ordered != sorted(ordered)
+        or unsafe_content
+        or unsafe_report_certainty
+        or not glossary_sections_valid
+    ):
+        raise _GenerationFailure(
+            _invalid_response_from(result),
+            rejection_count=1,
+        )
 
 
 def _fixed_result(
@@ -424,12 +514,25 @@ def _fixed_result(
             llm_result=llm_result,
             citation_rejection_count=citation_rejection_count,
         )
+    if plan.intent == "financial_term":
+        return _fixed_glossary_result(
+            plan,
+            evidence,
+            llm_result=llm_result,
+            citation_rejection_count=citation_rejection_count,
+        )
 
     accepted_claims: list[CitationClaim] = []
     accepted_citations: list[Citation] = []
     accepted_evidence: list[Evidence] = []
     fixed_rejection_count = 0
     for index, item in enumerate(evidence[:3]):
+        if _DIRECT_ADVICE.search(item.snippet) or (
+            plan.intent == "research_report_summary"
+            and _FUTURE_CERTAINTY.search(item.snippet)
+        ):
+            fixed_rejection_count += 1
+            continue
         claim = CitationClaim(
             claim_id=f"fixed-{index + 1}",
             text=item.snippet,
@@ -483,6 +586,82 @@ def _fixed_result(
     )
 
 
+def _fixed_glossary_result(
+    plan: QueryPlan,
+    evidence: tuple[Evidence, ...],
+    *,
+    llm_result: LLMResult | None,
+    citation_rejection_count: int,
+) -> CompositionResult:
+    draft_claims: list[DraftClaim] = []
+    claims: list[CitationClaim] = []
+    citations: list[Citation] = []
+    public_evidence: list[Evidence] = []
+    for index, item in enumerate(evidence):
+        section = _GLOSSARY_SECTION_MAP.get(
+            item.locator.get("section")  # type: ignore[arg-type]
+        )
+        if (
+            section is None
+            or _DIRECT_ADVICE.search(item.snippet)
+        ):
+            return _empty_fixed_result(
+                plan,
+                fallback_reason="no_evidence",
+                llm_result=llm_result,
+                citation_rejection_count=citation_rejection_count + 1,
+            )
+        claim = CitationClaim(
+            claim_id=f"fixed-{index + 1}",
+            text=item.snippet,
+            evidence_ids=(item.evidence_id,),
+        )
+        try:
+            validation = validate_citations((claim,), plan, (item,))
+        except CitationValidationError:
+            validation = CitationValidationResult((), ())
+        if validation.rejections or len(validation.citations) != 1:
+            return _empty_fixed_result(
+                plan,
+                fallback_reason="no_evidence",
+                llm_result=llm_result,
+                citation_rejection_count=citation_rejection_count + 1,
+            )
+        draft_claims.append(
+            DraftClaim(
+                claim_id=claim.claim_id,
+                section=section,
+                text=claim.text,
+                evidence_ids=claim.evidence_ids,
+            )
+        )
+        claims.append(claim)
+        citations.extend(validation.citations)
+        public_evidence.append(item.model_copy(deep=True))
+
+    if (
+        not draft_claims
+        or draft_claims[0].section != "summary"
+        or sum(item.section == "summary" for item in draft_claims) != 1
+    ):
+        return _empty_fixed_result(
+            plan,
+            fallback_reason="no_evidence",
+            llm_result=llm_result,
+            citation_rejection_count=citation_rejection_count + 1,
+        )
+    return CompositionResult(
+        answer_sections=AnswerSections.from_claims(tuple(draft_claims)),
+        claims=tuple(claims),
+        citations=CitationValidationResult(tuple(citations), ()),
+        generation_mode="fixed_template",
+        llm_result=llm_result.model_copy(deep=True) if llm_result else None,
+        transmitted_evidence=(),
+        public_evidence=tuple(public_evidence),
+        citation_rejection_count=citation_rejection_count,
+    )
+
+
 def _empty_fixed_result(
     plan: QueryPlan,
     *,
@@ -508,6 +687,24 @@ def _empty_fixed_result(
         public_evidence=(),
         citation_rejection_count=citation_rejection_count,
     )
+
+
+def _glossary_claim_sections_valid(
+    draft: StructuredAnswerDraft,
+    evidence: tuple[Evidence, ...],
+) -> bool:
+    evidence_by_id = {item.evidence_id: item for item in evidence}
+    for claim in draft.claims:
+        expected_sections = {
+            _GLOSSARY_SECTION_MAP.get(
+                evidence_by_id[evidence_id].locator.get("section")  # type: ignore[arg-type]
+            )
+            for evidence_id in claim.evidence_ids
+            if evidence_id in evidence_by_id
+        }
+        if expected_sections != {claim.section}:
+            return False
+    return True
 
 
 def _citation_bound_evidence(
