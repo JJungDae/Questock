@@ -56,7 +56,7 @@
 - Live provider or live Gemini work:
   `NOT_INCLUDED / NOT_APPROVED`
 - Commit, push, PR, merge, deploy:
-  `implementation commit/push NOT_RUN - separate user approval required`
+  `B8 implementation commit/main push complete; further PR/merge/deploy NOT_APPROVED`
 
 This Task Card is the canonical B8 plan. It treats the four remaining HBM
 golden failures as B8 quality stabilization work. They do not reopen B7.
@@ -860,10 +860,16 @@ Live provider/Gemini:
 NOT_RUN / NOT_APPROVED
 
 Implementation SHA:
-not created
+22909c71a10a62f81d3eb715c698b8b8575648b5
+
+Implementation commit:
+Implement B8 quality stabilization
+
+Implementation main push:
+complete
 
 Commit/push/PR/merge/deploy:
-implementation commit/push NOT_RUN - separate user approval required
+B8 implementation commit/main push complete
 PR/merge/deploy NOT_RUN / NOT_APPROVED
 
 B9 planning:
