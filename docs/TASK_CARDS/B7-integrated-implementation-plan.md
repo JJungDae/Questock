@@ -38,7 +38,7 @@
 - M3-15B:
   `IMPLEMENTED IN B7 - independent closure review pending`
 - B7-C:
-  `FOCUSED SUPPLEMENT IMPLEMENTED LOCALLY - 34 executable cases and local runner`
+  `FOCUSED SUPPLEMENT IMPLEMENTED AND PUSHED - 34 executable cases and local runner`
 - M3 Gate:
   `independent review FAIL at 0c450b1; focused supplement local gate PASS; closure review pending`
 - M3-12:
@@ -66,7 +66,7 @@
 - Live source provider work:
   `NOT_INCLUDED / NOT_APPROVED`
 - Commit, push, PR, merge, deploy:
-  `initial B7 main push complete; supplement commit/push NOT_RUN; further PR, merge, deploy NOT_APPROVED`
+  `initial B7 and supplement main pushes complete; further PR, merge, deploy NOT_APPROVED`
 
 This Task Card is the canonical B7 bundle plan after the completed
 `B6-REMAINDER` bundle.
@@ -1535,6 +1535,15 @@ Implement B7 integrated closure
 B7 implementation main push:
 complete
 
+Focused supplement SHA:
+b068868f2be33a4a2ec0b48a6a90b96c461bf862
+
+Focused supplement commit:
+Fix B7 closure review findings
+
+Focused supplement main push:
+complete
+
 B7 implementation review:
 CONDITIONAL PASS
 Focused supplement implementation-agent local verification PASS
@@ -1554,7 +1563,7 @@ BLOCKED until independent B7 implementation closure PASS
 
 Commit/push/PR/merge/deploy:
 B7 implementation commit/main push complete
-Focused supplement commit/push NOT_RUN
+Focused supplement commit/main push complete
 Further PR/merge/deploy NOT_APPROVED
 ```
 
