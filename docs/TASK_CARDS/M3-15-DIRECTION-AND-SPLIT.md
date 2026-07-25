@@ -20,17 +20,25 @@ B6-REMAINDER initial plan review CONDITIONAL PASS
 B6 implementation and supplement review complete
 
 M3-15 implementation:
-M3-15A COMPLETE / M3-15B IMPLEMENTED and locally verified through B7
+M3-15A COMPLETE / M3-15B PASS / complete through B7
 
 B7 implementation SHA/main push:
 833336a002b1e02070b35cd4afe9aff279752d61 / complete
+
+B7 focused supplement SHA/main push:
+b068868f2be33a4a2ec0b48a6a90b96c461bf862 / complete
+
+B7 independent implementation review:
+PASS WITH REQUIRED FOLLOW-UP
+
+M3 Gate independent review:
+PASS - 30/34 = 88.24%, Critical 17/17 = 100%, public exposure 0
 
 Streamlit:
 streamlit==1.60.0 APPROVED and locked during B6
 
 M3-15 final completion:
-implementation complete across B6 and B7
-independent B7 closure review pending
+PASS / complete across B6 and B7
 ```
 
 ## 2. M3-15A — B6
@@ -76,10 +84,10 @@ M3-07:
 complete
 
 M3-15B:
-implemented and locally verified in B7
+PASS / complete in B7
 
 M3-15 overall:
-implementation complete / independent closure review pending
+PASS / complete
 ```
 
 ## 5. frozen contract

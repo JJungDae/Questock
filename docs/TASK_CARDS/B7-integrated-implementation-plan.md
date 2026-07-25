@@ -36,11 +36,11 @@
 - M3-15A:
   `COMPLETE`
 - M3-15B:
-  `IMPLEMENTED IN B7 - independent closure review pending`
+  `PASS / complete`
 - B7-C:
   `FOCUSED SUPPLEMENT IMPLEMENTED AND PUSHED - 34 executable cases and local runner`
 - M3 Gate:
-  `independent review FAIL at 0c450b1; focused supplement local gate PASS; closure review pending`
+  `independent review PASS - 30/34 (88.24%), Critical 17/17 (100%), public exposure 0`
 - M3-12:
   `NOT_ACTIVATED`
 - M1-09:
@@ -52,7 +52,11 @@
 - External GPT-based plan review:
   `NOT_RUN - reviewer service unavailable`
 - B7 implementation:
-  `CONDITIONAL PASS - focused supplement implemented locally; closure review pending`
+  `PASS WITH REQUIRED FOLLOW-UP / complete`
+- B7 code blockers:
+  `CLOSED`
+- B8 planning and implementation:
+  `ALLOWED after approved B8 plan and preflight PASS`
 - B7-0 locked interpreter:
   `.deps/b6-streamlit-clean/Scripts/python.exe - Python 3.14.3, Streamlit 1.60.0`
 - B7-0 targeted:
@@ -1524,7 +1528,7 @@ CONDITIONAL PASS at
 Reviewer full suite: 1754 passed / 1 failed / 2 warnings
 
 Focused supplement independent pytest:
-NOT_RUN - closure review pending
+NOT_RUN
 
 B7 implementation SHA:
 833336a002b1e02070b35cd4afe9aff279752d61
@@ -1545,21 +1549,29 @@ Focused supplement main push:
 complete
 
 B7 implementation review:
-CONDITIONAL PASS
+Initial independent review CONDITIONAL PASS
 Focused supplement implementation-agent local verification PASS
-Final independent closure review NOT_RUN
+Final independent implementation review PASS WITH REQUIRED FOLLOW-UP
+B7 code blockers CLOSED
+No additional B7 code commit or closure review required
 
 M3-15:
-M3-15A complete; M3-15B implemented and locally verified;
-independent closure review pending
+M3-15A complete; M3-15B PASS / complete
+M3-15 final status PASS / complete
 
 M3 Gate:
 Independent review FAIL at 0c450b1
 Focused supplement local executable gate PASS
-Final independent gate review NOT_RUN
+Final independent gate review PASS
+Full golden 30/34 = 88.24%
+Critical 17/17 = 100%
+Public exposure findings 0
 
 B8 planning:
-BLOCKED until independent B7 implementation closure PASS
+ALLOWED
+
+B8 implementation:
+ALLOWED after approved B8 plan and preflight PASS
 
 Commit/push/PR/merge/deploy:
 B7 implementation commit/main push complete

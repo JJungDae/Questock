@@ -1,0 +1,775 @@
+# TASK CARD - B8 Quality Stabilization and Observability
+
+## 1. Status and Approval
+
+- Project: `Questock`
+- Repository: `JJungDae/Questock`
+- Branch: `main`
+- Bundle: `B8`
+- Included checkpoints:
+  - `B8-0` preflight and B7/M3 Gate factual verification
+  - `M4-01` provider failure and fallback regression
+  - `M4-02` full golden quality stabilization
+  - `M4-03` minimum structured observability
+- Priority: `P0`
+- Planning date: `2026-07-25`
+- Planning base SHA:
+  `52c015569111493f83ab27983839d18136da5655`
+- Planning base commit:
+  `docs: sync B7 supplement status`
+- Planning base main push:
+  `complete`
+- B7 implementation SHA:
+  `833336a002b1e02070b35cd4afe9aff279752d61`
+- B7 focused supplement SHA:
+  `b068868f2be33a4a2ec0b48a6a90b96c461bf862`
+- B7 focused supplement main push:
+  `complete`
+- B7 independent implementation review:
+  `PASS WITH REQUIRED FOLLOW-UP`
+- B7 code blockers:
+  `CLOSED`
+- M3-15B:
+  `PASS / complete`
+- M3 Gate independent review:
+  `PASS`
+- M3 Gate result:
+  `30/34 = 88.24%`
+- M3 Gate Critical:
+  `17/17 = 100%`
+- M3 Gate public exposure:
+  `0`
+- M1-09:
+  `mandatory supplement implemented - final independent review pending`
+- M3-12:
+  `NOT_ACTIVATED`
+- B8 planning:
+  `ALLOWED`
+- B8 implementation:
+  `NOT_APPROVED - allowed only after this plan is approved and B8-0 preflight PASS`
+- Dependency or lock change:
+  `NOT_APPROVED / NOT_EXPECTED`
+- Live provider or live Gemini work:
+  `NOT_INCLUDED / NOT_APPROVED`
+- Commit, push, PR, merge, deploy:
+  `NOT_APPROVED`
+
+This Task Card is the canonical B8 plan. It treats the four remaining HBM
+golden failures as B8 quality stabilization work. They do not reopen B7.
+
+---
+
+## 2. Normative Sources
+
+Read in this order before implementation:
+
+1. `docs/agent_handoff/SOURCE_OF_TRUTH_INDEX.md`
+2. `docs/agent_handoff/README_AGENT_RULES.md`
+3. `docs/agent_handoff/PROJECT_PLAN_FINAL_PASS.md`
+4. `docs/agent_handoff/PROJECT_PLAN_FINAL_PASS_POST_M3_01_ADDENDUM.md`
+5. `docs/agent_handoff/POST_M3_01_EXECUTION_FLOW_DECISION_2026-07-25.md`
+6. `docs/agent_handoff/AGENT_WORKFLOW.md`
+7. `docs/agent_handoff/AGENT_WORKFLOW_POST_M3_01_ADDENDUM.md`
+8. `docs/agent_handoff/FINANCIAL_CAPABILITY_BASELINE.md`
+9. `docs/agent_handoff/RISK_RESPONSE_MATRIX.md`
+10. `docs/agent_handoff/EVALUATION_TAXONOMY_DRAFT.md`
+11. `docs/TASK_CARDS/B7-integrated-implementation-plan.md`
+12. this Task Card
+13. current code, fixtures, and tests
+
+The post-M3-01 addendum controls the bundle order:
+
+```text
+B7 PASS
+-> M3 Gate PASS
+-> B8 M4-01~03
+-> B8 implementation review
+-> B9 only after B8 PASS
+```
+
+---
+
+## 3. Verified Baseline
+
+The planning inspection found:
+
+- `app/providers/base.py` already owns provider status normalization, retry,
+  attempt timeout, total deadline, parallel cancellation, and TTL cache.
+- `app/services/source_gateway.py` already validates project-owned source
+  results and distinguishes timeout from unconfigured provider state.
+- `app/services/chat_service.py` already composes provider, retrieval,
+  EvidenceDecision, LLM, fallback, and `PublicProcessSummary` state.
+- `app/planning/query_planner.py` treats any standalone uppercase ASCII token
+  matching `^[A-Z]{1,5}([.-][A-Z])?$` as a foreign ticker candidate.
+- `HBM` therefore reaches `SecurityResolver` as an unsupported candidate.
+  When a supported company is also resolved, the mixed resolved/unsupported
+  candidates force clarification.
+- `app/core/resolver.py` has the approved foreign-ticker boundary. B8 must not
+  weaken or rewrite this resolver contract.
+- There is no current internal structured JSON request log. The existing
+  `PublicProcessSummary` is a public UI contract and must not be reused as the
+  internal log model.
+- The recorded M3 Gate failures are:
+  - `B0-09`
+  - `B0-10`
+  - `B0-12`
+  - `B0-17`
+- Current recorded gate:
+  - full golden `30/34 = 88.24%`
+  - Critical `17/17 = 100%`
+  - public exposure `0`
+
+These are planning observations, not a new test execution.
+
+---
+
+## 4. Goal
+
+Complete the P0 stabilization slice without adding a new product feature:
+
+```text
+provider failure and fallback regression
+-> HBM/domain-token resolution stabilization
+-> full golden >= 90% with Critical 100%
+-> private minimum structured JSON logging
+```
+
+The completed bundle must:
+
+- preserve provider failure versus normal no-data distinctions
+- preserve partial results when at least one required source remains usable
+- prevent raw exceptions, secrets, prompts, paths, or source payloads from
+  entering user responses or logs
+- preserve supported-company and wrong-company safety
+- distinguish `HBM` as a domain token from actual foreign uppercase tickers
+- retain the frozen public API and core model/status contracts
+- produce one bounded internal request observation for completed requests
+- leave CI, Docker, deployment, demo packaging, and traceability to B9
+
+---
+
+## 5. Non-Goals
+
+Do not implement:
+
+- a live provider, live source adapter, or credential use
+- provider schema or status enum changes
+- `SecurityResolver` contract changes
+- public `ChatRequest`, `ChatResponse`, or `PublicProcessSummary` changes
+- core model or Evidence model changes
+- M1 or M2 implementation changes
+- new retrieval, ranking, normalization, dedupe, or context-budget behavior
+- LLM model, prompt, validator, or provider changes
+- Langfuse, OpenTelemetry, remote tracing, or a new dependency
+- user question, session, prompt, document, Evidence text, or raw payload logs
+- API or UI feature work
+- CI, Docker, deployment, or remote smoke
+- M3-12, M5-01, or P1 work
+
+---
+
+## 6. B8-0 Preflight Gate
+
+Use the approved locked interpreter:
+
+```powershell
+$python = ".deps/b6-streamlit-clean/Scripts/python.exe"
+```
+
+### 6.1 Git and scope verification
+
+Confirm:
+
+- branch is `main`
+- `HEAD` equals `origin/main`
+- the approved B8 Task Card is present
+- no commit after the approved plan changes a B8 contract
+- no code, fixture, dependency, or lock change is already dirty
+- user-owned review bundle files remain untouched and unstaged
+- `pyproject.toml` and `uv.lock` are unchanged
+
+Commands:
+
+```powershell
+git status --short --branch
+git rev-parse HEAD
+git rev-parse origin/main
+git log -5 --oneline
+git diff --check
+git diff --name-status
+```
+
+### 6.2 Regression preflight
+
+```powershell
+& $python -m pytest `
+  tests/unit/test_provider_base.py `
+  tests/unit/test_source_gateway.py `
+  tests/unit/test_query_planner.py `
+  tests/unit/test_chat_service.py `
+  tests/unit/test_answer_composer.py `
+  tests/unit/test_answer_validators.py `
+  tests/unit/test_ui_projections.py `
+  tests/unit/test_m3_gate_runner.py `
+  tests/integration/test_m2_phase_slice.py `
+  tests/integration/test_m3_chat_phase_slice.py `
+  tests/integration/test_streamlit_app.py `
+  tests/integration/test_m3_gate.py `
+  -q
+
+& $python -m pytest tests -q
+& $python scripts/m3_gate.py
+& $python -c "from app.services.chat_service import ChatService; from app.planning.query_planner import QueryPlanner; print('b8-preflight-import-ok')"
+& $python scripts/secret_scan.py
+& $python -m compileall app tests scripts -q
+```
+
+Preflight passes only if:
+
+- all commands exit `0`
+- full golden remains at least `30/34`
+- Critical remains `17/17`
+- public exposure remains `0`
+- no unexpected warning, contract drift, or unrelated failure appears
+
+If any item fails, stop before B8 implementation and report the evidence.
+
+---
+
+## 7. M4-01 - Provider Failure and Fallback Regression
+
+## 7.1 Contract
+
+Exercise existing provider and orchestration behavior end to end. Do not
+reimplement provider policy.
+
+Required distinctions:
+
+| Provider condition | Required public behavior |
+|---|---|
+| all required sources `no_data` | `no_evidence`, not `provider_failed` |
+| all required sources fail | `provider_failed`, fixed safe fallback |
+| one source `ok`, another `no_data` | usable Evidence preserved; decision follows existing EvidencePolicy |
+| one source `ok`, another failure | usable Evidence preserved; `partial` when required-source coverage is incomplete |
+| `timeout` | remains timeout in process state; never reported as no-data |
+| `rate_limited` | remains rate-limited; no unbounded retry |
+| `provider_unavailable` | remains provider-unavailable; safe message only |
+| `parse_error` | remains parse-error; safe message only |
+| total deadline | pending work cancelled; safe timeout fallback |
+| expired cache entry | treated as miss; stale value not returned |
+| valid cache hit | original `fetched_at` retained and `from_cache=True` |
+
+The whole request must not crash for expected provider failures. Unexpected
+project-boundary violations must remain sanitized errors and must not be
+misreported as normal no-data or low relevance.
+
+## 7.2 Tests
+
+Add deterministic fake/recorded tests for:
+
+- timeout
+- rate limit
+- no-data
+- parse error
+- provider unavailable
+- expired cache
+- one failed source with another successful source
+- all sources failed
+- all sources no-data
+- total deadline and cancellation
+- fixed fallback with no raw provider message
+- provider status, retrieval status, EvidenceDecision, and LLM status remaining
+  distinct in the public process summary
+
+Do not use live calls or long sleeps.
+
+---
+
+## 8. M4-02 - Golden Quality Stabilization
+
+## 8.1 Root-cause boundary
+
+The correction belongs in query candidate eligibility, not in the canonical
+resolver:
+
+```text
+supported company + HBM topic token
+-> resolve supported company
+-> do not send HBM to SecurityResolver as a foreign ticker candidate
+
+supported company + actual uppercase foreign ticker
+-> preserve the existing conflicting-security clarification behavior
+
+standalone actual uppercase foreign ticker
+-> preserve unsupported behavior
+```
+
+Use a narrow, project-owned domain-token allowlist in
+`app/planning/query_planner.py`. For this checkpoint the required token is
+exactly `HBM`. Do not broadly exempt uppercase words and do not add `HBM` as a
+security alias.
+
+## 8.2 Required exact tests
+
+Add or preserve exact tests for:
+
+- Samsung Electronics plus `HBM` resolves to `KRX:005930`
+- SK Hynix plus `HBM` resolves to `KRX:000660`
+- `HBM` without a supported security does not resolve to a company
+- standalone `AAPL` remains unsupported
+- Samsung Electronics plus `AAPL` still requires clarification
+- canonical name, ticker, security ID, and approved aliases still resolve
+- ambiguous `삼성`, `SK`, and `현대` still require clarification
+- multiple supported companies still do not first-match
+- wrong-company Evidence remains fully blocked
+- `B0-09`, `B0-10`, `B0-12`, and `B0-17` no longer fail because `HBM` was
+  classified as a foreign ticker
+
+Do not weaken fixture expectations, forbidden-company assertions, numeric
+validation, or safety assertions to increase the score.
+
+## 8.3 Gate
+
+Required B8 quality result:
+
+- full golden at least `31/34` (`>= 90%`)
+- Critical exactly `17/17` (`100%`)
+- public exposure exactly `0`
+- wrong-company blocking `100%`
+
+The implementation target is to close all four shared-root-cause HBM failures.
+If a case still fails for an independent downstream reason, record that failure
+taxonomy explicitly. The bundle still cannot pass below `31/34`.
+
+---
+
+## 9. M4-03 - Minimum Structured Observability
+
+## 9.1 Ownership
+
+Create a private internal observation boundary:
+
+- `app/services/observability.py`
+- an immutable internal request-observation record
+- a small sink protocol
+- a standard-library JSON logging sink
+- an injectable in-memory sink for deterministic tests
+
+This internal record is not a public API model and must not be added to
+`PublicProcessSummary`.
+
+## 9.2 Minimum fields
+
+One completed-request observation contains only:
+
+- `request_id`
+- `intent`
+- `security_id`
+- provider status by requested source
+- selected Evidence count
+- final EvidenceDecision status
+- total latency in milliseconds
+- LLM call count
+- fallback used
+
+Additional bounded fields are allowed only when needed to distinguish a
+sanitized terminal outcome. Do not log content-bearing fields.
+
+## 9.3 Request ID and determinism
+
+- generate an opaque request ID per request
+- do not derive it from `session_id`, message text, or a local path
+- inject the request-ID factory in tests
+- inject or reuse the existing monotonic clock for latency tests
+- serialize JSON with stable key ordering
+- do not mutate `ChatRequest`, `ChatResponse`, or pipeline inputs
+
+## 9.4 Privacy and failure behavior
+
+The log must never contain:
+
+- user message or session ID
+- prompt or hidden reasoning
+- answer text
+- document or Evidence text/snippet
+- raw provider payload
+- raw exception
+- credential or authorization value
+- local absolute path
+- source URL or locator
+
+Use an allowlist projection from already validated internal state. Do not run
+generic object serialization on request, response, provider result, Evidence,
+or exceptions.
+
+Observation emission failure must not replace an otherwise valid user response.
+It may be swallowed at the sink boundary without logging the raw exception.
+
+## 9.5 Required tests
+
+Verify:
+
+- exact JSON keys and value types
+- provider statuses remain per source
+- `no_data` and provider failures remain distinct
+- EvidenceDecision and fallback are correct
+- LLM call count is `0` or `1` from the request-owned call budget
+- latency is finite and non-negative
+- fixed request ID and clock produce deterministic output
+- caller inputs and returned response are not mutated
+- sentinel message, session ID, prompt, Evidence text, exception, secret,
+  source URL, and local path do not appear
+- sink failure does not crash a completed request
+- one request emits one terminal observation
+
+---
+
+## 10. File Ownership
+
+Expected implementation files:
+
+- `app/planning/query_planner.py`
+- `app/services/chat_service.py`
+- `app/services/observability.py`
+- `tests/unit/test_query_planner.py`
+- `tests/unit/test_chat_service.py`
+- `tests/unit/test_observability.py`
+- `tests/integration/test_b8_quality_phase_slice.py`
+- `tests/integration/test_m3_gate.py`
+- `docs/TASK_CARDS/B8-quality-observability.md`
+
+Regression-only files, not expected to change:
+
+- `app/core/resolver.py`
+- `app/providers/base.py`
+- `app/services/source_gateway.py`
+- `scripts/m3_gate.py`
+- `tests/fixtures/evaluation/m3_golden_cases.json`
+- existing M1/M2 tests
+
+If changing a regression-only file becomes necessary, stop and report the
+specific contract gap before editing it.
+
+Forbidden changes:
+
+- `app/core/models.py`
+- `app/core/status.py`
+- `app/api/schemas.py`
+- provider adapters
+- ingest modules
+- retrieval and Evidence modules
+- answer prompt/model/validator code
+- UI code
+- `pyproject.toml`
+- `uv.lock`
+- `.env.example`
+- CI or Docker files
+
+---
+
+## 11. Implementation Order
+
+1. Run B8-0 preflight.
+2. Add failing M4-01 end-to-end failure/fallback tests.
+3. Confirm whether existing provider/service behavior already passes.
+4. Make only the minimum service-boundary correction if an approved M4-01
+   test exposes a defect.
+5. Add HBM and foreign-ticker negative tests.
+6. Add the narrow `HBM` domain-token eligibility rule.
+7. Run the four exact golden cases, then the full gate.
+8. Add the private observability module and deterministic unit tests.
+9. Wire one terminal observation into `ChatService`.
+10. Run targeted, composition, full, gate, smoke, privacy, compile, and diff
+    checks.
+11. Review the complete diff and report results.
+12. Do not commit or push without a separate user approval.
+
+---
+
+## 12. Verification
+
+## 12.1 M4-01 targeted
+
+```powershell
+& $python -m pytest `
+  tests/unit/test_provider_base.py `
+  tests/unit/test_source_gateway.py `
+  tests/unit/test_chat_service.py `
+  tests/integration/test_b8_quality_phase_slice.py `
+  -q
+```
+
+## 12.2 M4-02 targeted and gate
+
+```powershell
+& $python -m pytest `
+  tests/unit/test_security_resolver.py `
+  tests/unit/test_query_planner.py `
+  tests/unit/test_m3_gate_runner.py `
+  tests/integration/test_m3_gate.py `
+  -q
+
+& $python scripts/m3_gate.py
+```
+
+Record:
+
+- each of `B0-09`, `B0-10`, `B0-12`, and `B0-17`
+- full numerator, denominator, and percentage
+- Critical numerator, denominator, and percentage
+- public exposure count
+
+## 12.3 M4-03 targeted
+
+```powershell
+& $python -m pytest `
+  tests/unit/test_observability.py `
+  tests/unit/test_chat_service.py `
+  tests/integration/test_b8_quality_phase_slice.py `
+  -q
+```
+
+## 12.4 B8 composition and full regression
+
+```powershell
+& $python -m pytest `
+  tests/unit/test_provider_base.py `
+  tests/unit/test_source_gateway.py `
+  tests/unit/test_security_resolver.py `
+  tests/unit/test_query_planner.py `
+  tests/unit/test_answer_composer.py `
+  tests/unit/test_answer_validators.py `
+  tests/unit/test_chat_service.py `
+  tests/unit/test_observability.py `
+  tests/unit/test_ui_projections.py `
+  tests/unit/test_m3_gate_runner.py `
+  tests/integration/test_m2_phase_slice.py `
+  tests/integration/test_m3_chat_phase_slice.py `
+  tests/integration/test_streamlit_app.py `
+  tests/integration/test_m3_gate.py `
+  tests/integration/test_b8_quality_phase_slice.py `
+  -q
+
+& $python -m pytest tests -q
+```
+
+## 12.5 Smoke and hygiene
+
+```powershell
+& $python -c "from app.planning.query_planner import QueryPlanner; from app.services.observability import JsonLogObservationSink; from app.services.chat_service import ChatService; print('b8-import-ok')"
+& $python scripts/secret_scan.py
+& $python -m compileall app tests scripts -q
+
+git diff --check
+git diff --name-status
+git diff --stat
+git status --short --branch
+```
+
+After the `ChatService` observation wiring, run the existing Streamlit AppTest
+suite and a finite headless startup with HTTP health `200`. The observation
+path must not change the current UI response or startup behavior.
+
+---
+
+## 13. Stop Conditions
+
+Stop implementation and report evidence if:
+
+- preflight fails
+- the approved B7 or M3 Gate baseline cannot be reproduced
+- a public schema, core model, or status change appears necessary
+- `SecurityResolver` must be weakened to handle `HBM`
+- an M1 provider or M2 Evidence/retrieval change appears necessary
+- a new dependency or lock update appears necessary
+- a golden expected value must be weakened to pass
+- wrong-company or any Critical case regresses
+- full golden remains below `31/34`
+- public exposure is nonzero
+- raw content, secret, exception, or local path appears in a log
+- live provider, credential, deployment, or B9 work is required
+- the diff expands beyond the listed ownership without approval
+
+The stop report must include:
+
+- problem
+- observed command or code evidence
+- minimum correction
+- alternative
+- test and schedule impact
+
+---
+
+## 14. Risks and Fallback
+
+Active risks:
+
+- `R15` provider timeout causes whole-answer failure
+- `R16` provider rate limit is confused with no-data or retried without bound
+- `R25` wrong-company Evidence enters an answer
+- `R30` numeric or company attribution changes
+- `R53` golden defects are deferred until the final gate
+- `R54` tests depend on live provider state
+- `R55` LLM phrasing is mistaken for a stable evaluation contract
+- `R56` observability scope expands into remote tracing
+- `R57` logs expose user content, secrets, or raw source material
+- `R58` unobserved quality numbers are reported as verified
+
+Fallback:
+
+- keep fake/recorded provider scenarios only
+- preserve fixed safe fallback instead of forcing a generated answer
+- keep the exact narrow `HBM` domain token rule
+- use standard-library one-line JSON logging only
+- omit optional observation fields rather than logging content
+- disable the sink if logging itself threatens request stability
+- stop new feature work when Critical or wrong-company tests fail
+
+Rollback proposal:
+
+- revert only the B8 implementation commit through a new revert commit
+- never reset, restore, clean, or rewrite main history
+- preserve B7 and M3 Gate artifacts
+
+---
+
+## 15. Completion Criteria
+
+### Governance
+
+- [ ] B8 plan approved
+- [ ] B8-0 preflight PASS
+- [ ] locked interpreter and base SHA recorded
+- [ ] no dependency or lock change
+- [ ] no forbidden file change
+- [ ] no live provider or live Gemini call
+
+### M4-01
+
+- [ ] expected provider failures do not crash the request
+- [ ] provider failure and no-data remain distinct
+- [ ] partial usable Evidence is preserved
+- [ ] timeout, rate limit, provider unavailable, and parse error remain distinct
+- [ ] cache expiry and cache-hit contracts pass
+- [ ] total deadline cancellation passes
+- [ ] user-facing fallback is fixed and sanitized
+
+### M4-02
+
+- [ ] `HBM` is treated as a domain token, not a foreign ticker candidate
+- [ ] actual foreign uppercase ticker behavior remains unchanged
+- [ ] supported security resolution remains exact
+- [ ] wrong-company regression remains fully blocked
+- [ ] four recorded HBM failures no longer fail for the original cause
+- [ ] full golden is at least `31/34`
+- [ ] Critical is `17/17`
+- [ ] public exposure is `0`
+
+### M4-03
+
+- [ ] internal observation model remains separate from public UI schema
+- [ ] minimum fields are emitted once per completed request
+- [ ] request ID and clock are injectable in tests
+- [ ] LLM call count is bounded and accurate
+- [ ] log output is deterministic apart from injected runtime values
+- [ ] no user content, prompt, secret, raw payload, exception, URL, or path
+- [ ] sink failure does not replace a valid response
+- [ ] no remote tracing or dependency added
+
+### Verification
+
+- [ ] M4-01 targeted PASS
+- [ ] M4-02 targeted PASS
+- [ ] M4-03 targeted PASS
+- [ ] B8 composition regression PASS
+- [ ] full unit PASS
+- [ ] direct M3 Gate runner PASS
+- [ ] import smoke PASS
+- [ ] Streamlit AppTest and finite startup PASS
+- [ ] secret scan PASS
+- [ ] compile PASS
+- [ ] diff check PASS
+- [ ] GitHub CI accurately recorded
+- [ ] independent pytest rerun accurately recorded
+
+---
+
+## 16. Result Log
+
+```text
+B8 planning base:
+52c015569111493f83ab27983839d18136da5655
+
+B8 plan review:
+NOT_RUN
+
+B8 implementation approval:
+NOT_APPROVED
+
+B8-0 preflight:
+NOT_RUN
+
+M4-01 targeted:
+NOT_RUN
+
+M4-02 targeted:
+NOT_RUN
+
+M4-03 targeted:
+NOT_RUN
+
+B8 composition regression:
+NOT_RUN
+
+Full unit:
+NOT_RUN
+
+M3 Gate:
+baseline 30/34 = 88.24%
+baseline Critical 17/17 = 100%
+baseline public exposure 0
+B8 rerun NOT_RUN
+
+Import smoke:
+NOT_RUN
+
+Secret scan:
+NOT_RUN
+
+Compile:
+NOT_RUN
+
+Diff:
+NOT_RUN
+
+GitHub CI:
+NOT_RUN
+
+Independent pytest rerun:
+NOT_RUN
+
+Implementation SHA:
+not created
+
+Commit/push/PR/merge/deploy:
+NOT_RUN / NOT_APPROVED
+
+B9 planning:
+BLOCKED until B8 implementation review PASS
+```
+
+---
+
+## 17. Approval Request
+
+Plan approval must explicitly cover:
+
+1. the narrow `HBM` domain-token exclusion in QueryPlanner candidate selection
+2. M4-01 deterministic provider-failure integration tests
+3. the private standard-library JSON observation boundary
+4. the listed implementation and test files
+5. full golden `>= 31/34`, Critical `17/17`, and public exposure `0`
+
+Approval of this Task Card authorizes implementation and local verification
+only after B8-0 preflight passes. It does not authorize commit, push, PR, merge,
+deployment, live provider calls, credentials, or B9 implementation.

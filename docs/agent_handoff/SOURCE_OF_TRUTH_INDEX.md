@@ -4,7 +4,7 @@
 > 기준 branch: `main`
 > Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
 > Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
-> 상태: `B6 PASS / B7 IMPLEMENTED - INDEPENDENT REVIEW PENDING`
+> 상태: `B7 PASS WITH REQUIRED FOLLOW-UP / M3 GATE PASS / B8 PLANNING`
 
 ## 1. 목적
 
@@ -60,7 +60,7 @@ PASS / complete
 Task Card 사실 동기화 완료, B6-0에서 상태 확인
 
 현재 완료 bundle:
-B6-REMAINDER
+B7
 
 B6 구현:
 PASS / complete
@@ -69,10 +69,10 @@ B6 완료 SHA:
 60e6203b265a967a8b6ba45da2ba3128e1e1bcfe
 
 다음 공식 bundle:
-B7
+B8
 
-B7 계획:
-docs/TASK_CARDS/B7-integrated-implementation-plan.md
+B8 계획:
+docs/TASK_CARDS/B8-quality-observability.md
 
 B7 구현:
 보완 계획 승인 / B7-0 preflight PASS / B7-A~C 구현 완료
@@ -80,13 +80,20 @@ B7 구현:
 초기 독립 M3 Gate 검수 FAIL
 focused supplement 로컬 full tests 연속 2회 1763 passed
 focused supplement 로컬 M3 Gate PASS: full 88.24%, Critical 100%, exposure 0
-focused supplement 독립 closure review NOT_RUN
+focused supplement 독립 구현 검수 PASS WITH REQUIRED FOLLOW-UP
+M3-15B PASS / complete
+M3 Gate 독립 검수 PASS: 30/34 = 88.24%, Critical 17/17 = 100%, public exposure 0
+B7 code blockers CLOSED
 focused supplement SHA/main push:
 b068868f2be33a4a2ec0b48a6a90b96c461bf862 / complete
-B8 진입 BLOCKED
+B8 계획 ALLOWED
+B8 구현은 승인된 B8 계획과 preflight PASS 후 ALLOWED
 
 B7 implementation SHA/main push:
 833336a002b1e02070b35cd4afe9aff279752d61 / complete
+
+M1-09:
+mandatory supplement implemented - final independent review pending
 ```
 
 ## 5. 현재 bundle 문서
@@ -94,9 +101,10 @@ B7 implementation SHA/main push:
 ```text
 completed:
 docs/TASK_CARDS/B6-REMAINDER-integrated-implementation-plan.md
-
-current closure pending:
 docs/TASK_CARDS/B7-integrated-implementation-plan.md
+
+current planning:
+docs/TASK_CARDS/B8-quality-observability.md
 ```
 
 ## 6. 금지
