@@ -167,7 +167,7 @@ def _render_response(response: ChatResponse) -> None:
                 st.caption(detail)
                 st.text(source.snippet)
                 for field in source.details:
-                    st.caption(f"{field.label}: {field.value}")
+                    st.text(f"{field.label}: {field.value}")
                 if source.link_url is not None:
                     st.link_button(
                         "원문 보기",

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-import math
+import re
 import unicodedata
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
@@ -12,12 +12,8 @@ from typing import Literal
 from app.core.models import Evidence, ProviderResult
 from app.core.status import ProviderStatus, RetrievalStatus
 from app.evidence.budget import (
-    ContextBudgetDiagnostics,
     ContextBudgetResult,
-    MAX_CONTEXT_CHARS,
-    MAX_CONTEXT_TOKENS,
-    MAX_EVIDENCE_COUNT,
-    TOKEN_ESTIMATOR_VERSION,
+    select_evidence_context,
 )
 from app.ingest import glossary as glossary_ingest
 from app.ingest.glossary import (
@@ -42,6 +38,22 @@ _SECTION_ORDER = (
 )
 _DIRECT_STRATEGY = "glossary-direct-m3-05-v1"
 _RETRIEVAL_SCORE = 1.0
+_UNICODE_ALNUM = r"[^\W_]"
+_GRAMMATICAL_PARTICLES = (
+    "에서",
+    "으로",
+    "은",
+    "는",
+    "이",
+    "가",
+    "을",
+    "를",
+    "와",
+    "과",
+    "의",
+    "에",
+    "로",
+)
 
 GlossaryLookupState = Literal["found", "not_found", "unavailable"]
 
@@ -64,7 +76,7 @@ class GlossaryService:
     def __init__(self) -> None:
         self._bundle: GlossaryCorpusBundle | None = None
         self._index: GlossaryIndex | None = None
-        self._lookup_terms: tuple[tuple[str, str], ...] = ()
+        self._lookup_terms: tuple[tuple[str, str, str], ...] = ()
         self._available = False
         self._initialize()
 
@@ -160,14 +172,25 @@ class GlossaryService:
 
     def _lookup_query(self, query: str) -> str | None:
         normalized_query = _normalize(query)
-        matches: list[tuple[int, int, str]] = []
-        for normalized_term, term in self._lookup_terms:
-            position = normalized_query.find(normalized_term)
-            if position >= 0:
-                matches.append((position, -len(normalized_term), term))
+        matches: list[tuple[str, int, int, str, str]] = []
+        for normalized_term, term, entry_id in self._lookup_terms:
+            position = _candidate_position(normalized_query, normalized_term)
+            if position is not None:
+                matches.append(
+                    (
+                        entry_id,
+                        -len(normalized_term),
+                        position,
+                        normalized_term,
+                        term,
+                    )
+                )
         if not matches:
             return None
-        return min(matches)[2]
+        entry_ids = {item[0] for item in matches}
+        if len(entry_ids) != 1:
+            return None
+        return min(matches, key=lambda item: item[1:])[4]
 
     def _evidence_for(self, entry: object) -> tuple[Evidence, ...]:
         assert self._bundle is not None
@@ -231,48 +254,40 @@ class GlossaryService:
 def select_glossary_context(
     evidence: tuple[Evidence, ...],
 ) -> ContextBudgetResult:
-    """Preserve all approved sections in the private glossary branch."""
-    selected = tuple(item.model_copy(deep=True) for item in evidence)
-    if len(selected) > MAX_EVIDENCE_COUNT:
-        selected = selected[:MAX_EVIDENCE_COUNT]
-    estimated_tokens, estimated_chars = _estimate_projection(selected)
-    while selected and (
-        estimated_tokens > MAX_CONTEXT_TOKENS
-        or estimated_chars > MAX_CONTEXT_CHARS
-    ):
-        selected = selected[:-1]
-        estimated_tokens, estimated_chars = _estimate_projection(selected)
-    input_count = len(evidence)
-    selected_count = len(selected)
-    diagnostics = ContextBudgetDiagnostics(
-        input_count=input_count,
-        unique_count=input_count,
-        duplicate_drop_count=0,
-        source_cap_drop_count=0,
-        count_cap_drop_count=max(0, input_count - MAX_EVIDENCE_COUNT),
-        context_drop_count=min(input_count, MAX_EVIDENCE_COUNT) - selected_count,
-        selected_count=selected_count,
-        estimated_context_tokens=estimated_tokens,
-        estimated_evidence_chars=estimated_chars,
-        reserved_tokens=0,
-        max_evidence_count=MAX_EVIDENCE_COUNT,
-        max_evidence_per_source=MAX_EVIDENCE_COUNT,
-        max_context_tokens=MAX_CONTEXT_TOKENS,
-        max_context_chars=MAX_CONTEXT_CHARS,
-        estimator_version=TOKEN_ESTIMATOR_VERSION,
-        budget_exhausted=bool(input_count and not selected),
-    )
-    return ContextBudgetResult(evidence=selected, diagnostics=diagnostics)
+    """Apply the completed M2 context-budget contract to glossary evidence."""
+    return select_evidence_context(evidence)
 
 
 def _build_lookup_terms(
     bundle: GlossaryCorpusBundle,
-) -> tuple[tuple[str, str], ...]:
-    values: dict[str, str] = {}
+) -> tuple[tuple[str, str, str], ...]:
+    values: dict[tuple[str, str], str] = {}
     for entry in bundle.entries:
         for term in (entry.canonical_term, *entry.aliases):
-            values.setdefault(_normalize(term), term)
-    return tuple(sorted(values.items()))
+            values.setdefault((_normalize(term), entry.entry_id), term)
+    return tuple(
+        sorted(
+            (
+                normalized_term,
+                term,
+                entry_id,
+            )
+            for (normalized_term, entry_id), term in values.items()
+        )
+    )
+
+
+def _candidate_position(query: str, term: str) -> int | None:
+    particles = "|".join(
+        re.escape(item)
+        for item in _GRAMMATICAL_PARTICLES
+    )
+    pattern = re.compile(
+        rf"(?<!{_UNICODE_ALNUM}){re.escape(term)}"
+        rf"(?:(?:{particles})(?!{_UNICODE_ALNUM})|(?!{_UNICODE_ALNUM}))"
+    )
+    match = pattern.search(query)
+    return match.start() if match is not None else None
 
 
 def _stable_id(
@@ -291,37 +306,6 @@ def _stable_id(
 def _normalize(value: str) -> str:
     normalized = unicodedata.normalize("NFKC", value)
     return " ".join(normalized.split()).casefold()
-
-
-def _estimate_projection(
-    evidence: tuple[Evidence, ...],
-) -> tuple[int, int]:
-    if not evidence:
-        return 0, 0
-    payload = [
-        {
-            "evidence_id": item.evidence_id,
-            "source_type": item.source_type,
-            "title": item.title,
-            "published_at": (
-                item.published_at.isoformat()
-                if item.published_at is not None
-                else None
-            ),
-            "subject_security_ids": list(item.subject_security_ids),
-            "mentioned_security_ids": list(item.mentioned_security_ids),
-            "scope": item.scope,
-            "snippet": item.snippet,
-        }
-        for item in evidence
-    ]
-    serialized = json.dumps(
-        payload,
-        ensure_ascii=False,
-        separators=(",", ":"),
-    )
-    byte_count = len(serialized.encode("utf-8"))
-    return math.ceil(byte_count / 3), len(serialized)
 
 
 def _aware_utc(value: object) -> datetime:

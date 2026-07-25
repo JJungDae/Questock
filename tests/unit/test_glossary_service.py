@@ -213,17 +213,101 @@ def test_service_loads_validates_and_indexes_once_per_instance(
     assert calls == {"load": 1, "validate": 1, "index": 1}
 
 
-def test_private_glossary_context_preserves_optional_section() -> None:
+def test_glossary_context_reuses_existing_per_source_cap() -> None:
     result = GlossaryService().lookup("PER이 뭐야?", fetched_at=BASIS_AT)
 
     selected = select_glossary_context(result.evidence)
 
-    assert selected.evidence == result.evidence
+    assert selected.evidence == result.evidence[:3]
     assert selected.diagnostics.input_count == 4
     assert selected.diagnostics.unique_count == 4
-    assert selected.diagnostics.selected_count == 4
-    assert selected.diagnostics.source_cap_drop_count == 0
+    assert selected.diagnostics.selected_count == 3
+    assert selected.diagnostics.source_cap_drop_count == 1
     assert selected.diagnostics.context_drop_count == 0
+    assert selected.diagnostics.max_evidence_per_source == 3
+
+
+@pytest.mark.parametrize(
+    ("query", "entry_id"),
+    [
+        ("PER이 뭐야?", "glossary:per"),
+        ("PER 뜻", "glossary:per"),
+        ("당기순이익이 뭐야?", "glossary:net_income"),
+        ("영업이익률 설명", "glossary:operating_margin"),
+        ("주가 이익 비율은 무엇인가?", "glossary:per"),
+    ],
+)
+def test_glossary_lookup_accepts_complete_canonical_and_alias_terms(
+    query: str,
+    entry_id: str,
+) -> None:
+    first = GlossaryService().lookup(query, fetched_at=BASIS_AT)
+    second = GlossaryService().lookup(query, fetched_at=BASIS_AT)
+
+    assert first == second
+    assert first.lookup_state == "found"
+    assert first.provider_result.status == ProviderStatus.OK
+    assert {
+        item.locator["entry_id"] for item in first.evidence
+    } == {entry_id}
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "super가 뭐야?",
+        "hyper PERformance가 뭐야?",
+        "매출원가가 뭐야?",
+        "공시가격이 뭐야?",
+        "PER과 PBR이 뭐야?",
+        "영업이익과 당기순이익이 뭐야?",
+    ],
+)
+def test_glossary_lookup_rejects_partial_or_multiple_distinct_terms(
+    query: str,
+) -> None:
+    first = GlossaryService().lookup(query, fetched_at=BASIS_AT)
+    second = GlossaryService().lookup(query, fetched_at=BASIS_AT)
+
+    assert first == second
+    assert first.lookup_state == "not_found"
+    assert first.provider_result.status == ProviderStatus.NO_DATA
+    assert first.evidence == ()
+
+
+def test_ambiguous_glossary_lookup_has_no_fallback_security_or_llm_call() -> None:
+    llm = GlossaryLLM()
+    service = ChatService(
+        glossary_service=GlossaryService(),
+        composer=AnswerComposer(llm),
+        utc_now=lambda: BASIS_AT,
+    )
+
+    first = asyncio.run(
+        service.chat(
+            ChatRequest(
+                message="PER과 PBR이 뭐야?",
+                session_id="ambiguous-first",
+            )
+        )
+    )
+    second = asyncio.run(
+        service.chat(
+            ChatRequest(
+                message="PER과 PBR이 뭐야?",
+                session_id="ambiguous-second",
+            )
+        )
+    )
+
+    assert first.model_dump_json() == second.model_dump_json()
+    assert first.status == "no_evidence"
+    assert first.security is None
+    assert first.evidence == []
+    assert llm.calls == 0
+    assert first.answer_sections.summary == [
+        "답변에 사용할 수 있는 근거를 확인하지 못했습니다."
+    ]
 
 
 def test_chat_service_glossary_path_has_actual_counts_and_citations() -> None:
@@ -244,9 +328,9 @@ def test_chat_service_glossary_path_has_actual_counts_and_citations() -> None:
     assert response.status == "complete"
     assert response.security is None
     assert response.missing_sources == []
-    assert len(response.evidence) == 4
+    assert len(response.evidence) == 3
     assert len(response.answer_sections.summary) == 1
-    assert len(response.answer_sections.facts) == 1
+    assert response.answer_sections.facts == []
     assert len(response.answer_sections.interpretation) == 1
     assert len(response.answer_sections.uncertainty) == 1
     assert llm.calls == 1
@@ -275,8 +359,17 @@ def test_chat_service_glossary_path_has_actual_counts_and_citations() -> None:
         response.diagnostics_public.decision.evidence_decision_status
         == "complete"
     )
-    assert response.diagnostics_public.context_budget.selected_count == 4
-    assert response.diagnostics_public.citation.citation_count == 4
+    assert response.diagnostics_public.context_budget.selected_count == 3
+    assert (
+        response.diagnostics_public.context_budget.source_cap_drop_count
+        == 1
+    )
+    assert response.diagnostics_public.citation.citation_count == 3
+    assert all(
+        item.locator["section"]
+        in {"definition", "why_it_matters", "caution"}
+        for item in response.evidence
+    )
     assert "KRX:005930" not in response.model_dump_json()
 
 

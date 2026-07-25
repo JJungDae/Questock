@@ -664,6 +664,139 @@ def test_malformed_beginner_structure_fails_closed_without_retry(
     assert result.citation_rejection_count == 1
 
 
+@pytest.mark.parametrize(
+    "duplicate_sections",
+    [
+        ("summary", "facts"),
+        ("positive_factors", "risk_factors"),
+    ],
+)
+def test_duplicate_claim_text_across_sections_fails_without_retry(
+    duplicate_sections: tuple[str, str],
+) -> None:
+    summary_text = "요약 문장이다."
+    duplicate_text = "같은 주장이다."
+    evidence = _evidence(snippet=f"{summary_text} {duplicate_text}")
+    claims = []
+    if duplicate_sections[0] != "summary":
+        claims.append(
+            {
+                "claim_id": "summary",
+                "section": "summary",
+                "text": summary_text,
+                "evidence_ids": [evidence.evidence_id],
+            }
+        )
+    claims.extend(
+        {
+            "claim_id": f"duplicate-{index}",
+            "section": section,
+            "text": duplicate_text,
+            "evidence_ids": [evidence.evidence_id],
+        }
+        for index, section in enumerate(duplicate_sections, start=1)
+    )
+    client = FakeLLMClient(
+        json.dumps({"claims": claims}, ensure_ascii=False)
+    )
+
+    result = asyncio.run(
+        AnswerComposer(client).compose(
+            question="삼성전자 최근 이슈",
+            plan=_plan(),
+            selected_evidence=[evidence],
+            documents_by_id={_document().document_id: _document()},
+            timeout_seconds=2,
+        )
+    )
+
+    assert result.generation_mode == "fixed_template"
+    assert result.citation_rejection_count == 1
+    assert len(client.calls) == 1
+
+
+def test_duplicate_text_and_evidence_occurrence_fails_without_retry() -> None:
+    summary_text = "요약 문장이다."
+    duplicate_text = "중복 사실이다."
+    evidence = _evidence(snippet=f"{summary_text} {duplicate_text}")
+    claims = [
+        {
+            "claim_id": "summary",
+            "section": "summary",
+            "text": summary_text,
+            "evidence_ids": [evidence.evidence_id],
+        },
+        *[
+            {
+                "claim_id": f"fact-{index}",
+                "section": "facts",
+                "text": duplicate_text,
+                "evidence_ids": [evidence.evidence_id],
+            }
+            for index in range(2)
+        ],
+    ]
+    client = FakeLLMClient(
+        json.dumps({"claims": claims}, ensure_ascii=False)
+    )
+
+    result = asyncio.run(
+        AnswerComposer(client).compose(
+            question="삼성전자 최근 이슈",
+            plan=_plan(),
+            selected_evidence=[evidence],
+            documents_by_id={_document().document_id: _document()},
+            timeout_seconds=2,
+        )
+    )
+
+    assert result.generation_mode == "fixed_template"
+    assert result.citation_rejection_count == 1
+    assert len(client.calls) == 1
+
+
+def test_distinct_claims_using_same_evidence_are_accepted() -> None:
+    summary_text = "첫 번째 주장이다."
+    fact_text = "두 번째 주장이다."
+    evidence = _evidence(snippet=f"{summary_text} {fact_text}")
+    client = FakeLLMClient(
+        json.dumps(
+            {
+                "claims": [
+                    {
+                        "claim_id": "summary",
+                        "section": "summary",
+                        "text": summary_text,
+                        "evidence_ids": [evidence.evidence_id],
+                    },
+                    {
+                        "claim_id": "fact",
+                        "section": "facts",
+                        "text": fact_text,
+                        "evidence_ids": [evidence.evidence_id],
+                    },
+                ]
+            },
+            ensure_ascii=False,
+        )
+    )
+
+    result = asyncio.run(
+        AnswerComposer(client).compose(
+            question="삼성전자 최근 이슈",
+            plan=_plan(),
+            selected_evidence=[evidence],
+            documents_by_id={_document().document_id: _document()},
+            timeout_seconds=2,
+        )
+    )
+
+    assert result.generation_mode == "llm"
+    assert result.answer_sections.summary == [summary_text]
+    assert result.answer_sections.facts == [fact_text]
+    assert len(client.calls) == 1
+
+
 def test_report_plan_event_condition_and_risk_mapping_is_accepted() -> None:
     snippets = (
         "회사는 설비 투자를 확대할 계획이다.",

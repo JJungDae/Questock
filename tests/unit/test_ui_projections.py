@@ -279,6 +279,127 @@ def test_unsafe_dynamic_text_is_replaced_without_raw_path_or_secret() -> None:
     assert "/mnt/data" not in repr(view)
 
 
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("title", "/tmp"),
+        ("snippet", "/etc"),
+        ("publisher", "/home"),
+        ("section", "file:///private"),
+        ("title", "C:\\private\\report"),
+        ("snippet", "\\\\server\\share\\report"),
+        ("publisher", "//server/share/report"),
+    ],
+)
+def test_local_path_variants_are_hidden_from_source_projection(
+    field: str,
+    value: str,
+) -> None:
+    item = _evidence(
+        "research_report",
+        locator={
+            "publisher": "Approved Research",
+            "manifest_id": "report-001",
+            "document_id": "report:001:page-1",
+            "page": 1,
+            "section": "Overview",
+        },
+        source_url=None,
+    )
+    if field in {"title", "snippet"}:
+        item = item.model_copy(update={field: value})
+    else:
+        locator = dict(item.locator)
+        locator[field] = value
+        item = item.model_copy(update={"locator": locator})
+    response = _response().model_copy(update={"evidence": [item]})
+
+    view = project_baseline_sources(response)[0]
+
+    assert value not in repr(view)
+    if field in {"title", "snippet"}:
+        assert getattr(view, field) == "안전하게 표시할 수 없는 내용입니다."
+    else:
+        assert all(detail.label != {
+            "publisher": "발행기관",
+            "section": "구간",
+        }[field] for detail in view.details)
+
+
+def test_safe_slash_prose_and_markdown_metadata_remain_literal_text() -> None:
+    item = _evidence(
+        "research_report",
+        locator={
+            "publisher": "[공식 문서](https://unapproved.example)",
+            "manifest_id": "report-001",
+            "document_id": "report:001:page-1",
+            "page": 1,
+            "section": "![이미지](https://unapproved.example)",
+        },
+        source_url=None,
+    ).model_copy(update={"snippet": "profit / loss"})
+    response = _response().model_copy(update={"evidence": [item]})
+
+    view = project_baseline_sources(response)[0]
+
+    assert view.snippet == "profit / loss"
+    assert [item.value for item in view.details if item.label in {
+        "발행기관",
+        "구간",
+    }] == [
+        "[공식 문서](https://unapproved.example)",
+        "![이미지](https://unapproved.example)",
+    ]
+
+
+def test_markdown_directives_in_metadata_are_preserved_only_as_plain_values() -> None:
+    item = _evidence(
+        "research_report",
+        locator={
+            "publisher": ":red[경고]",
+            "manifest_id": "report-001",
+            "document_id": "report:001:page-1",
+            "page": 1,
+            "section": ":material/open_in_new:",
+        },
+        source_url=None,
+    )
+    response = _response().model_copy(update={"evidence": [item]})
+
+    view = project_baseline_sources(response)[0]
+
+    assert [item.value for item in view.details if item.label in {
+        "발행기관",
+        "구간",
+    }] == [":red[경고]", ":material/open_in_new:"]
+
+
+def test_unknown_source_type_fails_with_sanitized_projection_error() -> None:
+    item = _evidence(
+        "news",
+        locator={"provider": "recorded_news"},
+        source_url=None,
+    ).model_copy(update={"source_type": "credential-sentinel"})
+    response = _response().model_copy(update={"evidence": [item]})
+
+    with pytest.raises(ProjectionError) as error:
+        project_baseline_sources(response)
+
+    assert str(error.value) == "근거를 화면에 표시할 수 없습니다."
+    assert "credential-sentinel" not in str(error.value)
+
+
+def test_unknown_missing_source_uses_fixed_safe_label() -> None:
+    response = _response().model_copy(
+        update={"missing_sources": ["credential-sentinel"]}
+    )
+
+    view = project_baseline_answer(response)
+
+    assert view.missing_sources == ("기타 자료",)
+    assert "credential-sentinel" not in repr(view)
+
+
 def test_process_stage_order_and_status_families_are_exact() -> None:
     summary = _response().diagnostics_public
 

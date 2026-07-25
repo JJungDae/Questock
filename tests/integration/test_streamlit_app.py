@@ -129,18 +129,23 @@ def test_app_renders_glossary_cards_source_detail_and_fixed_fallback() -> None:
     labels = "\n".join(item.value for item in app.markdown)
     for label in (
         "한 줄 결론",
-        "확인된 사실",
         "왜 중요한가",
         "더 확인할 것",
     ):
         assert label in labels
-    for hidden in ("긍정 요인", "확인된 위험", "AI 정리·추론"):
+    for hidden in (
+        "확인된 사실",
+        "긍정 요인",
+        "확인된 위험",
+        "AI 정리·추론",
+    ):
         assert hidden not in labels
     captions = "\n".join(item.value for item in app.caption)
     assert "금융 용어" in captions
-    assert "항목 ID: glossary:per" in captions
-    assert "버전: 1" in captions
-    assert "구간: definition" in captions
+    visible_text = "\n".join(item.value for item in app.text)
+    assert "항목 ID: glossary:per" in visible_text
+    assert "버전: 1" in visible_text
+    assert "구간: definition" in visible_text
     warnings = "\n".join(item.value for item in app.warning)
     assert "AI 정리 대신 근거 기반 고정 응답 사용" in warnings
     assert response.status == "complete"
@@ -205,5 +210,46 @@ def test_app_renders_malicious_html_as_text_not_markdown() -> None:
     )
     assert all(
         "<script>" not in item.value
+        for item in app.markdown
+    )
+
+
+def test_app_dynamic_metadata_is_plain_text_and_only_source_url_is_link() -> None:
+    response = _glossary_response()
+    injected = response.evidence[0].model_copy(
+        update={
+            "title": "/tmp",
+            "source_url": "https://approved.example/source",
+            "locator": {
+                **response.evidence[0].locator,
+                "entry_id": "![이미지](https://unapproved.example)",
+                "section": "[공식](https://unapproved.example)",
+            },
+        }
+    )
+    response = response.model_copy(update={"evidence": [injected]})
+    transport = FakeTransport(response)
+    app = AppTest.from_function(_app, args=(transport,)).run()
+
+    app.text_area[0].input("PER이 뭐야?")
+    submit = next(
+        item
+        for item in app.button
+        if item.key.startswith("FormSubmitter:chat_form-")
+    )
+    submit.click()
+    app.run()
+
+    assert not app.exception
+    visible_text = "\n".join(item.value for item in app.text)
+    assert "/tmp" not in visible_text
+    assert "[공식](https://unapproved.example)" in visible_text
+    assert "![이미지](https://unapproved.example)" in visible_text
+    links = app.get("link_button")
+    assert len(links) == 1
+    assert links[0].proto.label == "원문 보기"
+    assert links[0].proto.url == "https://approved.example/source"
+    assert all(
+        "unapproved.example" not in item.value
         for item in app.markdown
     )

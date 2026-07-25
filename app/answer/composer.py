@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import re
+import unicodedata
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
@@ -473,6 +474,7 @@ def _validate_draft_structure(
         plan.intent != "financial_term"
         or _glossary_claim_sections_valid(draft, evidence)
     )
+    claims_are_unique = _claims_are_unique(draft)
     if (
         not sections
         or sections[0] != "summary"
@@ -481,11 +483,30 @@ def _validate_draft_structure(
         or unsafe_content
         or unsafe_report_certainty
         or not glossary_sections_valid
+        or not claims_are_unique
     ):
         raise _GenerationFailure(
             _invalid_response_from(result),
             rejection_count=1,
         )
+
+
+def _claims_are_unique(draft: StructuredAnswerDraft) -> bool:
+    section_by_text: dict[str, AnswerSectionName] = {}
+    occurrences: set[tuple[str, tuple[str, ...]]] = set()
+    for claim in draft.claims:
+        normalized_text = " ".join(
+            unicodedata.normalize("NFKC", claim.text).split()
+        ).casefold()
+        occurrence = (normalized_text, tuple(claim.evidence_ids))
+        if occurrence in occurrences:
+            return False
+        occurrences.add(occurrence)
+        prior_section = section_by_text.get(normalized_text)
+        if prior_section is not None and prior_section != claim.section:
+            return False
+        section_by_text.setdefault(normalized_text, claim.section)
+    return True
 
 
 def _fixed_result(

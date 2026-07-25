@@ -11,12 +11,12 @@ from app.core.models import Evidence
 _HIDDEN_TEXT = "안전하게 표시할 수 없는 내용입니다."
 _CONTROL_CHARACTER = re.compile(r"[\x00-\x1f\x7f]")
 _WINDOWS_PATH = re.compile(r"(?<![A-Za-z0-9_])[A-Za-z]:[\\/]")
-_UNC_PATH = re.compile(r"(?:\\\\|//)[^\\/\s]+[\\/][^\\/\s]+")
-_POSIX_PATH = re.compile(
-    r"(?:^|[\s\"'()=\[\]{},;])/"
-    r"(?!/|health(?:\b|/))"
-    r"[A-Za-z0-9._-]+(?:/[^\s\"'()=\[\]{},;]+)+"
+_BACKSLASH_UNC_PATH = re.compile(r"\\\\[^\\/\s]+[\\/][^\\/\s]+")
+_FORWARD_UNC_PATH = re.compile(
+    r"(?<![A-Za-z0-9_:])//[^/\s]+/[^/\s]+"
 )
+_FILE_URL = re.compile(r"file://", re.IGNORECASE)
+_POSIX_PATH = re.compile(r"(?:^|[\s\"'()=\[\]{},;])/(?![/\s])")
 _CREDENTIAL_VALUE = re.compile(
     r"(?i)(?:api[-_]?key|client[-_]?secret|access[-_]?token|"
     r"auth[-_]?token|bearer[-_]?token|authorization|credential|signature)"
@@ -430,7 +430,10 @@ def project_process_stages(
 
 
 def _project_source(evidence: Evidence) -> BaselineSourceView:
-    if not isinstance(evidence, Evidence):
+    if (
+        not isinstance(evidence, Evidence)
+        or evidence.source_type not in _SOURCE_LABELS
+    ):
         raise ProjectionError("근거를 화면에 표시할 수 없습니다.")
     details: list[ProcessField] = []
     locator = evidence.locator
@@ -532,7 +535,9 @@ def _unsafe_text(value: str) -> bool:
     return bool(
         _CONTROL_CHARACTER.search(value)
         or _WINDOWS_PATH.search(value)
-        or _UNC_PATH.search(value)
+        or _BACKSLASH_UNC_PATH.search(value)
+        or _FORWARD_UNC_PATH.search(value)
+        or _FILE_URL.search(value)
         or _POSIX_PATH.search(value)
         or _CREDENTIAL_VALUE.search(value)
     )
