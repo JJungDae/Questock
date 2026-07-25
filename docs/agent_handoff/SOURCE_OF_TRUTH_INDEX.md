@@ -4,7 +4,7 @@
 > 기준 branch: `main`
 > Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
 > Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
-> 상태: `POST-M3-01 FLOW DOCUMENTATION UPDATE`
+> 상태: `B6 PASS / B7 PLANNING`
 
 ## 1. 목적
 
@@ -59,17 +59,33 @@ PASS / complete
 코드 BLOCKER 전부 CLOSED
 Task Card 사실 동기화 완료, B6-0에서 상태 확인
 
-다음 공식 bundle:
+현재 완료 bundle:
 B6-REMAINDER
 
 B6 구현:
-계획 검수·Streamlit dependency 승인·preflight 전 BLOCKED
+PASS / complete
+
+B6 완료 SHA:
+60e6203b265a967a8b6ba45da2ba3128e1e1bcfe
+
+다음 공식 bundle:
+B7
+
+B7 계획:
+docs/TASK_CARDS/B7-integrated-implementation-plan.md
+
+B7 구현:
+계획 승인·preflight PASS 전 BLOCKED
 ```
 
 ## 5. 현재 bundle 문서
 
 ```text
+completed:
 docs/TASK_CARDS/B6-REMAINDER-integrated-implementation-plan.md
+
+current:
+docs/TASK_CARDS/B7-integrated-implementation-plan.md
 ```
 
 ## 6. 금지

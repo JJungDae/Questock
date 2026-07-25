@@ -44,7 +44,29 @@
 - User final plan approval:
   `APPROVED`
 - B6 implementation:
-  `AUTHORIZED - Gate 0, B6-0, and Gate 1 PASS; B6-A pending`
+  `PASS / complete`
+- First B6 implementation SHA:
+  `b7ddcd9eec9fe551fd9e6ab337de6a4d8e64c4fd`
+- First B6 implementation commit:
+  `Implement B6 remainder`
+- First B6 implementation main push:
+  `complete`
+- First B6 implementation review:
+  `CONDITIONAL PASS`
+- B6 supplement SHA:
+  `60e6203b265a967a8b6ba45da2ba3128e1e1bcfe`
+- B6 supplement commit:
+  `Fix B6 review findings`
+- B6 supplement main push:
+  `complete`
+- B6 supplement review:
+  `PASS WITH REQUIRED FOLLOW-UP`
+- Required follow-up:
+  `B6 factual Task Card synchronization and B7 integrated planning; no further B6 code correction requested`
+- B7 planning:
+  `ALLOWED`
+- B7 implementation:
+  `BLOCKED pending approved B7 plan and preflight PASS`
 - Package-index access:
   `AUTHORIZED for streamlit==1.60.0 and its declared transitive closure`
 - Dependency installation and lock update:
@@ -53,10 +75,12 @@
   `NOT_INCLUDED / NOT_APPROVED`
 - Live news, disclosure, or research-report provider work:
   `NOT_INCLUDED`
-- Commit, push, PR, merge, deployment:
+- Further commit, push, PR, merge, deployment:
   `NOT_APPROVED`
 
-This document is the next official implementation plan after M3-01.
+This document is the completed B6 implementation record after M3-01.
+The next official implementation plan is
+`docs/TASK_CARDS/B7-integrated-implementation-plan.md`.
 
 It consumes the canonical project documentation:
 
@@ -2216,6 +2240,72 @@ B6 focused:
 Full suite:
 1641 passed, 2 warnings
 
+B6 first implementation SHA:
+b7ddcd9eec9fe551fd9e6ab337de6a4d8e64c4fd
+
+B6 first implementation commit:
+Implement B6 remainder
+
+B6 first implementation main push:
+complete
+
+B6 first implementation review:
+CONDITIONAL PASS
+
+B6 supplement scope:
+M2 context-budget reuse for glossary; boundary-aware glossary attribution;
+UI local-path/Markdown safety; answer-section duplicate-claim guard
+
+B6 supplement targeted:
+104 passed, 1 warning
+
+B6 supplement focused:
+386 passed, 2 warnings
+
+B6 supplement context-budget regression:
+122 passed, 2 warnings
+
+B6 supplement full suite:
+1669 passed, 2 warnings
+
+B6 supplement AppTest:
+6 passed, 1 warning
+
+B6 supplement Streamlit startup:
+PASS - headless health returned HTTP 200 and process was stopped
+
+B6 supplement import smoke:
+PASS - b6-fix-import-ok
+
+B6 supplement secret scan:
+PASS - []
+
+B6 supplement compile:
+PASS
+
+B6 supplement diff check:
+PASS - no whitespace errors; Git emitted LF-to-CRLF working-copy notices
+
+B6 supplement environment deviation:
+the repository .venv lacked Streamlit and the first targeted collection
+failed; final verification used the existing task-local clean B6 environment
+with Python 3.14.3 and Streamlit 1.60.0
+
+B6 supplement SHA:
+60e6203b265a967a8b6ba45da2ba3128e1e1bcfe
+
+B6 supplement commit:
+Fix B6 review findings
+
+B6 supplement main push:
+complete
+
+B6 supplement independent review:
+PASS WITH REQUIRED FOLLOW-UP
+
+B6 required follow-up:
+factual Task Card synchronization and B7 integrated planning only
+
 Secret scan:
 PASS - []
 
@@ -2232,9 +2322,13 @@ PASS - 97 packages resolved, no lock drift
 Import smoke:
 PASS - b6-import-ok / streamlit 1.60.0
 
-Local API/UI smoke:
-PASS - API health 200; glossary chat complete with 4 Evidence; Streamlit
-health 200
+First implementation local API/UI smoke:
+PASS - API health 200; glossary chat complete with 4 pre-supplement Evidence;
+Streamlit health 200
+
+Supplement final glossary contract:
+PASS - 4 source sections, 4 normalized/hard-filtered/freshness/retrieval
+items, 3 context-selected/public/cited Evidence, source-cap drop count 1
 
 Pixel screenshot:
 NOT_VERIFIED - Chrome headless captured the Streamlit shell before websocket
@@ -2253,13 +2347,16 @@ Independent pytest:
 NOT_RUN
 
 B6 implementation commit/push:
-NOT_RUN / NOT_APPROVED
+b7ddcd9eec9fe551fd9e6ab337de6a4d8e64c4fd / complete
+
+B6 supplement commit/push:
+60e6203b265a967a8b6ba45da2ba3128e1e1bcfe / complete
 
 B6 implementation review:
-NOT_RUN
+PASS WITH REQUIRED FOLLOW-UP
 
 B6 implementation:
-COMPLETE LOCALLY - ready for user push decision
+PASS / complete
 
 M3-15A:
 COMPLETE
@@ -2274,7 +2371,7 @@ B7-C:
 REQUIRED
 
 Final local verdict:
-B6 IMPLEMENTATION COMPLETE - READY FOR USER PUSH
+B6 PASS / COMPLETE - B7 PLANNING ALLOWED
 ```
 
 ---
