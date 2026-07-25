@@ -48,13 +48,15 @@
 - B8 plan review:
   `PASS WITH REQUIRED FOLLOW-UP`
 - B8 implementation:
-  `APPROVED after required plan supplement and B8-0 preflight PASS`
+  `IMPLEMENTED - local verification PASS - user review pending`
+- B8 implementation review:
+  `NOT_RUN`
 - Dependency or lock change:
   `NOT_APPROVED / NOT_EXPECTED`
 - Live provider or live Gemini work:
   `NOT_INCLUDED / NOT_APPROVED`
 - Commit, push, PR, merge, deploy:
-  `NOT_APPROVED`
+  `implementation commit/push NOT_RUN - separate user approval required`
 
 This Task Card is the canonical B8 plan. It treats the four remaining HBM
 golden failures as B8 quality stabilization work. They do not reopen B7.
@@ -693,64 +695,64 @@ Rollback proposal:
 
 ### Governance
 
-- [ ] B8 plan approved
-- [ ] B8-0 preflight PASS
-- [ ] locked interpreter and base SHA recorded
-- [ ] no dependency or lock change
-- [ ] no forbidden file change
-- [ ] no live provider or live Gemini call
+- [x] B8 plan approved
+- [x] B8-0 preflight PASS
+- [x] locked interpreter and base SHA recorded
+- [x] no dependency or lock change
+- [x] no forbidden production file change
+- [x] no live provider or live Gemini call
 
 ### M4-01
 
-- [ ] expected provider failures do not crash the request
-- [ ] provider failure and no-data remain distinct
-- [ ] partial usable Evidence is preserved
-- [ ] timeout, rate limit, provider unavailable, and parse error remain distinct
-- [ ] cache expiry and cache-hit contracts pass
-- [ ] total deadline cancellation passes
-- [ ] user-facing fallback is fixed and sanitized
+- [x] expected provider failures do not crash the request
+- [x] provider failure and no-data remain distinct
+- [x] partial usable Evidence is preserved
+- [x] timeout, rate limit, provider unavailable, and parse error remain distinct
+- [x] cache expiry and cache-hit contracts pass
+- [x] total deadline cancellation passes
+- [x] user-facing fallback is fixed and sanitized
 
 ### M4-02
 
-- [ ] `HBM` is treated as a domain token, not a foreign ticker candidate
-- [ ] actual foreign uppercase ticker behavior remains unchanged
-- [ ] supported security resolution remains exact
-- [ ] wrong-company regression remains fully blocked
-- [ ] four recorded HBM failures no longer fail for the original cause
-- [ ] full golden is at least `31/34`
-- [ ] Critical is `17/17`
-- [ ] public exposure is `0`
+- [x] `HBM` is treated as a domain token, not a foreign ticker candidate
+- [x] actual foreign uppercase ticker behavior remains unchanged
+- [x] supported security resolution remains exact
+- [x] wrong-company regression remains fully blocked
+- [x] four recorded HBM failures no longer fail for the original cause
+- [x] full golden is at least `31/34`
+- [x] Critical is `17/17`
+- [x] public exposure is `0`
 
 ### M4-03
 
-- [ ] internal observation model remains separate from public UI schema
-- [ ] minimum fields are emitted once per completed request
-- [ ] request ID and clock are injectable in tests
-- [ ] default runtime sink is project-owned `JsonLogObservationSink`
-- [ ] returned ChatResponse statuses emit exactly one terminal observation
-- [ ] retrieval strategy equals the internal RetrievalResult strategy
-- [ ] LLM call count is bounded and accurate
-- [ ] fallback is true only for fixed-template generation
-- [ ] log output is deterministic apart from injected runtime values
-- [ ] no user content, prompt, secret, raw payload, exception, URL, or path
-- [ ] sink failure does not replace a valid response
-- [ ] no remote tracing or dependency added
+- [x] internal observation model remains separate from public UI schema
+- [x] minimum fields are emitted once per completed request
+- [x] request ID and clock are injectable in tests
+- [x] default runtime sink is project-owned `JsonLogObservationSink`
+- [x] returned ChatResponse statuses emit exactly one terminal observation
+- [x] retrieval strategy equals the internal RetrievalResult strategy
+- [x] LLM call count is bounded and accurate
+- [x] fallback is true only for fixed-template generation
+- [x] log output is deterministic apart from injected runtime values
+- [x] no user content, prompt, secret, raw payload, exception, URL, or path
+- [x] sink failure does not replace a valid response
+- [x] no remote tracing or dependency added
 
 ### Verification
 
-- [ ] M4-01 targeted PASS
-- [ ] M4-02 targeted PASS
-- [ ] M4-03 targeted PASS
-- [ ] B8 composition regression PASS
-- [ ] full unit PASS
-- [ ] direct M3 Gate runner PASS
-- [ ] import smoke PASS
-- [ ] Streamlit AppTest and finite startup PASS
-- [ ] secret scan PASS
-- [ ] compile PASS
-- [ ] diff check PASS
-- [ ] GitHub CI accurately recorded
-- [ ] independent pytest rerun accurately recorded
+- [x] M4-01 targeted PASS
+- [x] M4-02 targeted PASS
+- [x] M4-03 targeted PASS
+- [x] B8 composition regression PASS
+- [x] full unit PASS
+- [x] direct M3 Gate runner PASS
+- [x] import smoke PASS
+- [x] Streamlit AppTest and finite startup PASS
+- [x] secret scan PASS
+- [x] compile PASS
+- [x] diff check PASS
+- [x] GitHub CI accurately recorded
+- [x] independent pytest rerun accurately recorded
 
 ---
 
@@ -760,6 +762,15 @@ Rollback proposal:
 B8 planning base:
 52c015569111493f83ab27983839d18136da5655
 
+B8 approved plan supplement SHA:
+e53110ef19173f97eefc511ca7bc9c8a37aa786b
+
+B8 approved plan supplement commit:
+docs: refine B8 implementation contract
+
+B8 approved plan supplement main push:
+complete
+
 B8 plan review:
 PASS WITH REQUIRED FOLLOW-UP
 
@@ -767,22 +778,36 @@ B8 implementation approval:
 APPROVED after required plan supplement and B8-0 preflight PASS
 
 B8-0 preflight:
-NOT_RUN
+PASS
+Initial sandbox run: environment failure - pytest temp directory PermissionError
+Approved out-of-sandbox rerun: PASS
+Focused: 309 passed, 1 warning
+Full: 1763 passed, 2 warnings
+Gate: 30/34 = 88.24%, Critical 17/17 = 100%, exposure 0
+Import: b8-preflight-import-ok
+Secret scan: []
+Compile: exit code 0
+Diff: exit code 0
 
 M4-01 targeted:
-NOT_RUN
+PASS - final rerun 98 passed, 1 warning
 
 M4-02 targeted:
-NOT_RUN
+PASS - 135 passed, 1 warning
 
 M4-03 targeted:
-NOT_RUN
+Initial run: 46 passed / 9 failed because ProviderResult status was already a
+string under QuestockModel use_enum_values and emission safely failed
+Rerun: PASS - 55 passed, 1 warning
 
 B8 composition regression:
-NOT_RUN
+Initial run: 381 passed / 1 failed because the approved default JSON sink made
+the old direct-gate stderr-empty assertion obsolete
+Gate runner observability rerun: 7 passed, 1 warning
+Final rerun: PASS - 382 passed, 1 warning
 
 Full unit:
-NOT_RUN
+PASS - 1795 passed, 2 warnings
 
 M3 Gate:
 baseline 30/34 = 88.24%
@@ -792,19 +817,22 @@ fixture total 34 unchanged
 fixture content unchanged
 runner threshold unchanged
 B8 acceptance 31/34 or better
-B8 rerun NOT_RUN
+B8 rerun PASS - 34/34 = 100%
+B8 Critical 17/17 = 100%
+B8 public exposure 0
+B0-09, B0-10, B0-12, B0-17 PASS
 
 Import smoke:
-NOT_RUN
+PASS - b8-import-ok
 
 Secret scan:
-NOT_RUN
+PASS - []
 
 Compile:
-NOT_RUN
+PASS - exit code 0
 
 Diff:
-NOT_RUN
+PASS - git diff --check exit code 0; CRLF conversion warnings only
 
 GitHub CI:
 NOT_RUN
@@ -812,11 +840,31 @@ NOT_RUN
 Independent pytest rerun:
 NOT_RUN
 
+Streamlit AppTest:
+PASS - 8 passed, 1 warning
+
+Streamlit finite startup:
+PASS - headless port 8521, /_stcore/health HTTP 200, process stopped after
+verification
+
+Scope deviation:
+`tests/unit/test_m3_gate_runner.py` now validates allowlisted JSON observation
+lines on stderr instead of requiring empty stderr. Production default logging
+made the old assertion incompatible with M4-03. The M3 runner, fixture total,
+fixture content, threshold, and production gate behavior were not changed.
+
+Dependency/lock:
+unchanged
+
+Live provider/Gemini:
+NOT_RUN / NOT_APPROVED
+
 Implementation SHA:
 not created
 
 Commit/push/PR/merge/deploy:
-NOT_RUN / NOT_APPROVED
+implementation commit/push NOT_RUN - separate user approval required
+PR/merge/deploy NOT_RUN / NOT_APPROVED
 
 B9 planning:
 BLOCKED until B8 implementation review PASS

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import io
 import json
+import logging
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -16,7 +18,12 @@ from app.evidence.budget import LLMCallBudget
 from app.llm.base import LLMRequest, LLMResult, LLMStatus, create_llm_result
 from app.providers.base import create_provider_result
 from app.services import chat_service as chat_service_module
-from app.services.chat_service import ChatService
+from app.services.chat_service import ChatService, ChatServiceError
+from app.services.observability import (
+    InMemoryObservationSink,
+    JsonLogObservationSink,
+    ObservationSink,
+)
 from app.services.source_gateway import (
     SourceGatewayResult,
     SourceGatewayTimeoutDescriptor,
@@ -185,17 +192,26 @@ def _service(
     deadline_seconds: float = 20,
     monotonic: Callable[[], float] | None = None,
     call_budget_factory: Callable[[], LLMCallBudget] | None = None,
+    observation_sink: ObservationSink | None = None,
+    request_id_factory: Callable[[], str] | None = None,
 ) -> ChatService:
     kwargs: dict[str, Any] = {
         "source_gateway": gateway,
         "composer": AnswerComposer(llm),
         "deadline_seconds": deadline_seconds,
         "utc_now": lambda: BASIS_AT,
+        "observation_sink": (
+            observation_sink
+            if observation_sink is not None
+            else InMemoryObservationSink()
+        ),
     }
     if monotonic is not None:
         kwargs["monotonic"] = monotonic
     if call_budget_factory is not None:
         kwargs["call_budget_factory"] = call_budget_factory
+    if request_id_factory is not None:
+        kwargs["request_id_factory"] = request_id_factory
     return ChatService(
         **kwargs,
     )
@@ -214,6 +230,187 @@ class MutableClock:
 
     def advance(self, seconds: float) -> None:
         self.value += seconds
+
+
+class RaisingObservationSink:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def emit(self, observation: object) -> None:
+        self.calls += 1
+        raise RuntimeError(
+            "sentinel-secret C:\\private\\observation-error.txt"
+        )
+
+
+def test_default_runtime_observation_sink_is_json_logger() -> None:
+    service = ChatService()
+
+    assert isinstance(
+        service._observation_sink,  # noqa: SLF001
+        JsonLogObservationSink,
+    )
+    assert (
+        service._observation_sink.logger_name  # noqa: SLF001
+        == "questock.observability"
+    )
+
+
+def test_complete_response_emits_actual_internal_observation_once() -> None:
+    sink = InMemoryObservationSink()
+    clock = MutableClock()
+    gateway = FakeGateway(
+        (news_document(),),
+        after_fetch=lambda: clock.advance(0.0125),
+    )
+    request = _request()
+    original_request = request.model_dump(mode="python")
+
+    response = asyncio.run(
+        _service(
+            gateway,
+            ExtractiveLLM(),
+            monotonic=clock,
+            observation_sink=sink,
+            request_id_factory=lambda: "request-complete",
+        ).chat(request)
+    )
+
+    assert response.status == "complete"
+    assert request.model_dump(mode="python") == original_request
+    assert len(sink.observations) == 1
+    observation = sink.observations[0]
+    assert observation.request_id == "request-complete"
+    assert observation.intent == "recent_issue"
+    assert observation.security_id == SECURITY_ID
+    assert observation.provider_statuses == (("news", "ok"),)
+    assert observation.evidence_count == 1
+    assert (
+        observation.retrieval_strategy
+        == "lexical-bm25-m2-03-v1"
+    )
+    assert observation.evidence_decision == "complete"
+    assert observation.total_latency_ms == 12.5
+    assert observation.llm_call_count == 1
+    assert observation.fallback_used is False
+
+
+def test_fixed_template_and_blocked_fallback_observations_are_distinct() -> None:
+    fixed_sink = InMemoryObservationSink()
+    blocked_sink = InMemoryObservationSink()
+
+    fixed = asyncio.run(
+        _service(
+            FakeGateway((news_document(),)),
+            ExtractiveLLM(status=LLMStatus.TIMEOUT),
+            observation_sink=fixed_sink,
+            request_id_factory=lambda: "request-fixed",
+        ).chat(_request())
+    )
+    blocked = asyncio.run(
+        _service(
+            FakeGateway(()),
+            ExtractiveLLM(),
+            observation_sink=blocked_sink,
+            request_id_factory=lambda: "request-blocked",
+        ).chat(
+            ChatRequest(
+                message="삼성전자 지금 사야 돼?",
+                session_id="chat-service-blocked",
+            )
+        )
+    )
+
+    assert fixed.diagnostics_public.generation.mode == "fixed_template"
+    assert fixed_sink.observations[0].fallback_used is True
+    assert fixed_sink.observations[0].llm_call_count == 1
+    assert blocked.status == "blocked"
+    assert blocked.diagnostics_public.generation.mode == "blocked"
+    assert blocked_sink.observations[0].fallback_used is False
+    assert blocked_sink.observations[0].evidence_decision == "blocked"
+    assert blocked_sink.observations[0].provider_statuses == ()
+    assert blocked_sink.observations[0].llm_call_count == 0
+
+
+def test_observation_sink_failure_does_not_replace_valid_response() -> None:
+    sink = RaisingObservationSink()
+
+    response = asyncio.run(
+        _service(
+            FakeGateway((news_document(),)),
+            ExtractiveLLM(),
+            observation_sink=sink,
+            request_id_factory=lambda: "request-sink-failure",
+        ).chat(_request())
+    )
+
+    assert response.status == "complete"
+    assert sink.calls == 1
+
+
+def test_request_without_chat_response_emits_no_terminal_observation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sink = InMemoryObservationSink()
+
+    def fail_response(**kwargs: object) -> object:
+        raise RuntimeError(
+            "sentinel-secret C:\\private\\response-error.txt"
+        )
+
+    monkeypatch.setattr(
+        chat_service_module,
+        "_build_response",
+        fail_response,
+    )
+
+    with pytest.raises(
+        ChatServiceError,
+        match="chat service unavailable",
+    ):
+        asyncio.run(
+            _service(
+                FakeGateway((news_document(),)),
+                ExtractiveLLM(),
+                observation_sink=sink,
+                request_id_factory=lambda: "request-no-response",
+            ).chat(_request())
+        )
+
+    assert sink.observations == ()
+
+
+def test_json_observation_excludes_request_and_source_content() -> None:
+    output = io.StringIO()
+    logger = logging.Logger("questock.observability.chat-unit")
+    logger.setLevel(logging.INFO)
+    handler = logging.StreamHandler(output)
+    handler.setFormatter(logging.Formatter("%(message)s"))
+    logger.addHandler(handler)
+    sentinel = "sentinel-secret"
+    session_id = "session-private-path"
+
+    response = asyncio.run(
+        _service(
+            FakeGateway((news_document(),)),
+            ExtractiveLLM(),
+            observation_sink=JsonLogObservationSink(logger),
+            request_id_factory=lambda: "request-safe-log",
+        ).chat(
+            ChatRequest(
+                message=f"{QUESTION} {sentinel}",
+                session_id=session_id,
+            )
+        )
+    )
+
+    rendered = output.getvalue()
+    assert response.status == "complete"
+    assert sentinel not in rendered
+    assert session_id not in rendered
+    assert SNIPPET not in rendered
+    assert "https://news.example.test" not in rendered
+    assert "C:\\private" not in rendered
 
 
 def test_recorded_complete_path_preserves_m2_order_and_generates_once() -> None:

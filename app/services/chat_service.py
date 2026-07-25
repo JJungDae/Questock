@@ -6,6 +6,7 @@ import time
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Callable
+from uuid import uuid4
 
 from app.answer.composer import AnswerComposer, CompositionResult
 from app.api.schemas import (
@@ -51,6 +52,12 @@ from app.services.glossary_service import (
     GlossaryService,
     select_glossary_context,
 )
+from app.services.observability import (
+    JsonLogObservationSink,
+    ObservationSink,
+    RequestObservation,
+    fallback_used_for_generation_mode,
+)
 from app.services.source_gateway import (
     ExplicitUnconfiguredSourceGateway,
     SourceGateway,
@@ -95,6 +102,8 @@ class ChatService:
         glossary_service: GlossaryService | None = None,
         session_store: InMemorySessionStore | None = None,
         call_budget_factory: Callable[[], LLMCallBudget] | None = None,
+        observation_sink: ObservationSink | None = None,
+        request_id_factory: Callable[[], str] | None = None,
         deadline_seconds: float = _DEFAULT_DEADLINE_SECONDS,
         utc_now: Callable[[], datetime] | None = None,
         monotonic: Callable[[], float] = time.monotonic,
@@ -117,6 +126,25 @@ class ChatService:
             call_budget_factory
             if call_budget_factory is not None
             else lambda: LLMCallBudget(max_calls=1)
+        )
+        if observation_sink is not None and not isinstance(
+            observation_sink,
+            ObservationSink,
+        ):
+            raise ValueError("observation sink is invalid")
+        if request_id_factory is not None and not callable(
+            request_id_factory
+        ):
+            raise ValueError("request ID factory is invalid")
+        self._observation_sink = (
+            observation_sink
+            if observation_sink is not None
+            else JsonLogObservationSink()
+        )
+        self._request_id_factory = (
+            request_id_factory
+            if request_id_factory is not None
+            else lambda: uuid4().hex
         )
         self._deadline_seconds = float(deadline_seconds)
         self._utc_now = utc_now or (lambda: datetime.now(UTC))
@@ -225,6 +253,14 @@ class ChatService:
                     deadline_exhausted=deadline_exhausted,
                 )
             self._save_session_context(request.session_id, plan)
+            self._emit_terminal_observation(
+                plan=plan,
+                gateway=gateway,
+                pipeline=pipeline,
+                composition=composition,
+                call_budget=call_budget,
+                started_at=started_at,
+            )
             return response
         except ChatServiceError:
             raise
@@ -378,6 +414,54 @@ class ChatService:
                 previous_source_types=list(plan.required_sources),
             ),
         )
+
+    def _emit_terminal_observation(
+        self,
+        *,
+        plan: QueryPlan,
+        gateway: SourceGatewayResult,
+        pipeline: "_PipelineResult",
+        composition: CompositionResult,
+        call_budget: LLMCallBudget,
+        started_at: float,
+    ) -> None:
+        try:
+            request_id = self._request_id_factory()
+            security_id = (
+                f"{plan.security.market}:{plan.security.ticker}"
+                if plan.security is not None
+                else None
+            )
+            elapsed_ms = (
+                self._monotonic() - started_at
+            ) * 1000
+            observation = RequestObservation(
+                request_id=request_id,
+                intent=plan.intent,
+                security_id=security_id,
+                provider_statuses=tuple(
+                    (
+                        source,
+                        str(
+                            gateway.provider_results_by_source[
+                                source
+                            ].status
+                        ),
+                    )
+                    for source in plan.required_sources
+                ),
+                evidence_count=len(pipeline.budget.evidence),
+                retrieval_strategy=pipeline.retrieval.strategy,
+                evidence_decision=str(pipeline.decision.status),
+                total_latency_ms=round(elapsed_ms, 3),
+                llm_call_count=call_budget.snapshot().calls_used,
+                fallback_used=fallback_used_for_generation_mode(
+                    composition.generation_mode
+                ),
+            )
+            self._observation_sink.emit(observation)
+        except Exception:
+            return
 
     def _deadline_safe_composition(
         self,

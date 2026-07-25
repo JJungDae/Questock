@@ -214,6 +214,7 @@ UPPER_FOREIGN_RE = re.compile(r"^[A-Z]{1,5}([.\-][A-Z])?$")
 HANGUL_RE = re.compile(r"[\uac00-\ud7a3]")
 SECURITY_ENGLISH_HINTS = frozenset({"samsung", "electronics", "sk", "hynix", "hyundai", "motor"})
 ASCII_FINANCIAL_TERM_MARKERS = frozenset({"PER", "PBR", "ROE", "EPS"})
+SECURITY_DOMAIN_TOKENS = frozenset({"HBM"})
 TRAILING_PUNCTUATION = ".,;:!?()[]{}\"'`"
 
 
@@ -470,6 +471,8 @@ def _should_resolve_candidate(value: str, token_width: int) -> bool:
     if len(words) > 1:
         return any(word.lower().strip(TRAILING_PUNCTUATION) in SECURITY_ENGLISH_HINTS for word in words)
     if value in ASCII_FINANCIAL_TERM_MARKERS:
+        return False
+    if value in SECURITY_DOMAIN_TOKENS:
         return False
     if UPPER_FOREIGN_RE.fullmatch(value):
         return True

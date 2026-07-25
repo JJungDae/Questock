@@ -8,20 +8,15 @@ def test_executable_m3_gate_runs_real_local_pipeline() -> None:
 
     assert report.gate_passed is True
     assert report.total == 34
-    assert report.passed == 30
-    assert report.failed == 4
-    assert report.percentage >= 80
+    assert report.passed == 34
+    assert report.failed == 0
+    assert report.percentage == 100
     assert report.critical_percentage == 100
     assert report.critical_failed_case_ids == ()
     assert report.exposure_count == 0
     assert report.m3_12_status == "NOT_ACTIVATED"
     assert set(report.capabilities) == CAPABILITIES
-    assert report.failed_case_ids == (
-        "B0-09",
-        "B0-10",
-        "B0-12",
-        "B0-17",
-    )
+    assert report.failed_case_ids == ()
 
 
 def test_gate_keeps_runtime_status_families_and_ui_projection_visible() -> None:
@@ -46,6 +41,8 @@ def test_gate_keeps_runtime_status_families_and_ui_projection_visible() -> None:
         "B7-33",
         "B7-34",
     ):
+        assert results[case_id].passed is True
+    for case_id in ("B0-09", "B0-10", "B0-12", "B0-17"):
         assert results[case_id].passed is True
     assert report.capabilities["UI01"].percentage == 100
     assert report.capabilities["A17-M"].percentage == 100

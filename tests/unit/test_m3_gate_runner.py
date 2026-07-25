@@ -139,5 +139,31 @@ def test_direct_script_runs_from_clean_repository_shell() -> None:
     )
 
     assert completed.returncode == 0, completed.stderr
-    assert completed.stderr == ""
+    observation_lines = [
+        line for line in completed.stderr.splitlines() if line
+    ]
+    assert observation_lines
+    for line in observation_lines:
+        observation = json.loads(line)
+        assert set(observation) == {
+            "evidence_count",
+            "evidence_decision",
+            "fallback_used",
+            "intent",
+            "llm_call_count",
+            "provider_statuses",
+            "request_id",
+            "retrieval_strategy",
+            "security_id",
+            "total_latency_ms",
+        }
+        expected_strategy = (
+            "glossary-direct-m3-05-v1"
+            if observation["intent"] == "financial_term"
+            else "lexical-bm25-m2-03-v1"
+        )
+        assert observation["retrieval_strategy"] == expected_strategy
+        assert "C:\\" not in line
+        assert "/workspace/" not in line
+        assert "/home/" not in line
     assert json.loads(completed.stdout)["gate_passed"] is True

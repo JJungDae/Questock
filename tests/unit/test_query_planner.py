@@ -167,6 +167,49 @@ def test_ordinary_lowercase_english_words_do_not_become_foreign_tickers():
 
 
 @pytest.mark.parametrize(
+    ("query", "security_id"),
+    [
+        (f"{SAMSUNG} 최근 HBM 관련 이슈를 알려줘", SAMSUNG_ID),
+        (f"{SK_HYNIX} HBM 관련 최근 뉴스 알려줘", SK_HYNIX_ID),
+    ],
+)
+def test_hbm_domain_token_does_not_conflict_with_supported_security(
+    query: str,
+    security_id: str,
+) -> None:
+    resolver = SpyResolver()
+
+    result = planner(resolver=resolver).plan(query)
+
+    assert_success(
+        result,
+        security_id=security_id,
+        intent=RECENT_ISSUE,
+        sources=["news"],
+        evidence=["recent_news"],
+    )
+    assert "HBM" not in resolver.calls
+
+
+def test_hbm_without_supported_security_does_not_resolve_to_a_company() -> None:
+    resolver = SpyResolver()
+
+    result = planner(resolver=resolver).plan("HBM 관련 최근 뉴스 알려줘")
+
+    assert_clarification(result, RECENT_ISSUE)
+    assert "HBM" not in resolver.calls
+
+
+def test_standalone_foreign_uppercase_ticker_remains_unsupported() -> None:
+    resolver = SpyResolver()
+
+    result = planner(resolver=resolver).plan(f"AAPL {RECENT_NEWS}")
+
+    assert_clarification(result, RECENT_ISSUE)
+    assert "AAPL" in resolver.calls
+
+
+@pytest.mark.parametrize(
     "query",
     [
         "Samsung Electronics stock news",
