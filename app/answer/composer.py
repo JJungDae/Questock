@@ -21,6 +21,10 @@ from app.answer.models import (
     DraftClaim,
     StructuredAnswerDraft,
 )
+from app.answer.validators import (
+    is_unsafe_answer_text,
+    validate_answer_draft,
+)
 from app.core.models import Evidence, FinancialDocument, QueryPlan
 from app.evidence.citations import (
     Citation,
@@ -55,16 +59,6 @@ _CREDENTIAL_VALUE = re.compile(
     r"\s*[:=]\s*\S+"
 )
 _URL = re.compile(r"(?i)\b(?:https?|file)://")
-_DIRECT_ADVICE = re.compile(
-    r"(?:사세요|파세요|"
-    r"(?:매수|매도|손절|익절|목표가).{0,12}"
-    r"(?:하세요|해야|권장|추천|제시))"
-)
-_FUTURE_CERTAINTY = re.compile(
-    r"(?:보장(?:된다|됩니다|한다)|틀림없이|"
-    r"확실히.{0,20}(?:된다|됩니다|할 것이다)|"
-    r"반드시.{0,20}(?:상승|하락|개선|성장|달성))"
-)
 _SAFE_FALLBACKS = {
     "blocked": "요청 범위상 제공할 수 없는 답변입니다.",
     "provider_failed": "자료 제공 상태를 확인하지 못해 답변을 보류합니다.",
@@ -181,14 +175,15 @@ class AnswerComposer:
             canonical_evidence,
             canonical_documents,
         )
+        projected = _project_m3_evidence(canonical_plan, eligible)
         canonical_budget = _call_budget(call_budget)
-        if not eligible:
+        if not projected:
             return _fixed_result(canonical_plan, canonical_evidence)
 
         payload = {
             "intent": canonical_plan.intent,
             "question": canonical_question,
-            "evidence": _prompt_evidence(eligible),
+            "evidence": _prompt_evidence(projected),
             "timeout_seconds": timeout_seconds,
         }
         try:
@@ -204,33 +199,57 @@ class AnswerComposer:
             )
             if not isinstance(parsed, _ParsedOutput):
                 raise AnswerCompositionError("structured generation output is invalid")
-            _validate_draft_structure(
+            validation = validate_answer_draft(
                 parsed.draft,
                 canonical_plan,
-                eligible,
-                parsed.result,
+                projected,
             )
-            claims = _citation_claims(parsed.draft, eligible, parsed.result)
-            citations = validate_citations(claims, canonical_plan, eligible)
-            if citations.rejections:
+            if validation.draft is None:
                 raise _GenerationFailure(
                     _invalid_response_from(parsed.result),
-                    rejection_count=len(citations.rejections),
+                    rejection_count=max(1, validation.rejection_count),
                 )
+            try:
+                _validate_draft_structure(
+                    validation.draft,
+                    canonical_plan,
+                    projected,
+                    parsed.result,
+                )
+                claims = _citation_claims(
+                    validation.draft,
+                    projected,
+                    parsed.result,
+                )
+                citations = validate_citations(claims, canonical_plan, projected)
+                if citations.rejections:
+                    raise _GenerationFailure(
+                        _invalid_response_from(parsed.result),
+                        rejection_count=len(citations.rejections),
+                    )
+            except _GenerationFailure as exc:
+                raise _GenerationFailure(
+                    exc.result,
+                    rejection_count=(
+                        validation.rejection_count + exc.rejection_count
+                    ),
+                ) from None
             return CompositionResult(
-                answer_sections=AnswerSections.from_claims(parsed.draft.claims),
+                answer_sections=AnswerSections.from_claims(
+                    validation.draft.claims
+                ),
                 claims=claims,
                 citations=citations,
                 generation_mode="llm",
                 llm_result=parsed.result.model_copy(deep=True),
                 transmitted_evidence=tuple(
-                    item.model_copy(deep=True) for item in eligible
+                    item.model_copy(deep=True) for item in projected
                 ),
                 public_evidence=_citation_bound_evidence(
-                    eligible,
+                    projected,
                     citations,
                 ),
-                citation_rejection_count=0,
+                citation_rejection_count=validation.rejection_count,
             )
         except _GenerationFailure as exc:
             return _fixed_result(
@@ -419,6 +438,44 @@ def _external_processing_eligible(
     return tuple(output)
 
 
+def _project_m3_evidence(
+    plan: QueryPlan,
+    evidence: tuple[Evidence, ...],
+) -> tuple[Evidence, ...]:
+    if plan.intent not in {"risk_factors", "multi_source_summary"}:
+        return tuple(item.model_copy(deep=True) for item in evidence)
+
+    selected_indexes: list[int] = []
+    for source_type in plan.required_sources:
+        index = next(
+            (
+                position
+                for position, item in enumerate(evidence)
+                if (
+                    position not in selected_indexes
+                    and item.source_type == source_type
+                )
+            ),
+            None,
+        )
+        if index is not None:
+            selected_indexes.append(index)
+        if len(selected_indexes) == 3:
+            break
+
+    if len(selected_indexes) < 3:
+        for index in range(len(evidence)):
+            if index not in selected_indexes:
+                selected_indexes.append(index)
+            if len(selected_indexes) == 3:
+                break
+
+    return tuple(
+        evidence[index].model_copy(deep=True)
+        for index in selected_indexes
+    )
+
+
 def _prompt_evidence(evidence: tuple[Evidence, ...]) -> str:
     rendered = []
     for item in evidence:
@@ -465,11 +522,6 @@ def _validate_draft_structure(
     sections = [item.section for item in draft.claims]
     summary_count = sections.count("summary")
     ordered = [_SECTION_ORDER[item] for item in sections]
-    unsafe_content = any(_DIRECT_ADVICE.search(item.text) for item in draft.claims)
-    unsafe_report_certainty = (
-        plan.intent == "research_report_summary"
-        and any(_FUTURE_CERTAINTY.search(item.text) for item in draft.claims)
-    )
     glossary_sections_valid = (
         plan.intent != "financial_term"
         or _glossary_claim_sections_valid(draft, evidence)
@@ -480,8 +532,6 @@ def _validate_draft_structure(
         or sections[0] != "summary"
         or summary_count != 1
         or ordered != sorted(ordered)
-        or unsafe_content
-        or unsafe_report_certainty
         or not glossary_sections_valid
         or not claims_are_unique
     ):
@@ -548,10 +598,7 @@ def _fixed_result(
     accepted_evidence: list[Evidence] = []
     fixed_rejection_count = 0
     for index, item in enumerate(evidence[:3]):
-        if _DIRECT_ADVICE.search(item.snippet) or (
-            plan.intent == "research_report_summary"
-            and _FUTURE_CERTAINTY.search(item.snippet)
-        ):
+        if is_unsafe_answer_text(item.snippet, intent=plan.intent):
             fixed_rejection_count += 1
             continue
         claim = CitationClaim(
@@ -624,7 +671,7 @@ def _fixed_glossary_result(
         )
         if (
             section is None
-            or _DIRECT_ADVICE.search(item.snippet)
+            or is_unsafe_answer_text(item.snippet, intent=plan.intent)
         ):
             return _empty_fixed_result(
                 plan,

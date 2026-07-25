@@ -904,3 +904,399 @@ def test_direct_advice_or_report_future_certainty_fails_closed(
     assert len(client.calls) == 1
     assert result.citation_rejection_count >= 1
     assert snippet not in result.answer_sections.model_dump_json()
+
+
+def test_unsupported_numeric_claim_is_removed_without_second_llm_call() -> None:
+    summary = "회사는 신규 설비 계획을 발표했다."
+    unsupported = "투자 규모는 20조원이다."
+    evidence = _evidence(
+        snippet=f"{summary} 투자 규모는 2조원이다.",
+    )
+    content = json.dumps(
+        {
+            "claims": [
+                {
+                    "claim_id": "summary",
+                    "section": "summary",
+                    "text": summary,
+                    "evidence_ids": [evidence.evidence_id],
+                },
+                {
+                    "claim_id": "fact",
+                    "section": "facts",
+                    "text": unsupported,
+                    "evidence_ids": [evidence.evidence_id],
+                },
+            ]
+        },
+        ensure_ascii=False,
+    )
+    client = FakeLLMClient(content)
+
+    result = asyncio.run(
+        AnswerComposer(client).compose(
+            question="삼성전자 최근 투자 계획",
+            plan=_plan(),
+            selected_evidence=[evidence],
+            documents_by_id={_document().document_id: _document()},
+            timeout_seconds=2,
+        )
+    )
+
+    assert result.generation_mode == "llm"
+    assert result.answer_sections.summary == [summary]
+    assert result.answer_sections.facts == []
+    assert unsupported not in result.answer_sections.model_dump_json()
+    assert result.citation_rejection_count == 1
+    assert len(client.calls) == 1
+
+
+def test_removed_numeric_summary_uses_supported_fixed_fallback() -> None:
+    unsupported = "투자 규모는 20조원이다."
+    evidence = _evidence(snippet="실제 투자 규모는 2조원이다.")
+    content = json.dumps(
+        {
+            "claims": [
+                {
+                    "claim_id": "summary",
+                    "section": "summary",
+                    "text": unsupported,
+                    "evidence_ids": [evidence.evidence_id],
+                },
+                {
+                    "claim_id": "fact",
+                    "section": "facts",
+                    "text": "회사는 투자 계획을 발표했다.",
+                    "evidence_ids": [evidence.evidence_id],
+                },
+            ]
+        },
+        ensure_ascii=False,
+    )
+    client = FakeLLMClient(content)
+
+    result = asyncio.run(
+        AnswerComposer(client).compose(
+            question="삼성전자 최근 투자 계획",
+            plan=_plan(),
+            selected_evidence=[evidence],
+            documents_by_id={_document().document_id: _document()},
+            timeout_seconds=2,
+        )
+    )
+
+    assert result.generation_mode == "fixed_template"
+    assert result.answer_sections.summary == [evidence.snippet]
+    assert unsupported not in result.answer_sections.model_dump_json()
+    assert result.citation_rejection_count >= 2
+    assert len(client.calls) == 1
+
+
+def test_wrong_company_numeric_evidence_is_rejected() -> None:
+    evidence = _evidence(
+        snippet="매출은 10억원이다.",
+        subject_security_ids=["KRX:000660"],
+    )
+    client = FakeLLMClient(
+        _draft(
+            text="매출은 10억원이다.",
+            evidence_id=evidence.evidence_id,
+        )
+    )
+
+    result = asyncio.run(
+        AnswerComposer(client).compose(
+            question="삼성전자 매출",
+            plan=_plan(),
+            selected_evidence=[evidence],
+            documents_by_id={_document().document_id: _document()},
+            timeout_seconds=2,
+        )
+    )
+
+    assert result.generation_mode == "fixed_template"
+    assert result.public_evidence == ()
+    assert result.citation_rejection_count >= 1
+    assert len(client.calls) == 1
+
+
+def test_industry_mention_is_not_promoted_to_subject() -> None:
+    evidence = Evidence(
+        evidence_id="evidence:news:mentioned-only",
+        document_id="document:news:unit",
+        source_type="news",
+        title="산업 기사",
+        source_url="https://news.example.test/article",
+        published_at=BASIS_AT,
+        subject_security_ids=[],
+        mentioned_security_ids=[SECURITY_ID],
+        scope="industry_common",
+        snippet="업계 투자 규모는 10조원이다.",
+        locator={
+            "provider": "recorded_news",
+            "source_url": "https://news.example.test/article",
+            "published_at": BASIS_AT.isoformat(),
+            "raw_index": 0,
+            "query": "삼성전자 투자",
+        },
+        retrieval_score=0.8,
+    )
+    before = evidence.model_dump(mode="python")
+    client = FakeLLMClient(
+        _draft(
+            text=evidence.snippet,
+            evidence_id=evidence.evidence_id,
+        )
+    )
+
+    result = asyncio.run(
+        AnswerComposer(client).compose(
+            question="삼성전자 업계 투자",
+            plan=_plan(),
+            selected_evidence=[evidence],
+            documents_by_id={_document().document_id: _document()},
+            timeout_seconds=2,
+        )
+    )
+
+    assert result.generation_mode == "llm"
+    assert result.public_evidence[0].subject_security_ids == []
+    assert result.public_evidence[0].mentioned_security_ids == [SECURITY_ID]
+    assert evidence.model_dump(mode="python") == before
+
+
+def test_m3_projection_is_source_diverse_deterministic_and_limited_to_three() -> None:
+    report = _evidence(
+        source_type="research_report",
+        evidence_id="evidence:report:1",
+        snippet="리포트는 설비 계획을 설명했다.",
+    )
+    news = _evidence(
+        evidence_id="evidence:news:1",
+        snippet="뉴스는 공급 일정을 설명했다.",
+    )
+    disclosure = _evidence(
+        source_type="disclosure",
+        evidence_id="evidence:disclosure:1",
+        snippet="공시는 투자 결정을 설명했다.",
+    )
+    extra_news = _evidence(
+        evidence_id="evidence:news:2",
+        snippet="추가 뉴스는 수요를 설명했다.",
+    )
+    plan = _plan().model_copy(
+        update={
+            "intent": "multi_source_summary",
+            "required_sources": [
+                "research_report",
+                "news",
+                "disclosure",
+            ],
+            "required_evidence": ["multi_source"],
+        },
+        deep=True,
+    )
+    client = FakeLLMClient(
+        _draft(
+            text=report.snippet,
+            evidence_id=report.evidence_id,
+        )
+    )
+    documents = {
+        document.document_id: document
+        for document in (
+            _document(source_type="research_report", permission=True),
+            _document(source_type="news"),
+            _document(source_type="disclosure"),
+        )
+    }
+    before = [
+        item.model_dump(mode="python")
+        for item in (news, disclosure, report, extra_news)
+    ]
+
+    result = asyncio.run(
+        AnswerComposer(client).compose(
+            question="삼성전자 여러 자료 요약",
+            plan=plan,
+            selected_evidence=[news, disclosure, report, extra_news],
+            documents_by_id=documents,
+            timeout_seconds=2,
+        )
+    )
+
+    assert result.generation_mode == "llm"
+    assert [item.evidence_id for item in result.transmitted_evidence] == [
+        report.evidence_id,
+        news.evidence_id,
+        disclosure.evidence_id,
+    ]
+    assert len(result.transmitted_evidence) == 3
+    assert result.public_evidence == (report,)
+    rendered = "\n".join(
+        message.content for message in client.calls[0][0].messages
+    )
+    assert extra_news.evidence_id not in rendered
+    assert before == [
+        item.model_dump(mode="python")
+        for item in (news, disclosure, report, extra_news)
+    ]
+
+
+def test_permission_denied_report_is_excluded_before_projection_and_refilled() -> None:
+    denied_report = _evidence(
+        source_type="research_report",
+        evidence_id="evidence:report:denied",
+        snippet="비전송 리포트다.",
+    )
+    news = _evidence(
+        evidence_id="evidence:news:1",
+        snippet="뉴스는 공급 일정을 설명했다.",
+    )
+    disclosure = _evidence(
+        source_type="disclosure",
+        evidence_id="evidence:disclosure:1",
+        snippet="공시는 투자 결정을 설명했다.",
+    )
+    extra_news = _evidence(
+        evidence_id="evidence:news:2",
+        snippet="추가 뉴스는 수요를 설명했다.",
+    )
+    plan = _plan().model_copy(
+        update={
+            "intent": "multi_source_summary",
+            "required_sources": [
+                "research_report",
+                "news",
+                "disclosure",
+            ],
+            "required_evidence": ["multi_source"],
+        },
+        deep=True,
+    )
+    client = FakeLLMClient(
+        _draft(
+            text=news.snippet,
+            evidence_id=news.evidence_id,
+        )
+    )
+    documents = {
+        document.document_id: document
+        for document in (
+            _document(source_type="research_report", permission=False),
+            _document(source_type="news"),
+            _document(source_type="disclosure"),
+        )
+    }
+
+    result = asyncio.run(
+        AnswerComposer(client).compose(
+            question="삼성전자 여러 자료 요약",
+            plan=plan,
+            selected_evidence=[
+                denied_report,
+                news,
+                disclosure,
+                extra_news,
+            ],
+            documents_by_id=documents,
+            timeout_seconds=2,
+        )
+    )
+
+    assert result.generation_mode == "llm"
+    assert [item.evidence_id for item in result.transmitted_evidence] == [
+        news.evidence_id,
+        disclosure.evidence_id,
+        extra_news.evidence_id,
+    ]
+    rendered = "\n".join(
+        message.content for message in client.calls[0][0].messages
+    )
+    assert denied_report.evidence_id not in rendered
+    assert denied_report.snippet not in rendered
+
+
+def test_two_sided_composition_requires_uncertainty_without_retry() -> None:
+    snippets = {
+        "summary": "수요와 원가 변수가 함께 확인됐다.",
+        "positive_factors": "수요 증가는 긍정 요인이다.",
+        "risk_factors": "원가 상승은 위험 요인이다.",
+    }
+    evidence = _evidence(snippet=" ".join(snippets.values()))
+    content = json.dumps(
+        {
+            "claims": [
+                {
+                    "claim_id": section,
+                    "section": section,
+                    "text": text,
+                    "evidence_ids": [evidence.evidence_id],
+                }
+                for section, text in snippets.items()
+            ]
+        },
+        ensure_ascii=False,
+    )
+    client = FakeLLMClient(content)
+
+    result = asyncio.run(
+        AnswerComposer(client).compose(
+            question="삼성전자 긍정 요인과 위험 요인",
+            plan=_plan().model_copy(
+                update={"intent": "risk_factors"},
+                deep=True,
+            ),
+            selected_evidence=[evidence],
+            documents_by_id={_document().document_id: _document()},
+            timeout_seconds=2,
+        )
+    )
+
+    assert result.generation_mode == "fixed_template"
+    assert result.citation_rejection_count >= 3
+    assert len(client.calls) == 1
+
+
+def test_two_sided_composition_keeps_parallel_supported_views() -> None:
+    snippets = {
+        "summary": "수요와 원가 변수가 함께 확인됐다.",
+        "positive_factors": "수요 증가는 긍정 요인이다.",
+        "risk_factors": "원가 상승은 위험 요인이다.",
+        "uncertainty": "실제 영향은 추가 확인이 필요하다.",
+    }
+    evidence = _evidence(snippet=" ".join(snippets.values()))
+    content = json.dumps(
+        {
+            "claims": [
+                {
+                    "claim_id": section,
+                    "section": section,
+                    "text": text,
+                    "evidence_ids": [evidence.evidence_id],
+                }
+                for section, text in snippets.items()
+            ]
+        },
+        ensure_ascii=False,
+    )
+
+    result = asyncio.run(
+        AnswerComposer(FakeLLMClient(content)).compose(
+            question="삼성전자 긍정 요인과 위험 요인",
+            plan=_plan().model_copy(
+                update={"intent": "risk_factors"},
+                deep=True,
+            ),
+            selected_evidence=[evidence],
+            documents_by_id={_document().document_id: _document()},
+            timeout_seconds=2,
+        )
+    )
+
+    assert result.generation_mode == "llm"
+    assert result.answer_sections.positive_factors == [
+        snippets["positive_factors"]
+    ]
+    assert result.answer_sections.risk_factors == [snippets["risk_factors"]]
+    assert result.answer_sections.uncertainty == [snippets["uncertainty"]]

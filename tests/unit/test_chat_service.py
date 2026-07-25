@@ -586,7 +586,11 @@ def test_chat_fixed_fallback_excludes_citation_rejected_evidence() -> None:
         _service(FakeGateway((document,)), llm).chat(_request())
     )
 
-    assert response.status == "complete"
+    assert response.status == "no_evidence"
+    assert (
+        response.diagnostics_public.decision.evidence_decision_status
+        == "complete"
+    )
     assert response.answer_sections.summary == [
         "답변에 사용할 수 있는 근거를 확인하지 못했습니다."
     ]
@@ -743,6 +747,201 @@ def test_final_response_audit_replaces_late_llm_output(
     ]
     assert llm.calls == 1
     assert budgets[0].snapshot().calls_used == 1
+
+
+def test_same_session_inherits_context_and_new_session_does_not() -> None:
+    service = _service(FakeGateway(()), ExtractiveLLM())
+
+    first = asyncio.run(
+        service.chat(
+            ChatRequest(
+                message="삼성전자 최근 뉴스",
+                session_id="session-a",
+            )
+        )
+    )
+    inherited = asyncio.run(
+        service.chat(
+            ChatRequest(
+                message="그중 공시만",
+                session_id="session-a",
+            )
+        )
+    )
+    reset = asyncio.run(
+        service.chat(
+            ChatRequest(
+                message="그중 공시만",
+                session_id="session-b",
+            )
+        )
+    )
+
+    assert first.security is not None
+    assert first.security.ticker == "005930"
+    assert inherited.security is not None
+    assert inherited.security.ticker == "005930"
+    assert inherited.diagnostics_public.query_plan.intent == "disclosure_summary"
+    assert reset.security is None
+    assert reset.diagnostics_public.security.resolution_status == "not_found"
+
+
+def test_explicit_new_security_wins_and_prohibited_turn_does_not_replace_it() -> None:
+    service = _service(FakeGateway(()), ExtractiveLLM())
+    asyncio.run(
+        service.chat(
+            ChatRequest(
+                message="삼성전자 최근 뉴스",
+                session_id="session-a",
+            )
+        )
+    )
+    explicit = asyncio.run(
+        service.chat(
+            ChatRequest(
+                message="SK하이닉스 최근 공시",
+                session_id="session-a",
+            )
+        )
+    )
+    asyncio.run(
+        service.chat(
+            ChatRequest(
+                message="현대자동차 지금 사도 돼?",
+                session_id="session-a",
+            )
+        )
+    )
+    inherited = asyncio.run(
+        service.chat(
+            ChatRequest(
+                message="이어서 알려줘",
+                session_id="session-a",
+            )
+        )
+    )
+
+    assert explicit.security is not None
+    assert explicit.security.ticker == "000660"
+    assert inherited.security is not None
+    assert inherited.security.ticker == "000660"
+    assert inherited.diagnostics_public.query_plan.intent == "disclosure_summary"
+
+
+def test_recent_cue_clears_old_session_date_range() -> None:
+    service = _service(FakeGateway(()), ExtractiveLLM())
+    asyncio.run(
+        service.chat(
+            ChatRequest(
+                message="삼성전자 2026-07-01~2026-07-02 공시",
+                session_id="session-a",
+            )
+        )
+    )
+    recent = asyncio.run(
+        service.chat(
+            ChatRequest(
+                message="삼성전자 최근 뉴스",
+                session_id="session-a",
+            )
+        )
+    )
+    follow_up = asyncio.run(
+        service.chat(
+            ChatRequest(
+                message="그중 공시만",
+                session_id="session-a",
+            )
+        )
+    )
+
+    assert recent.diagnostics_public.query_plan.date_start is None
+    assert recent.diagnostics_public.query_plan.date_end is None
+    assert follow_up.diagnostics_public.query_plan.date_start is None
+    assert follow_up.diagnostics_public.query_plan.date_end is None
+
+
+def test_provider_failure_still_preserves_accepted_planning_context() -> None:
+    service = _service(
+        FakeGateway((), status=ProviderStatus.TIMEOUT),
+        ExtractiveLLM(),
+    )
+
+    failed = asyncio.run(
+        service.chat(
+            ChatRequest(
+                message="삼성전자 최근 뉴스",
+                session_id="session-a",
+            )
+        )
+    )
+    inherited = asyncio.run(
+        service.chat(
+            ChatRequest(
+                message="이어서 알려줘",
+                session_id="session-a",
+            )
+        )
+    )
+
+    assert failed.status == "provider_failed"
+    assert inherited.security is not None
+    assert inherited.security.ticker == "005930"
+    assert inherited.diagnostics_public.query_plan.intent == "recent_issue"
+
+
+def test_concurrent_same_session_waits_for_context_update() -> None:
+    async def run() -> None:
+        started = asyncio.Event()
+        release = asyncio.Event()
+
+        class BlockingGateway(FakeGateway):
+            async def fetch(
+                self,
+                plan: QueryPlan,
+                *,
+                query: str,
+                timeout_seconds: float,
+            ) -> SourceGatewayResult:
+                if self.calls == 0:
+                    started.set()
+                    await release.wait()
+                return await super().fetch(
+                    plan,
+                    query=query,
+                    timeout_seconds=timeout_seconds,
+                )
+
+        gateway = BlockingGateway(())
+        service = _service(gateway, ExtractiveLLM())
+        first_task = asyncio.create_task(
+            service.chat(
+                ChatRequest(
+                    message="삼성전자 최근 뉴스",
+                    session_id="session-a",
+                )
+            )
+        )
+        await started.wait()
+        second_task = asyncio.create_task(
+            service.chat(
+                ChatRequest(
+                    message="이어서 알려줘",
+                    session_id="session-a",
+                )
+            )
+        )
+        await asyncio.sleep(0)
+        assert gateway.calls == 0
+        release.set()
+        _, inherited = await asyncio.gather(first_task, second_task)
+
+        assert gateway.calls == 2
+        assert inherited.security is not None
+        assert inherited.security.ticker == "005930"
+        assert inherited.diagnostics_public.query_plan.intent == "recent_issue"
+
+    asyncio.run(run())
 
 
 def _track_budget(output: list[LLMCallBudget]) -> LLMCallBudget:

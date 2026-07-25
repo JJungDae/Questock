@@ -7,6 +7,7 @@ from typing import Any
 from streamlit.testing.v1 import AppTest
 
 from app.api.schemas import ChatRequest
+from app.core.models import Evidence
 from app.services.chat_service import ChatService
 from app.ui.app import run
 
@@ -253,3 +254,153 @@ def test_app_dynamic_metadata_is_plain_text_and_only_source_url_is_link() -> Non
         "unapproved.example" not in item.value
         for item in app.markdown
     )
+
+
+def test_app_keeps_session_across_turns_and_reset_creates_isolated_id() -> None:
+    transport = FakeTransport(_response())
+    app = AppTest.from_function(_app, args=(transport,)).run()
+
+    app.text_area[0].input("삼성전자 최근 뉴스")
+    submit = next(
+        item
+        for item in app.button
+        if item.key.startswith("FormSubmitter:chat_form-")
+    )
+    submit.click()
+    app.run()
+    first_session_id = transport.requests[-1].session_id
+
+    app.text_area[0].input("그럼 위험 요인은?")
+    submit = next(
+        item
+        for item in app.button
+        if item.key.startswith("FormSubmitter:chat_form-")
+    )
+    submit.click()
+    app.run()
+
+    assert transport.requests[-1].session_id == first_session_id
+    reset = next(item for item in app.button if item.key == "reset_session")
+    reset.click()
+    app.run()
+    assert not app.subheader
+
+    app.text_area[0].input("그럼 위험 요인은?")
+    submit = next(
+        item
+        for item in app.button
+        if item.key.startswith("FormSubmitter:chat_form-")
+    )
+    submit.click()
+    app.run()
+
+    assert transport.requests[-1].session_id != first_session_id
+    assert transport.requests[-1].session_id.startswith("anonymous-")
+
+
+def test_app_renders_conflict_cards_and_three_safe_sources() -> None:
+    response = _glossary_response()
+    response = response.model_copy(
+        deep=True,
+        update={
+            "answer_sections": response.answer_sections.model_copy(
+                update={
+                    "summary": ["수요와 비용 변수가 함께 확인됐다."],
+                    "facts": [],
+                    "interpretation": [],
+                    "inference": [],
+                    "positive_factors": ["수요 증가는 긍정 요인이다."],
+                    "risk_factors": ["원가 상승은 위험 요인이다."],
+                    "uncertainty": ["실제 영향은 추가 확인이 필요하다."],
+                }
+            ),
+            "evidence": _three_source_evidence(),
+        },
+    )
+    transport = FakeTransport(response)
+    app = AppTest.from_function(_app, args=(transport,)).run()
+
+    app.text_area[0].input("삼성전자 여러 자료 요약")
+    submit = next(
+        item
+        for item in app.button
+        if item.key.startswith("FormSubmitter:chat_form-")
+    )
+    submit.click()
+    app.run()
+
+    assert not app.exception
+    labels = "\n".join(item.value for item in app.markdown)
+    for label in ("긍정 요인", "확인된 위험", "더 확인할 것"):
+        assert label in labels
+    captions = "\n".join(item.value for item in app.caption)
+    for label in ("뉴스", "공시", "리서치 리포트"):
+        assert label in captions
+    links = app.get("link_button")
+    assert len(links) == 2
+    assert any(item.label == "분석 과정 보기" for item in app.expander)
+
+
+def _three_source_evidence() -> list[Evidence]:
+    news_url = "https://news.example.test/multi"
+    receipt_no = "20260725000001"
+    disclosure_url = (
+        "https://dart.fss.or.kr/dsaf001/main.do"
+        f"?rcpNo={receipt_no}"
+    )
+    return [
+        Evidence(
+            evidence_id="evidence:news:multi",
+            document_id="document:news:multi",
+            source_type="news",
+            title="뉴스 근거",
+            source_url=news_url,
+            published_at=NOW,
+            subject_security_ids=["KRX:005930"],
+            mentioned_security_ids=[],
+            scope="company_specific",
+            snippet="수요 증가는 긍정 요인이다.",
+            locator={"provider": "recorded_news", "source_url": news_url},
+            retrieval_score=0.9,
+        ),
+        Evidence(
+            evidence_id="evidence:disclosure:multi",
+            document_id="document:disclosure:multi",
+            source_type="disclosure",
+            title="공시 근거",
+            source_url=disclosure_url,
+            published_at=NOW,
+            subject_security_ids=["KRX:005930"],
+            mentioned_security_ids=[],
+            scope="company_specific",
+            snippet="회사는 투자 계획을 공시했다.",
+            locator={
+                "provider": "recorded_disclosure",
+                "receipt_no": receipt_no,
+                "viewer_url": disclosure_url,
+            },
+            retrieval_score=0.8,
+        ),
+        Evidence(
+            evidence_id="evidence:report:multi",
+            document_id="document:report:multi",
+            source_type="research_report",
+            title="리포트 근거",
+            source_url=None,
+            published_at=NOW,
+            subject_security_ids=["KRX:005930"],
+            mentioned_security_ids=[],
+            scope="company_specific",
+            snippet="원가 상승은 위험 요인이다.",
+            locator={
+                "manifest_id": "report-multi-001",
+                "document_id": "document:report:multi",
+                "page_basis": "source_section_only",
+                "page": None,
+                "section": "위험 요인",
+                "source_url": None,
+                "source_asset_id": "report-multi-001",
+            },
+            retrieval_score=0.7,
+        ),
+    ]

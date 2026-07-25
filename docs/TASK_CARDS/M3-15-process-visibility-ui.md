@@ -16,11 +16,13 @@
 - M3-15 planning:
   `APPROVED through B6-REMAINDER plan`
 - M3-15 implementation:
-  `M3-15A complete locally; M3-15B pending B7`
+  `M3-15A complete and pushed; M3-15B implemented and locally verified in B7`
 - Streamlit dependency:
   `streamlit==1.60.0 AUTHORIZED in Gate 1`
 - Commit, push, PR, merge, deploy:
-  `NOT_APPROVED`
+  `B6 M3-15A main push complete; further Git operations NOT_APPROVED`
+- M3-15 final closure:
+  `implementation complete; independent B7 closure review pending`
 
 This Task Card implements the mentoring direction that the existing M1/M2
 capabilities must be visible in the demonstration instead of appearing as an
@@ -499,6 +501,8 @@ Stop if:
 - M2/M3 regression: `PASS within full suite`
 - Recorded demo corpus: `NOT_APPROVED`
 - Live source: `NOT_VERIFIED`
-- Commit/push/PR/merge/deploy: `NOT_RUN`
+- B6 completion SHA/main push:
+  `60e6203b265a967a8b6ba45da2ba3128e1e1bcfe / complete`
+- Further commit/push/PR/merge/deploy: `NOT_RUN / NOT_APPROVED`
 - M3-15A: `COMPLETE`
 - M3-15B: `PENDING B7`

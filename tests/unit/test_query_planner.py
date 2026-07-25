@@ -410,6 +410,102 @@ def test_result_lists_are_fresh_and_session_is_not_mutated():
     assert session.current_date_range == session_range
 
 
+def test_narrow_follow_up_inherits_previous_intent_security_and_sources():
+    session = SessionContext(
+        current_security_id=SAMSUNG_ID,
+        previous_intent=RECENT_ISSUE,
+        previous_source_types=["news"],
+    )
+
+    result = planner().plan("이어서 알려줘", session=session)
+
+    assert_success(
+        result,
+        security_id=SAMSUNG_ID,
+        intent=RECENT_ISSUE,
+        sources=["news"],
+        evidence=["recent_news"],
+    )
+
+
+def test_explicit_intent_and_date_win_over_previous_intent_and_period():
+    session = SessionContext(
+        current_security_id=SK_HYNIX_ID,
+        current_date_range=DateRange(
+            start=date(2026, 1, 1),
+            end=date(2026, 1, 2),
+        ),
+        previous_intent=RECENT_ISSUE,
+        previous_source_types=["news"],
+    )
+
+    explicit_intent = planner().plan("그중 공시만", session=session)
+    explicit_period = planner().plan(
+        "2026-07-01~2026-07-10 기간은?",
+        session=session,
+    )
+
+    assert_success(
+        explicit_intent,
+        security_id=SK_HYNIX_ID,
+        intent=DISCLOSURE_SUMMARY,
+        sources=["disclosure"],
+        evidence=["disclosure"],
+        date_range=DateRange(
+            start=date(2026, 1, 1),
+            end=date(2026, 1, 2),
+        ),
+    )
+    assert_success(
+        explicit_period,
+        security_id=SK_HYNIX_ID,
+        intent=RECENT_ISSUE,
+        sources=["news"],
+        evidence=["recent_news"],
+        date_range=DateRange(
+            start=date(2026, 7, 1),
+            end=date(2026, 7, 10),
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    "session",
+    [
+        SessionContext(
+            current_security_id=SAMSUNG_ID,
+            previous_intent=RECENT_ISSUE,
+            previous_source_types=["disclosure"],
+        ),
+        SessionContext(
+            current_security_id=SAMSUNG_ID,
+            previous_intent=FINANCIAL_TERM,
+            previous_source_types=["glossary"],
+        ),
+    ],
+)
+def test_invalid_or_non_security_previous_intent_does_not_inherit(session):
+    result = planner().plan("이어서 알려줘", session=session)
+
+    assert_clarification(result, OUT_OF_SCOPE)
+
+
+def test_unrelated_question_does_not_receive_stale_session_context():
+    session = SessionContext(
+        current_security_id=SAMSUNG_ID,
+        current_date_range=DateRange(
+            start=date(2026, 1, 1),
+            end=date(2026, 1, 2),
+        ),
+        previous_intent=RECENT_ISSUE,
+        previous_source_types=["news"],
+    )
+
+    result = planner().plan("점심 메뉴 알려줘", session=session)
+
+    assert_clarification(result, OUT_OF_SCOPE)
+
+
 def test_resolver_failure_is_not_converted_to_query_plan():
     query_planner = planner(resolver=FailingResolver())
 

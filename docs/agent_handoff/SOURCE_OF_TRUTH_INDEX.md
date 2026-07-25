@@ -4,7 +4,7 @@
 > 기준 branch: `main`
 > Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
 > Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
-> 상태: `B6 PASS / B7 PLANNING`
+> 상태: `B6 PASS / B7 IMPLEMENTED - INDEPENDENT REVIEW PENDING`
 
 ## 1. 목적
 
@@ -75,7 +75,10 @@ B7 계획:
 docs/TASK_CARDS/B7-integrated-implementation-plan.md
 
 B7 구현:
-계획 승인·preflight PASS 전 BLOCKED
+보완 계획 승인 / B7-0 preflight PASS / B7-A~C 구현 완료
+로컬 full tests 1755 passed
+로컬 M3 Gate PASS: full 86.21%, Critical 100%, exposure 0
+독립 구현 검수 NOT_RUN
 ```
 
 ## 5. 현재 bundle 문서
@@ -84,7 +87,7 @@ B7 구현:
 completed:
 docs/TASK_CARDS/B6-REMAINDER-integrated-implementation-plan.md
 
-current:
+current closure pending:
 docs/TASK_CARDS/B7-integrated-implementation-plan.md
 ```
 

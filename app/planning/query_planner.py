@@ -4,7 +4,7 @@ import re
 import unicodedata
 from dataclasses import dataclass
 from datetime import date
-from typing import Literal
+from typing import Literal, cast
 
 from app.core.models import DateRange, QueryPlan, SecurityIdentifier, SessionContext
 from app.core.resolver import SecurityResolver, security_id_for
@@ -195,6 +195,16 @@ COMPARISON_PATTERNS = (
     " vs ",
     " versus ",
 )
+FOLLOW_UP_PATTERNS = (
+    "이어서",
+    "계속 알려",
+    "같은 기간",
+    "그 기간",
+    "해당 기간",
+    "그중",
+    "그 내용",
+    "그 자료",
+)
 
 DATE_RE = re.compile(r"(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)")
 RANGE_RE = re.compile(r"(?<!\d)(\d{4}-\d{2}-\d{2})\s*~\s*(\d{4}-\d{2}-\d{2})(?!\d)")
@@ -262,6 +272,8 @@ class QueryPlanner:
             return _clarification_plan(OUT_OF_SCOPE)
 
         intent = _classify_intent(intent_query)
+        if intent == OUT_OF_SCOPE:
+            intent = _session_follow_up_intent(intent_query, session)
         if intent == OUT_OF_SCOPE:
             return _clarification_plan(OUT_OF_SCOPE)
 
@@ -350,6 +362,29 @@ def _classify_intent(normalized_query: str) -> Intent:
     if _contains_any(normalized_query, RECENT_ISSUE_PATTERNS):
         return RECENT_ISSUE
     return OUT_OF_SCOPE
+
+
+def _session_follow_up_intent(
+    normalized_query: str,
+    session: SessionContext | None,
+) -> Intent:
+    if session is None or not _is_follow_up(normalized_query):
+        return OUT_OF_SCOPE
+    previous = session.previous_intent
+    if previous not in SECURITY_REQUIRED_INTENTS:
+        return OUT_OF_SCOPE
+    expected_sources = list(SOURCE_EVIDENCE_MATRIX[previous][0])
+    if session.previous_source_types != expected_sources:
+        return OUT_OF_SCOPE
+    return cast(Intent, previous)
+
+
+def _is_follow_up(normalized_query: str) -> bool:
+    if _contains_any(normalized_query, FOLLOW_UP_PATTERNS):
+        return True
+    return "기간" in normalized_query and bool(
+        RANGE_RE.search(normalized_query) or DATE_RE.search(normalized_query)
+    )
 
 
 def _parse_period(normalized_query: str, basis_date: date) -> _PeriodParse:

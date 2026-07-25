@@ -27,6 +27,7 @@ from app.core.models import (
     QueryPlan,
     RetrievalRequest,
     RetrievalResult,
+    SessionContext,
 )
 from app.core.resolver import SecurityResolver
 from app.core.status import RetrievalStatus
@@ -57,6 +58,7 @@ from app.services.source_gateway import (
     create_source_gateway_timeout_result,
     validate_source_gateway_result,
 )
+from app.services.session_store import InMemorySessionStore, SessionStoreError
 
 _DEFAULT_DEADLINE_SECONDS = 20.0
 _DEGRADATION_WARNING = "llm_generation_degraded"
@@ -91,6 +93,7 @@ class ChatService:
         composer: AnswerComposer | None = None,
         resolver: SecurityResolver | None = None,
         glossary_service: GlossaryService | None = None,
+        session_store: InMemorySessionStore | None = None,
         call_budget_factory: Callable[[], LLMCallBudget] | None = None,
         deadline_seconds: float = _DEFAULT_DEADLINE_SECONDS,
         utc_now: Callable[[], datetime] | None = None,
@@ -109,6 +112,7 @@ class ChatService:
         self._composer = composer or AnswerComposer(_DisabledLLMClient())
         self._resolver = resolver or SecurityResolver()
         self._glossary_service = glossary_service
+        self._session_store = session_store or InMemorySessionStore()
         self._call_budget_factory = (
             call_budget_factory
             if call_budget_factory is not None
@@ -121,6 +125,19 @@ class ChatService:
     async def chat(self, request: ChatRequest) -> ChatResponse:
         if not isinstance(request, ChatRequest):
             raise ChatServiceError("chat request is invalid")
+        try:
+            async with self._session_store.serialized(request.session_id):
+                return await self._chat_serialized(request)
+        except ChatServiceError:
+            raise
+        except SessionStoreError:
+            raise ChatServiceError("chat service unavailable") from None
+        except Exception:
+            raise ChatServiceError("chat service unavailable") from None
+
+    async def _chat_serialized(self, request: ChatRequest) -> ChatResponse:
+        if not isinstance(request, ChatRequest):
+            raise ChatServiceError("chat request is invalid")
         basis_at = _aware_utc(self._utc_now())
         started_at = self._monotonic()
         try:
@@ -128,6 +145,7 @@ class ChatService:
                 request.message,
                 basis_date=basis_at.astimezone(SEOUL_TZ).date(),
                 resolver=self._resolver,
+                session=self._session_store.get(request.session_id),
             )
             plan = observed.plan
             call_budget = self._new_call_budget()
@@ -206,6 +224,7 @@ class ChatService:
                     resolved_security_id=observed.security_id,
                     deadline_exhausted=deadline_exhausted,
                 )
+            self._save_session_context(request.session_id, plan)
             return response
         except ChatServiceError:
             raise
@@ -332,6 +351,33 @@ class ChatService:
         if not isinstance(budget, LLMCallBudget) or snapshot.max_calls != 1:
             raise ChatServiceError("LLM call budget is invalid")
         return budget
+
+    def _save_session_context(self, session_id: str, plan: QueryPlan) -> None:
+        if (
+            plan.requires_clarification
+            or plan.intent in {"prohibited_advice", "out_of_scope"}
+        ):
+            return
+        current = self._session_store.get(session_id) or SessionContext()
+        security_id = current.current_security_id
+        if plan.security is not None:
+            security_id = f"{plan.security.market}:{plan.security.ticker}"
+        date_range = current.current_date_range
+        if plan.intent != "financial_term":
+            date_range = (
+                plan.date_range.model_copy(deep=True)
+                if plan.date_range is not None
+                else None
+            )
+        self._session_store.put(
+            session_id,
+            SessionContext(
+                current_security_id=security_id,
+                current_date_range=date_range,
+                previous_intent=plan.intent,
+                previous_source_types=list(plan.required_sources),
+            ),
+        )
 
     def _deadline_safe_composition(
         self,
@@ -596,8 +642,11 @@ def _build_response(
         resolution_status=resolution_status,
         resolved_security_id=resolved_security_id,
     )
+    response_status = pipeline.decision.status
+    if response_status == "complete" and not composition.public_evidence:
+        response_status = "no_evidence"
     return ChatResponse(
-        status=pipeline.decision.status,
+        status=response_status,
         security=plan.security.model_copy(deep=True) if plan.security else None,
         basis_date=basis_at.astimezone(SEOUL_TZ).date(),
         answer_sections=composition.answer_sections.model_copy(deep=True),

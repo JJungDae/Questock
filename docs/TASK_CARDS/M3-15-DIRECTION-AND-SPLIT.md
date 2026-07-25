@@ -17,16 +17,17 @@ f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4
 
 M3-15 plan:
 B6-REMAINDER initial plan review CONDITIONAL PASS
-corrected plan closure review pending
+B6 implementation and supplement review complete
 
 M3-15 implementation:
-BLOCKED pending B6 plan approval, Streamlit dependency approval, and preflight
+M3-15A COMPLETE / M3-15B IMPLEMENTED and locally verified through B7
 
 Streamlit:
-NOT_APPROVED until B6 plan review
+streamlit==1.60.0 APPROVED and locked during B6
 
 M3-15 final completion:
-split between B6 and B7
+implementation complete across B6 and B7
+independent B7 closure review pending
 ```
 
 ## 2. M3-15A — B6
@@ -72,10 +73,10 @@ M3-07:
 complete
 
 M3-15B:
-pending B7
+implemented and locally verified in B7
 
 M3-15 overall:
-not complete
+implementation complete / independent closure review pending
 ```
 
 ## 5. frozen contract

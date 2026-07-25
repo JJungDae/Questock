@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Literal
 
-from app.core.models import QueryPlan, SecurityIdentifier
+from app.core.models import QueryPlan, SecurityIdentifier, SessionContext
 from app.core.resolver import (
     ResolutionResult,
     SecurityResolver,
@@ -109,12 +109,13 @@ def build_observed_query_plan(
     *,
     basis_date: date,
     resolver: SecurityResolver,
+    session: SessionContext | None = None,
 ) -> ObservedQueryPlan:
     observer = _ObservingSecurityResolver(resolver)
     plan = QueryPlanner(
         resolver=observer,  # type: ignore[arg-type]
         basis_date=basis_date,
-    ).plan(query)
+    ).plan(query, session=session)
     fallback_observation = not observer.has_observations
     if fallback_observation:
         observer.observe_query(query)
