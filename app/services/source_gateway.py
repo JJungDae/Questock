@@ -80,10 +80,23 @@ def validate_source_gateway_result(
     if tuple(value.provider_results_by_source) != tuple(required_sources):
         raise SourceGatewayValidationError("source gateway keys are invalid")
 
+    provider_results: dict[str, ProviderResult[Any]] = {}
+    for source in required_sources:
+        result = value.provider_results_by_source.get(source)
+        if not isinstance(result, ProviderResult):
+            raise SourceGatewayValidationError("source provider result is invalid")
+        provider_results[source] = result.model_copy(deep=True)
+
     documents: list[FinancialDocument] = []
     documents_by_id: dict[str, FinancialDocument] = {}
     for document in value.documents:
         if not isinstance(document, FinancialDocument):
+            raise SourceGatewayValidationError("source documents are invalid")
+        source_result = provider_results.get(document.source_type)
+        if (
+            source_result is None
+            or source_result.status != ProviderStatus.OK
+        ):
             raise SourceGatewayValidationError("source documents are invalid")
         if document.document_id in documents_by_id:
             raise SourceGatewayValidationError("source document IDs are duplicated")
@@ -103,12 +116,12 @@ def validate_source_gateway_result(
         ):
             raise SourceGatewayValidationError("source document mapping is inconsistent")
 
-    provider_results: dict[str, ProviderResult[Any]] = {}
-    for source in required_sources:
-        result = value.provider_results_by_source.get(source)
-        if not isinstance(result, ProviderResult):
-            raise SourceGatewayValidationError("source provider result is invalid")
-        provider_results[source] = result.model_copy(deep=True)
+    _validate_data_mode(
+        data_mode=value.data_mode,
+        live_connectivity_checked=value.live_connectivity_checked,
+        documents=documents,
+        provider_results=provider_results,
+    )
 
     return SourceGatewayResult(
         documents=tuple(item.model_copy(deep=True) for item in documents),
@@ -120,6 +133,36 @@ def validate_source_gateway_result(
         data_mode=value.data_mode,
         live_connectivity_checked=value.live_connectivity_checked,
     )
+
+
+def _validate_data_mode(
+    *,
+    data_mode: DataMode,
+    live_connectivity_checked: bool,
+    documents: Sequence[FinancialDocument],
+    provider_results: Mapping[str, ProviderResult[Any]],
+) -> None:
+    if data_mode == "unconfigured":
+        if (
+            documents
+            or live_connectivity_checked
+            or any(
+                result.status != ProviderStatus.PROVIDER_UNAVAILABLE
+                for result in provider_results.values()
+            )
+        ):
+            raise SourceGatewayValidationError("source data mode is invalid")
+        return
+    if data_mode == "recorded":
+        if live_connectivity_checked:
+            raise SourceGatewayValidationError("source data mode is invalid")
+        return
+    if data_mode == "live":
+        if not live_connectivity_checked:
+            raise SourceGatewayValidationError("source data mode is invalid")
+        return
+    # The current result contract has no per-document provenance proof.
+    raise SourceGatewayValidationError("source data mode is invalid")
 
 
 __all__ = [

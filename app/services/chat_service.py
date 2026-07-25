@@ -28,15 +28,23 @@ from app.core.models import (
     RetrievalRequest,
     RetrievalResult,
 )
+from app.core.resolver import SecurityResolver
 from app.core.status import ProviderStatus, RetrievalStatus
-from app.evidence.budget import ContextBudgetResult, select_evidence_context
+from app.evidence.budget import (
+    ContextBudgetResult,
+    LLMCallBudget,
+    select_evidence_context,
+)
 from app.evidence.freshness import FreshnessResult, SEOUL_TZ, evaluate_freshness
 from app.evidence.normalizer import normalize_financial_documents
 from app.evidence.policy import EvidenceDecision, EvidencePolicy
 from app.llm.base import LLMRequest, LLMResult, LLMStatus, create_llm_result
-from app.planning.query_planner import QueryPlanner
 from app.providers.base import create_provider_result
 from app.retrieval import filter_evidence, retrieve_evidence
+from app.services.planning_observation import (
+    PublicResolutionStatus,
+    build_observed_query_plan,
+)
 from app.services.source_gateway import (
     ExplicitUnconfiguredSourceGateway,
     SourceGateway,
@@ -46,6 +54,7 @@ from app.services.source_gateway import (
 
 _DEFAULT_DEADLINE_SECONDS = 20.0
 _DEGRADATION_WARNING = "llm_generation_degraded"
+_DEADLINE_WARNING = "request_deadline_exceeded"
 _FALLBACK_SECURITY_ID = "KRX:005930"
 
 
@@ -74,6 +83,8 @@ class ChatService:
         *,
         source_gateway: SourceGateway | None = None,
         composer: AnswerComposer | None = None,
+        resolver: SecurityResolver | None = None,
+        call_budget_factory: Callable[[], LLMCallBudget] | None = None,
         deadline_seconds: float = _DEFAULT_DEADLINE_SECONDS,
         utc_now: Callable[[], datetime] | None = None,
         monotonic: Callable[[], float] = time.monotonic,
@@ -85,8 +96,16 @@ class ChatService:
             or deadline_seconds > _DEFAULT_DEADLINE_SECONDS
         ):
             raise ValueError("chat deadline is invalid")
-        self._source_gateway = source_gateway or ExplicitUnconfiguredSourceGateway()
+        self._source_gateway = (
+            source_gateway or ExplicitUnconfiguredSourceGateway()
+        )
         self._composer = composer or AnswerComposer(_DisabledLLMClient())
+        self._resolver = resolver or SecurityResolver()
+        self._call_budget_factory = (
+            call_budget_factory
+            if call_budget_factory is not None
+            else lambda: LLMCallBudget(max_calls=1)
+        )
         self._deadline_seconds = float(deadline_seconds)
         self._utc_now = utc_now or (lambda: datetime.now(UTC))
         self._monotonic = monotonic
@@ -97,33 +116,74 @@ class ChatService:
         basis_at = _aware_utc(self._utc_now())
         started_at = self._monotonic()
         try:
-            plan = QueryPlanner(
-                basis_date=basis_at.astimezone(SEOUL_TZ).date()
-            ).plan(request.message)
+            observed = build_observed_query_plan(
+                request.message,
+                basis_date=basis_at.astimezone(SEOUL_TZ).date(),
+                resolver=self._resolver,
+            )
+            plan = observed.plan
+            call_budget = self._new_call_budget()
             gateway = await self._source_data(
                 plan,
                 query=request.message,
                 started_at=started_at,
             )
+            deadline_exhausted = self._deadline_reached(started_at)
             pipeline = _run_evidence_pipeline(
                 query=request.message,
                 plan=plan,
                 gateway=gateway,
                 basis_at=basis_at,
             )
+            deadline_exhausted = (
+                deadline_exhausted or self._deadline_reached(started_at)
+            )
             composition = await self._compose(
                 request=request,
                 plan=plan,
                 pipeline=pipeline,
                 started_at=started_at,
+                call_budget=call_budget,
+                deadline_exhausted=deadline_exhausted,
             )
-            return _build_response(
+            deadline_exhausted = (
+                deadline_exhausted or self._deadline_reached(started_at)
+            )
+            composition = self._deadline_safe_composition(
+                plan=plan,
+                pipeline=pipeline,
+                composition=composition,
+                deadline_exhausted=deadline_exhausted,
+            )
+            response = _build_response(
                 plan=plan,
                 gateway=gateway,
                 pipeline=pipeline,
                 composition=composition,
                 basis_at=basis_at,
+                resolution_status=observed.resolution_status,
+                resolved_security_id=observed.security_id,
+                deadline_exhausted=deadline_exhausted,
             )
+            if self._deadline_reached(started_at):
+                deadline_exhausted = True
+                composition = self._deadline_safe_composition(
+                    plan=plan,
+                    pipeline=pipeline,
+                    composition=composition,
+                    deadline_exhausted=True,
+                )
+                response = _build_response(
+                    plan=plan,
+                    gateway=gateway,
+                    pipeline=pipeline,
+                    composition=composition,
+                    basis_at=basis_at,
+                    resolution_status=observed.resolution_status,
+                    resolved_security_id=observed.security_id,
+                    deadline_exhausted=deadline_exhausted,
+                )
+            return response
         except ChatServiceError:
             raise
         except Exception:
@@ -157,8 +217,8 @@ class ChatService:
         except TimeoutError:
             results = {
                 source: create_provider_result(
-                    status=ProviderStatus.TIMEOUT,
-                    error_code="total_deadline_exceeded",
+                    status=ProviderStatus.PROVIDER_UNAVAILABLE,
+                    error_code="provider_unavailable",
                 )
                 for source in plan.required_sources
             }
@@ -181,6 +241,8 @@ class ChatService:
         plan: QueryPlan,
         pipeline: "_PipelineResult",
         started_at: float,
+        call_budget: LLMCallBudget,
+        deadline_exhausted: bool,
     ) -> CompositionResult:
         if (
             pipeline.decision.status not in {"complete", "partial"}
@@ -197,6 +259,11 @@ class ChatService:
                     else "no_evidence"
                 ),
             )
+        if deadline_exhausted or self._deadline_reached(started_at):
+            return self._composer.compose_fixed(
+                plan=plan,
+                selected_evidence=pipeline.budget.evidence,
+            )
         remaining = self._remaining(started_at)
         try:
             return await asyncio.wait_for(
@@ -206,6 +273,7 @@ class ChatService:
                     selected_evidence=pipeline.budget.evidence,
                     documents_by_id=pipeline.documents_by_id,
                     timeout_seconds=remaining,
+                    call_budget=call_budget,
                 ),
                 timeout=remaining,
             )
@@ -221,6 +289,41 @@ class ChatService:
                 selected_evidence=pipeline.budget.evidence,
                 llm_result=timeout_result,
             )
+
+    def _new_call_budget(self) -> LLMCallBudget:
+        try:
+            budget = self._call_budget_factory()
+            snapshot = budget.snapshot()
+        except Exception:
+            raise ChatServiceError("LLM call budget is invalid") from None
+        if not isinstance(budget, LLMCallBudget) or snapshot.max_calls != 1:
+            raise ChatServiceError("LLM call budget is invalid")
+        return budget
+
+    def _deadline_safe_composition(
+        self,
+        *,
+        plan: QueryPlan,
+        pipeline: "_PipelineResult",
+        composition: CompositionResult,
+        deadline_exhausted: bool,
+    ) -> CompositionResult:
+        if not deadline_exhausted or composition.generation_mode != "llm":
+            return composition
+        timeout_result = create_llm_result(
+            status=LLMStatus.TIMEOUT,
+            model="gemini/gemini-2.5-flash",
+            provider="gemini",
+            latency_ms=self._deadline_seconds * 1000,
+        )
+        return self._composer.compose_fixed(
+            plan=plan,
+            selected_evidence=pipeline.budget.evidence,
+            llm_result=timeout_result,
+        )
+
+    def _deadline_reached(self, started_at: float) -> bool:
+        return self._monotonic() - started_at >= self._deadline_seconds
 
     def _remaining(self, started_at: float) -> float:
         remaining = self._deadline_seconds - (self._monotonic() - started_at)
@@ -360,8 +463,13 @@ def _build_response(
     pipeline: _PipelineResult,
     composition: CompositionResult,
     basis_at: datetime,
+    resolution_status: PublicResolutionStatus,
+    resolved_security_id: str | None,
+    deadline_exhausted: bool,
 ) -> ChatResponse:
     warnings = [item.code for item in pipeline.decision.warnings]
+    if deadline_exhausted:
+        warnings.append(_DEADLINE_WARNING)
     if (
         composition.llm_result is not None
         and composition.llm_result.status != LLMStatus.OK
@@ -372,6 +480,8 @@ def _build_response(
         gateway=gateway,
         pipeline=pipeline,
         composition=composition,
+        resolution_status=resolution_status,
+        resolved_security_id=resolved_security_id,
     )
     return ChatResponse(
         status=pipeline.decision.status,
@@ -379,7 +489,7 @@ def _build_response(
         basis_date=basis_at.astimezone(SEOUL_TZ).date(),
         answer_sections=composition.answer_sections.model_copy(deep=True),
         evidence=[
-            item.model_copy(deep=True) for item in pipeline.budget.evidence
+            item.model_copy(deep=True) for item in composition.public_evidence
         ],
         warnings=warnings,
         missing_sources=list(pipeline.decision.missing_sources),
@@ -393,6 +503,8 @@ def _build_process_summary(
     gateway: SourceGatewayResult,
     pipeline: _PipelineResult,
     composition: CompositionResult,
+    resolution_status: PublicResolutionStatus,
+    resolved_security_id: str | None,
 ) -> PublicProcessSummary:
     source_counts = {
         source: sum(
@@ -417,12 +529,8 @@ def _build_process_summary(
         data_mode=gateway.data_mode,
         live_connectivity_checked=gateway.live_connectivity_checked,
         security=PublicSecuritySummary(
-            resolution_status="resolved" if plan.security else "not_found",
-            security_id=(
-                f"{plan.security.market}:{plan.security.ticker}"
-                if plan.security
-                else None
-            ),
+            resolution_status=resolution_status,
+            security_id=resolved_security_id,
         ),
         query_plan=PublicQueryPlanSummary(
             intent=plan.intent,

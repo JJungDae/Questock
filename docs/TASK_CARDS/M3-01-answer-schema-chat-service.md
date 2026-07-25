@@ -31,13 +31,23 @@
 - M3-01 final plan approval:
   `APPROVED by user`
 - M3-01 implementation:
-  `IMPLEMENTED - local verification PASS; independent review pending`
+  `FIRST IMPLEMENTATION PUSHED / CONDITIONAL PASS`
+- First implementation SHA:
+  `9b92d1b9923b74a2f3ea55f51c82fc2c731e83fc`
+- First implementation commit:
+  `Implement m3-01`
+- First implementation main push:
+  `complete`
+- First implementation review:
+  `CONDITIONAL PASS`
+- Required supplement:
+  `complete locally / independent closure pending`
 - Package-index access for the exact `tzdata` addition:
   `APPROVED / used only for exact tzdata lock update`
 - Gemini live call:
   `SEPARATE APPROVAL / NOT INCLUDED`
-- Commit, push, PR, merge, deploy:
-  `NOT_APPROVED`
+- Supplement commit, push, PR, merge, deploy:
+  `NOT_RUN / NOT_APPROVED`
 - M3-12 price-move stretch:
   `NOT_ACTIVATED - post-M4 M5-01 owns the mentor-selected extension`
 - UI implementation:
@@ -405,6 +415,18 @@ security_id
 
 No candidate aliases or raw resolver diagnostics.
 
+The M3-owned planning observation wrapper delegates to `SecurityResolver`
+through the existing `QueryPlanner(resolver=...)` injection point.
+`QueryPlanner` remains the only `QueryPlan` producer. The public status is:
+
+- `resolved` for one accepted canonical security
+- `ambiguous` for a true ambiguity or multiple resolved canonical securities
+- `unsupported` for an explicit unsupported candidate without ambiguity
+- `not_found` otherwise
+
+Early blocked and out-of-scope plans retain a supported canonical observation
+without exposing the raw query or candidate text.
+
 ### 7.4 Query-plan summary
 
 ```text
@@ -596,7 +618,11 @@ Rules:
 ## 8.4 LiteLLM mapping
 
 - Python SDK only
-- exactly one reserved call in M3-01 baseline
+- one request-scoped `LLMCallBudget(max_calls=1)` created by `ChatService`
+- the exact budget is passed to `AnswerComposer`
+- reservation occurs immediately before `LLMClient.complete()`
+- parser, citation, prompt, timeout, and fallback paths never reserve a second
+  call
 - explicit model, timeout, max output tokens, thinking, response format, and
   retry-zero mapping
 - normalize usage and finish reason
@@ -660,6 +686,17 @@ live_connectivity_checked
 ```
 
 It must preserve every source key required by QueryPlan.
+
+Validation also requires:
+
+- documents only for requested sources whose ProviderResult is `ok`
+- non-OK sources contribute zero documents
+- `unconfigured` has zero documents, no live check, and only
+  `provider_unavailable` results
+- `recorded` has no live check
+- `live` has a completed live-connectivity check
+- `mixed` remains unavailable until an approved private provenance contract can
+  prove both recorded and live document origins
 
 The gateway may call existing provider policy helpers and existing local ingest
 outputs. It must not reimplement retry, cache, deadline, or provider status
@@ -749,6 +786,12 @@ Rules:
 Public status continues to reflect EvidenceDecision when selected Evidence
 exists. LLM failure adds only a stable degradation warning.
 
+For mixed valid and invalid fixed claims, M3-01 retains only claims whose
+citations pass M2-07, preserving selected Evidence order. If none remain, it
+returns the fixed no-evidence response. `ChatResponse.evidence` contains only
+deep-copied Evidence referenced by accepted public citations; the
+PublicProcessSummary context-budget counts remain the original M2 counts.
+
 Generation mode in `PublicProcessSummary` must match the actual path.
 
 ---
@@ -766,6 +809,15 @@ Generation mode in `PublicProcessSummary` must match the actual path.
 - no operation waits after deadline
 - tests use injected clocks/tasks, not real long sleeps
 
+The service audits the deadline after the gateway, after the synchronous M2
+pipeline, before model invocation, after composition, and after initial response
+assembly. An expiry before model invocation adds
+`request_deadline_exceeded`, performs no reservation or call, and uses the
+decision-specific or citation-bound fixed response. If response assembly crosses
+the deadline after an LLM call, the final audit replaces model output with the
+citation-bound fixed response, records sanitized LLM `timeout`, and preserves
+completed provider and M2 outputs.
+
 ---
 
 ## 14. Allowed Files
@@ -781,6 +833,7 @@ Generation mode in `PublicProcessSummary` must match the actual path.
 - `app/llm/base.py`
 - `app/llm/litellm_client.py`
 - `app/services/__init__.py`
+- `app/services/planning_observation.py`
 - `app/services/source_gateway.py`
 - `app/services/chat_service.py`
 
@@ -792,6 +845,7 @@ Generation mode in `PublicProcessSummary` must match the actual path.
 - `tests/unit/test_answer_composer.py`
 - `tests/unit/test_source_gateway.py`
 - `tests/unit/test_public_process_summary.py`
+- `tests/unit/test_security_planning_observation.py`
 - `tests/unit/test_chat_service.py`
 - `tests/unit/test_api_chat.py`
 - `tests/integration/test_m3_chat_phase_slice.py`
@@ -1127,8 +1181,9 @@ execution.
 - [x] no UI or price-move implementation
 - [x] live Gemini either separately passed or accurately NOT_RUN
 - [x] fixture/recorded/live/unconfigured states separated
-- [ ] user reviews result
-- [x] commit/push remain NOT_RUN until separate approval
+- [x] first implementation review completed with CONDITIONAL PASS
+- [ ] supplement receives independent closure review
+- [x] supplement commit/push remain NOT_RUN until separate approval
 
 M3-02 implementation is blocked until M3-01 receives implementation review
 PASS.
@@ -1237,14 +1292,60 @@ Stop and report if:
 - Known non-failing warnings:
   `LangChain Core Pydantic V1 compatibility warning on Python 3.14;
   Starlette TestClient httpx deprecation warning`
+- First implementation SHA:
+  `9b92d1b9923b74a2f3ea55f51c82fc2c731e83fc`
+- First implementation commit:
+  `Implement m3-01`
+- First implementation main push:
+  `complete`
+- First implementation review:
+  `CONDITIONAL PASS`
+- Required supplement:
+  `complete locally / independent closure pending`
+- Supplement targeted:
+  `PASS - 85 passed`
+  - command included answer composer, source gateway, public process summary,
+    ChatService, M3-owned security planning observation, and M3 chat phase
+    slice tests
+- M3-00 + M2 phase + M3 phase composition after supplement:
+  `PASS - 19 passed`
+- M2/M3 focused regression after supplement:
+  `PASS - 757 passed`
+- Full suite after supplement:
+  `PASS - 1564 passed, 2 warnings`
+  - first sandbox run:
+    `ENVIRONMENT_BLOCKED - 1461 passed, 103 setup errors`
+  - repository-local basetemp retry:
+    `ENVIRONMENT_BLOCKED - 1461 passed, 103 setup errors`
+  - both blocked runs failed only because the managed sandbox denied pytest
+    temporary-directory creation
+  - same full command rerun with normal local temp permission:
+    `exit code 0 - 1564 passed, 2 warnings`
+- Supplement import smoke:
+  `PASS - m3-01-supplement-import-ok`
+- Supplement ZoneInfo smoke:
+  `PASS - Asia/Seoul`
+- Supplement secret scan:
+  `PASS - []`
+  - direct `scan_paths` check for the two new untracked supplement files:
+    `PASS - []`
+- Supplement compile:
+  `PASS`
+- Supplement diff check:
+  `PASS`
+- Supplement clean-lock rerun:
+  `NOT_RUN - prior task-created clean environment was removed after its
+  approved verification`
 - Gemini live smoke: `NOT_RUN`
 - GitHub CI: `NOT_RUN`
 - UI: `NOT_STARTED`
 - M3-12/M5-01: `NOT_STARTED`
-- M3-01 implementation SHA: `NOT_CREATED`
-- Independent implementation review: `NOT_RUN`
+- Supplement SHA: `NOT_CREATED`
+- Supplement commit/push: `NOT_RUN / NOT_APPROVED`
+- Independent implementation review:
+  `CONDITIONAL PASS for first implementation / supplement closure pending`
 - Independent pytest rerun: `NOT_RUN`
-- Commit/push/PR/merge/deploy: `NOT_RUN / NOT_APPROVED`
+- Further commit/push/PR/merge/deploy: `NOT_RUN / NOT_APPROVED`
 
 ---
 

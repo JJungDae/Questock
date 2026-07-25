@@ -106,3 +106,42 @@ def test_unknown_public_field_is_rejected() -> None:
         ensure_ascii=False,
     )
 
+
+@pytest.mark.parametrize(
+    ("message", "expected_status", "expected_security_id"),
+    [
+        ("삼성전자 최근 뉴스", "resolved", "KRX:005930"),
+        ("삼성 최근 뉴스", "ambiguous", None),
+        ("005935 최근 뉴스", "unsupported", None),
+        ("카카오 최근 뉴스", "not_found", None),
+        ("삼성전자 지금 매수해야 하나", "resolved", "KRX:005930"),
+        ("삼성전자 왜 올랐어", "resolved", "KRX:005930"),
+        (
+            "삼성전자와 SK하이닉스 최근 뉴스",
+            "ambiguous",
+            None,
+        ),
+    ],
+)
+def test_public_security_resolution_is_truthful(
+    message: str,
+    expected_status: str,
+    expected_security_id: str | None,
+) -> None:
+    response = asyncio.run(
+        ChatService(utc_now=lambda: BASIS_AT).chat(
+            ChatRequest(
+                message=message,
+                session_id="security-resolution-unit",
+            )
+        )
+    )
+
+    assert (
+        response.diagnostics_public.security.resolution_status
+        == expected_status
+    )
+    assert (
+        response.diagnostics_public.security.security_id
+        == expected_security_id
+    )

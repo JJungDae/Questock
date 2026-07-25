@@ -2,15 +2,20 @@ from __future__ import annotations
 
 import asyncio
 import json
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any
+
+import pytest
 
 from app.answer.composer import AnswerComposer
 from app.api.schemas import ChatRequest
 from app.core.models import FinancialDocument, QueryPlan
 from app.core.status import ProviderStatus
+from app.evidence.budget import LLMCallBudget
 from app.llm.base import LLMRequest, LLMResult, LLMStatus, create_llm_result
 from app.providers.base import create_provider_result
+from app.services import chat_service as chat_service_module
 from app.services.chat_service import ChatService
 from app.services.source_gateway import SourceGatewayResult
 
@@ -25,8 +30,13 @@ def news_document(
     document_id: str = "document:news:unit",
     security_id: str = SECURITY_ID,
     published_at: datetime = BASIS_AT - timedelta(days=1),
+    snippet: str = SNIPPET,
+    source_url: str | None = None,
+    locator_source_url: str | None = None,
 ) -> FinancialDocument:
-    source_url = f"https://news.example.test/{document_id.replace(':', '-')}"
+    canonical_source_url = source_url or (
+        f"https://news.example.test/{document_id.replace(':', '-')}"
+    )
     return FinancialDocument(
         document_id=document_id,
         source_type="news",
@@ -35,11 +45,11 @@ def news_document(
         mentioned_security_ids=[],
         title="삼성전자 반도체 투자 최근 뉴스",
         published_at=published_at,
-        source_url=source_url,
-        text=SNIPPET,
+        source_url=canonical_source_url,
+        text=snippet,
         locator={
             "provider": "recorded_news",
-            "source_url": source_url,
+            "source_url": locator_source_url or canonical_source_url,
             "published_at": published_at.isoformat(),
             "raw_index": 0,
             "query": QUESTION,
@@ -57,11 +67,13 @@ class FakeGateway:
         status: ProviderStatus = ProviderStatus.OK,
         data_mode: str = "recorded",
         delay: float = 0,
+        after_fetch: Callable[[], None] | None = None,
     ) -> None:
         self.documents = documents
         self.status = status
         self.data_mode = data_mode
         self.delay = delay
+        self.after_fetch = after_fetch
         self.calls = 0
         self.cancel_count = 0
 
@@ -79,6 +91,8 @@ class FakeGateway:
         except asyncio.CancelledError:
             self.cancel_count += 1
             raise
+        if self.after_fetch is not None:
+            self.after_fetch()
         if self.status == ProviderStatus.OK:
             provider_result = create_provider_result(
                 status=self.status,
@@ -100,7 +114,7 @@ class FakeGateway:
                 item.document_id: item for item in self.documents
             },
             data_mode=self.data_mode,  # type: ignore[arg-type]
-            live_connectivity_checked=False,
+            live_connectivity_checked=self.data_mode == "live",
         )
 
 
@@ -162,17 +176,37 @@ def _service(
     llm: ExtractiveLLM,
     *,
     deadline_seconds: float = 20,
+    monotonic: Callable[[], float] | None = None,
+    call_budget_factory: Callable[[], LLMCallBudget] | None = None,
 ) -> ChatService:
+    kwargs: dict[str, Any] = {
+        "source_gateway": gateway,
+        "composer": AnswerComposer(llm),
+        "deadline_seconds": deadline_seconds,
+        "utc_now": lambda: BASIS_AT,
+    }
+    if monotonic is not None:
+        kwargs["monotonic"] = monotonic
+    if call_budget_factory is not None:
+        kwargs["call_budget_factory"] = call_budget_factory
     return ChatService(
-        source_gateway=gateway,
-        composer=AnswerComposer(llm),
-        deadline_seconds=deadline_seconds,
-        utc_now=lambda: BASIS_AT,
+        **kwargs,
     )
 
 
 def _request(message: str = QUESTION) -> ChatRequest:
     return ChatRequest(message=message, session_id="chat-service-unit")
+
+
+class MutableClock:
+    def __init__(self) -> None:
+        self.value = 0.0
+
+    def __call__(self) -> float:
+        return self.value
+
+    def advance(self, seconds: float) -> None:
+        self.value += seconds
 
 
 def test_recorded_complete_path_preserves_m2_order_and_generates_once() -> None:
@@ -288,7 +322,7 @@ def test_completed_source_result_is_preserved_when_other_sources_fail() -> None:
                     ),
                 },
                 documents_by_id={document.document_id: document},
-                data_mode="mixed",
+                data_mode="recorded",
                 live_connectivity_checked=False,
             )
 
@@ -329,8 +363,12 @@ def test_gateway_deadline_cancels_pending_and_preserves_source_key() -> None:
     )
 
     assert response.status == "provider_failed"
-    assert response.diagnostics_public.sources[0].provider_status == "timeout"
+    assert (
+        response.diagnostics_public.sources[0].provider_status
+        == "provider_unavailable"
+    )
     assert response.diagnostics_public.decision.failed_sources == ["news"]
+    assert response.warnings == ["request_deadline_exceeded"]
     assert gateway.cancel_count == 1
     assert llm.calls == 0
 
@@ -395,3 +433,273 @@ def test_equal_fixture_input_returns_equal_isolated_json() -> None:
     first.evidence[0].locator["raw_index"] = 99
     assert second.evidence[0].locator["raw_index"] == 0
     assert document.locator["raw_index"] == 0
+
+
+def test_request_scoped_call_budget_is_fresh_for_each_chat() -> None:
+    budgets: list[LLMCallBudget] = []
+
+    def budget_factory() -> LLMCallBudget:
+        budget = LLMCallBudget(max_calls=1)
+        budgets.append(budget)
+        return budget
+
+    llm = ExtractiveLLM()
+    service = _service(
+        FakeGateway((news_document(),)),
+        llm,
+        call_budget_factory=budget_factory,
+    )
+
+    first = asyncio.run(service.chat(_request()))
+    second = asyncio.run(service.chat(_request()))
+
+    assert first.status == second.status == "complete"
+    assert llm.calls == 2
+    assert len(budgets) == 2
+    assert budgets[0] is not budgets[1]
+    assert [item.snapshot().calls_used for item in budgets] == [1, 1]
+
+
+def test_blocked_and_no_evidence_paths_do_not_reserve_call_budget() -> None:
+    budgets: list[LLMCallBudget] = []
+
+    def budget_factory() -> LLMCallBudget:
+        budget = LLMCallBudget(max_calls=1)
+        budgets.append(budget)
+        return budget
+
+    blocked = asyncio.run(
+        _service(
+            FakeGateway(()),
+            ExtractiveLLM(),
+            call_budget_factory=budget_factory,
+        ).chat(_request("삼성전자 지금 매수해야 하나"))
+    )
+    no_evidence = asyncio.run(
+        _service(
+            FakeGateway((), status=ProviderStatus.NO_DATA),
+            ExtractiveLLM(),
+            call_budget_factory=budget_factory,
+        ).chat(_request())
+    )
+
+    assert blocked.status == "blocked"
+    assert no_evidence.status == "no_evidence"
+    assert len(budgets) == 2
+    assert [item.snapshot().calls_used for item in budgets] == [0, 0]
+
+
+def test_exhausted_injected_budget_falls_back_without_llm_call() -> None:
+    exhausted = LLMCallBudget(max_calls=1)
+    exhausted.reserve_call()
+    llm = ExtractiveLLM()
+
+    response = asyncio.run(
+        _service(
+            FakeGateway((news_document(),)),
+            llm,
+            call_budget_factory=lambda: exhausted,
+        ).chat(_request())
+    )
+
+    assert response.status == "complete"
+    assert response.diagnostics_public.generation.mode == "fixed_template"
+    assert response.diagnostics_public.generation.llm_status is None
+    assert llm.calls == 0
+    assert exhausted.snapshot().calls_used == 1
+
+
+def test_public_evidence_contains_only_citation_referenced_items() -> None:
+    second_snippet = "삼성전자 생산 설비 증설 계획이 별도로 확인됐다."
+    documents = (
+        news_document(),
+        news_document(
+            document_id="document:news:second",
+            snippet=second_snippet,
+        ),
+    )
+
+    response = asyncio.run(
+        _service(FakeGateway(documents), ExtractiveLLM()).chat(_request())
+    )
+
+    assert response.status == "complete"
+    assert response.diagnostics_public.context_budget.selected_count == 2
+    assert response.diagnostics_public.citation.citation_count == 1
+    assert len(response.evidence) == 1
+    assert response.evidence[0].snippet == SNIPPET
+
+
+def test_chat_fixed_fallback_excludes_citation_rejected_evidence() -> None:
+    sentinel = "credential-sentinel"
+    document = news_document(
+        locator_source_url=(
+            "https://news.example.test/different-article"
+            f"?reference={sentinel}"
+        )
+    )
+    llm = ExtractiveLLM()
+
+    response = asyncio.run(
+        _service(FakeGateway((document,)), llm).chat(_request())
+    )
+
+    assert response.status == "complete"
+    assert response.answer_sections.summary == [
+        "답변에 사용할 수 있는 근거를 확인하지 못했습니다."
+    ]
+    assert response.evidence == []
+    assert response.diagnostics_public.context_budget.selected_count == 1
+    assert response.diagnostics_public.citation.citation_count == 0
+    assert response.diagnostics_public.citation.rejection_count >= 1
+    assert llm.calls == 1
+    assert sentinel not in response.model_dump_json()
+
+
+def test_gateway_completion_after_deadline_skips_llm_and_keeps_safe_evidence() -> None:
+    clock = MutableClock()
+    budgets: list[LLMCallBudget] = []
+    llm = ExtractiveLLM()
+    gateway = FakeGateway(
+        (news_document(),),
+        after_fetch=lambda: clock.advance(21),
+    )
+
+    response = asyncio.run(
+        _service(
+            gateway,
+            llm,
+            monotonic=clock,
+            call_budget_factory=lambda: _track_budget(budgets),
+        ).chat(_request())
+    )
+
+    assert response.status == "complete"
+    assert response.diagnostics_public.generation.mode == "fixed_template"
+    assert response.diagnostics_public.generation.llm_status is None
+    assert response.answer_sections.summary == [SNIPPET]
+    assert response.warnings == ["request_deadline_exceeded"]
+    assert llm.calls == 0
+    assert budgets[0].snapshot().calls_used == 0
+
+
+@pytest.mark.parametrize(
+    ("provider_status", "expected_status"),
+    [
+        (ProviderStatus.PROVIDER_UNAVAILABLE, "provider_failed"),
+        (ProviderStatus.NO_DATA, "no_evidence"),
+    ],
+)
+def test_gateway_non_evidence_result_after_deadline_keeps_decision_fallback(
+    provider_status: ProviderStatus,
+    expected_status: str,
+) -> None:
+    clock = MutableClock()
+    budgets: list[LLMCallBudget] = []
+    llm = ExtractiveLLM()
+    gateway = FakeGateway(
+        (),
+        status=provider_status,
+        after_fetch=lambda: clock.advance(21),
+    )
+
+    response = asyncio.run(
+        _service(
+            gateway,
+            llm,
+            monotonic=clock,
+            call_budget_factory=lambda: _track_budget(budgets),
+        ).chat(_request())
+    )
+
+    assert response.status == expected_status
+    assert response.evidence == []
+    assert response.diagnostics_public.generation.llm_status is None
+    assert response.warnings == ["request_deadline_exceeded"]
+    assert llm.calls == 0
+    assert budgets[0].snapshot().calls_used == 0
+
+
+def test_pipeline_completion_after_deadline_skips_llm(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    clock = MutableClock()
+    original = chat_service_module._run_evidence_pipeline
+
+    def advancing_pipeline(*args: Any, **kwargs: Any) -> Any:
+        result = original(*args, **kwargs)
+        clock.advance(21)
+        return result
+
+    monkeypatch.setattr(
+        chat_service_module,
+        "_run_evidence_pipeline",
+        advancing_pipeline,
+    )
+    llm = ExtractiveLLM()
+    budgets: list[LLMCallBudget] = []
+
+    response = asyncio.run(
+        _service(
+            FakeGateway((news_document(),)),
+            llm,
+            monotonic=clock,
+            call_budget_factory=lambda: _track_budget(budgets),
+        ).chat(_request())
+    )
+
+    assert response.status == "complete"
+    assert response.diagnostics_public.generation.mode == "fixed_template"
+    assert response.warnings == ["request_deadline_exceeded"]
+    assert llm.calls == 0
+    assert budgets[0].snapshot().calls_used == 0
+
+
+def test_final_response_audit_replaces_late_llm_output(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    clock = MutableClock()
+    original = chat_service_module._build_response
+    calls = 0
+
+    def advancing_build_response(*args: Any, **kwargs: Any) -> Any:
+        nonlocal calls
+        response = original(*args, **kwargs)
+        calls += 1
+        if calls == 1:
+            clock.advance(21)
+        return response
+
+    monkeypatch.setattr(
+        chat_service_module,
+        "_build_response",
+        advancing_build_response,
+    )
+    llm = ExtractiveLLM()
+    budgets: list[LLMCallBudget] = []
+
+    response = asyncio.run(
+        _service(
+            FakeGateway((news_document(),)),
+            llm,
+            monotonic=clock,
+            call_budget_factory=lambda: _track_budget(budgets),
+        ).chat(_request())
+    )
+
+    assert response.status == "complete"
+    assert response.diagnostics_public.generation.mode == "fixed_template"
+    assert response.diagnostics_public.generation.llm_status == "timeout"
+    assert response.answer_sections.summary == [SNIPPET]
+    assert response.warnings == [
+        "request_deadline_exceeded",
+        "llm_generation_degraded",
+    ]
+    assert llm.calls == 1
+    assert budgets[0].snapshot().calls_used == 1
+
+
+def _track_budget(output: list[LLMCallBudget]) -> LLMCallBudget:
+    budget = LLMCallBudget(max_calls=1)
+    output.append(budget)
+    return budget

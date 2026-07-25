@@ -7,10 +7,12 @@ from datetime import UTC, datetime
 from typing import Any
 
 import pytest
+from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.runnables import RunnableSequence
 
 from app.answer.composer import AnswerComposer
 from app.core.models import Evidence, FinancialDocument, QueryPlan, SecurityIdentifier
+from app.evidence.budget import LLMCallBudget
 from app.llm.base import (
     LLMMessage,
     LLMRequest,
@@ -116,20 +118,29 @@ def _document(
     )
 
 
-def _evidence(*, source_type: str = "news") -> Evidence:
+def _evidence(
+    *,
+    source_type: str = "news",
+    evidence_id: str | None = None,
+    subject_security_ids: list[str] | None = None,
+    source_url: str | None | object = ...,
+    locator: dict[str, Any] | None = None,
+    snippet: str = SNIPPET,
+) -> Evidence:
     document = _document(source_type=source_type)
+    actual_url = document.source_url if source_url is ... else source_url
     return Evidence(
-        evidence_id=f"evidence:{source_type}:unit",
+        evidence_id=evidence_id or f"evidence:{source_type}:unit",
         document_id=document.document_id,
         source_type=source_type,
         title=document.title,
-        source_url=document.source_url,
+        source_url=actual_url,
         published_at=BASIS_AT,
-        subject_security_ids=[SECURITY_ID],
+        subject_security_ids=subject_security_ids or [SECURITY_ID],
         mentioned_security_ids=[],
         scope="company_specific",
-        snippet=SNIPPET,
-        locator=deepcopy(document.locator),
+        snippet=snippet,
+        locator=deepcopy(locator if locator is not None else document.locator),
         retrieval_score=0.8,
     )
 
@@ -182,6 +193,39 @@ def test_real_chain_accepts_only_citation_bound_structured_draft() -> None:
         assert forbidden not in rendered
 
 
+def test_production_graph_contains_actual_pydantic_parser_stage() -> None:
+    composer = AnswerComposer(FakeLLMClient(_draft()))
+    graph_repr = repr(composer.chain)
+
+    assert isinstance(composer.chain, RunnableSequence)
+    assert isinstance(composer._parser, PydanticOutputParser)
+    assert graph_repr.index("ChatPromptTemplate") < graph_repr.index("_audit_prompt")
+    assert graph_repr.index("_audit_prompt") < graph_repr.index("_call_client")
+    assert "PydanticOutputParser" in graph_repr
+
+
+def test_one_eligible_request_reserves_exactly_one_call() -> None:
+    budget = LLMCallBudget(max_calls=1)
+    client = FakeLLMClient(_draft())
+    document = _document()
+
+    result = asyncio.run(
+        AnswerComposer(client).compose(
+            question="?쇱꽦?꾩옄 理쒓렐 ?댁뒋",
+            plan=_plan(),
+            selected_evidence=[_evidence()],
+            documents_by_id={document.document_id: document},
+            timeout_seconds=2,
+            call_budget=budget,
+        )
+    )
+
+    assert result.generation_mode == "llm"
+    assert budget.snapshot().calls_used == 1
+    assert budget.snapshot().calls_remaining == 0
+    assert len(client.calls) == 1
+
+
 @pytest.mark.parametrize(
     "content",
     [
@@ -196,6 +240,7 @@ def test_invalid_draft_falls_back_without_retry(content: str) -> None:
     client = FakeLLMClient(content)
     document = _document()
     evidence = _evidence()
+    budget = LLMCallBudget(max_calls=1)
 
     result = asyncio.run(
         AnswerComposer(client).compose(
@@ -204,6 +249,7 @@ def test_invalid_draft_falls_back_without_retry(content: str) -> None:
             selected_evidence=[evidence],
             documents_by_id={document.document_id: document},
             timeout_seconds=2,
+            call_budget=budget,
         )
     )
 
@@ -212,6 +258,7 @@ def test_invalid_draft_falls_back_without_retry(content: str) -> None:
     assert result.llm_result is not None
     assert result.llm_result.status == LLMStatus.INVALID_RESPONSE
     assert len(client.calls) == 1
+    assert budget.snapshot().calls_used == 1
 
 
 def test_llm_failure_preserves_fixed_extractive_answer() -> None:
@@ -302,6 +349,7 @@ def test_prompt_safety_failure_is_closed_and_does_not_call_model() -> None:
     client = FakeLLMClient(_draft())
     document = _document()
     evidence = _evidence()
+    budget = LLMCallBudget(max_calls=1)
 
     result = asyncio.run(
         AnswerComposer(client).compose(
@@ -310,15 +358,162 @@ def test_prompt_safety_failure_is_closed_and_does_not_call_model() -> None:
             selected_evidence=[evidence],
             documents_by_id={document.document_id: document},
             timeout_seconds=2,
+            call_budget=budget,
         )
     )
 
     assert result.generation_mode == "fixed_template"
     assert client.calls == []
+    assert budget.snapshot().calls_used == 0
     assert "sentinel" not in json.dumps(
         result.answer_sections.model_dump(),
         ensure_ascii=False,
     )
+
+
+def test_exhausted_budget_fails_closed_without_client_call() -> None:
+    budget = LLMCallBudget(max_calls=1)
+    budget.reserve_call()
+    client = FakeLLMClient(_draft())
+    document = _document()
+
+    result = asyncio.run(
+        AnswerComposer(client).compose(
+            question="?쇱꽦?꾩옄 理쒓렐 ?댁뒋",
+            plan=_plan(),
+            selected_evidence=[_evidence()],
+            documents_by_id={document.document_id: document},
+            timeout_seconds=2,
+            call_budget=budget,
+        )
+    )
+
+    assert result.generation_mode == "fixed_template"
+    assert result.llm_result is None
+    assert len(client.calls) == 0
+    assert budget.snapshot().calls_used == 1
+
+
+def test_no_eligible_evidence_does_not_reserve_call() -> None:
+    budget = LLMCallBudget(max_calls=1)
+    client = FakeLLMClient(
+        _draft(evidence_id="evidence:research_report:unit")
+    )
+    document = _document(source_type="research_report", permission=False)
+
+    result = asyncio.run(
+        AnswerComposer(client).compose(
+            question="?쇱꽦?꾩옄 由ы룷???붿빟",
+            plan=_plan().model_copy(
+                update={
+                    "intent": "research_report_summary",
+                    "required_sources": ["research_report"],
+                    "required_evidence": ["research_report"],
+                },
+                deep=True,
+            ),
+            selected_evidence=[_evidence(source_type="research_report")],
+            documents_by_id={document.document_id: document},
+            timeout_seconds=2,
+            call_budget=budget,
+        )
+    )
+
+    assert result.generation_mode == "fixed_template"
+    assert client.calls == []
+    assert budget.snapshot().calls_used == 0
+
+
+def test_blocked_fixed_result_ignores_unexpected_evidence() -> None:
+    blocked = _plan().model_copy(
+        update={
+            "security": None,
+            "intent": "prohibited_advice",
+            "required_sources": [],
+            "required_evidence": [],
+            "requires_clarification": True,
+        },
+        deep=True,
+    )
+
+    result = AnswerComposer(FakeLLMClient(_draft())).compose_fixed(
+        plan=blocked,
+        selected_evidence=[_evidence()],
+        fallback_reason="blocked",
+    )
+
+    assert result.generation_mode == "blocked"
+    assert result.claims == ()
+    assert result.citations.citations == ()
+    assert result.answer_sections.facts == []
+    assert SNIPPET not in result.answer_sections.summary
+
+
+def test_fixed_result_keeps_only_citation_safe_evidence_in_order() -> None:
+    valid = _evidence(evidence_id="evidence:news:valid")
+    wrong_company = _evidence(
+        evidence_id="evidence:news:wrong-company",
+        subject_security_ids=["KRX:000660"],
+    )
+    unsafe_url = _evidence(
+        evidence_id="evidence:news:unsafe-url",
+        source_url="https://news.example.test/article?api-key="
+        + "-".join(("secret", "sentinel")),
+    )
+
+    result = AnswerComposer(FakeLLMClient(_draft())).compose_fixed(
+        plan=_plan(),
+        selected_evidence=[valid, wrong_company, unsafe_url],
+    )
+
+    assert [claim.evidence_ids for claim in result.claims] == [
+        ("evidence:news:valid",)
+    ]
+    assert [item.evidence_id for item in result.public_evidence] == [
+        "evidence:news:valid"
+    ]
+    assert result.answer_sections.summary == [SNIPPET]
+    assert result.answer_sections.facts == []
+    assert result.citation_rejection_count == 2
+
+
+@pytest.mark.parametrize(
+    "unsafe_locator",
+    [
+        {
+            "provider": "recorded_news",
+            "source_url": "https://news.example.test/article",
+            "published_at": BASIS_AT.isoformat(),
+            "raw_index": 0,
+            "query": "?쇱꽦?꾩옄 ?ъ옄",
+            "api_key": "-".join(("secret", "sentinel")),
+        },
+        {
+            "provider": "recorded_news",
+            "source_url": "https://news.example.test/article",
+            "published_at": BASIS_AT.isoformat(),
+            "raw_index": 0,
+            "query": "?쇱꽦?꾩옄 ?ъ옄",
+            "private_path": "C:\\private\\report.txt",
+        },
+    ],
+)
+def test_fixed_result_fails_closed_for_unsafe_locator(
+    unsafe_locator: dict[str, Any],
+) -> None:
+    unsafe = _evidence().model_copy(update={"locator": unsafe_locator}, deep=True)
+
+    result = AnswerComposer(FakeLLMClient(_draft())).compose_fixed(
+        plan=_plan(),
+        selected_evidence=[unsafe],
+    )
+
+    assert result.claims == ()
+    assert result.citations.citations == ()
+    assert result.public_evidence == ()
+    serialized = result.answer_sections.model_dump_json()
+    assert "sentinel" not in serialized
+    assert "C:\\private" not in serialized
 
 
 def test_equal_input_is_deterministic_and_caller_values_are_not_mutated() -> None:
@@ -351,4 +546,3 @@ def test_equal_input_is_deterministic_and_caller_values_are_not_mutated() -> Non
     assert first.citations == second.citations
     assert evidence.model_dump(mode="python") == snapshot
     assert first.answer_sections is not second.answer_sections
-

@@ -8,14 +8,24 @@ from typing import Any, Literal
 
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnableLambda, RunnableSequence
+from langchain_core.runnables import (
+    RunnableLambda,
+    RunnablePassthrough,
+    RunnableSequence,
+)
 
 from app.answer.models import AnswerSections, DraftClaim, StructuredAnswerDraft
 from app.core.models import Evidence, FinancialDocument, QueryPlan
 from app.evidence.citations import (
+    Citation,
     CitationClaim,
+    CitationValidationError,
     CitationValidationResult,
     validate_citations,
+)
+from app.evidence.budget import (
+    LLMCallBudget,
+    LLMCallBudgetExceededError,
 )
 from app.llm.base import (
     LLMClient,
@@ -51,12 +61,6 @@ class AnswerCompositionError(ValueError):
 
 
 @dataclass(frozen=True)
-class _BoundaryOutput:
-    content: str
-    result: LLMResult
-
-
-@dataclass(frozen=True)
 class _ParsedOutput:
     draft: StructuredAnswerDraft
     result: LLMResult
@@ -70,6 +74,7 @@ class CompositionResult:
     generation_mode: GenerationMode
     llm_result: LLMResult | None
     transmitted_evidence: tuple[Evidence, ...]
+    public_evidence: tuple[Evidence, ...]
     citation_rejection_count: int = 0
 
 
@@ -100,11 +105,18 @@ class AnswerComposer:
                 ),
             ]
         ).partial(format_instructions=self._parser.get_format_instructions())
+        parse_stage = RunnablePassthrough.assign(
+            draft=RunnableLambda(_boundary_content) | self._parser
+        ).with_fallbacks(
+            [RunnableLambda(self._raise_parse_failure)],
+            exception_key="parser_exception",
+        )
         self.chain: RunnableSequence = (
             self._prompt
             | RunnableLambda(self._audit_prompt)
             | RunnableLambda(self._call_client)
-            | RunnableLambda(self._parse_output)
+            | parse_stage
+            | RunnableLambda(self._combine_output)
         )
 
     async def compose(
@@ -115,6 +127,7 @@ class AnswerComposer:
         selected_evidence: Sequence[Evidence],
         documents_by_id: Mapping[str, FinancialDocument],
         timeout_seconds: float,
+        call_budget: LLMCallBudget | None = None,
     ) -> CompositionResult:
         canonical_question = _validate_question(question)
         canonical_plan = _copy_plan(plan)
@@ -124,6 +137,7 @@ class AnswerComposer:
             canonical_evidence,
             canonical_documents,
         )
+        canonical_budget = _call_budget(call_budget)
         if not eligible:
             return _fixed_result(canonical_plan, canonical_evidence)
 
@@ -137,7 +151,10 @@ class AnswerComposer:
                 payload,
                 config={
                     "callbacks": [],
-                    "configurable": {"timeout_seconds": timeout_seconds},
+                    "configurable": {
+                        "timeout_seconds": timeout_seconds,
+                        "call_budget": canonical_budget,
+                    },
                 },
             )
             if not isinstance(parsed, _ParsedOutput):
@@ -158,6 +175,10 @@ class AnswerComposer:
                 transmitted_evidence=tuple(
                     item.model_copy(deep=True) for item in eligible
                 ),
+                public_evidence=_citation_bound_evidence(
+                    eligible,
+                    citations,
+                ),
                 citation_rejection_count=0,
             )
         except _GenerationFailure as exc:
@@ -166,6 +187,11 @@ class AnswerComposer:
                 canonical_evidence,
                 llm_result=exc.result,
                 citation_rejection_count=exc.rejection_count,
+            )
+        except LLMCallBudgetExceededError:
+            return _fixed_result(
+                canonical_plan,
+                canonical_evidence,
             )
         except Exception:
             return _fixed_result(
@@ -213,7 +239,7 @@ class AnswerComposer:
         self,
         prompt_value: Any,
         config: Mapping[str, Any],
-    ) -> _BoundaryOutput:
+    ) -> dict[str, Any]:
         messages = tuple(
             LLMMessage(
                 role="user" if getattr(item, "type", "") == "human" else "system",
@@ -231,26 +257,63 @@ class AnswerComposer:
             if isinstance(configurable, Mapping)
             else 8.0
         )
+        call_budget = (
+            configurable.get("call_budget")
+            if isinstance(configurable, Mapping)
+            else None
+        )
+        if not isinstance(call_budget, LLMCallBudget):
+            raise AnswerCompositionError("LLM call budget is invalid")
+        call_budget.reserve_call()
         result = await self._client.complete(
             request,
             timeout_seconds=timeout_seconds,
         )
         if result.status != LLMStatus.OK or result.content is None:
             raise _GenerationFailure(result)
-        return _BoundaryOutput(result.content, result)
+        return {
+            "content": result.content,
+            "result": result,
+        }
 
-    def _parse_output(self, output: _BoundaryOutput) -> _ParsedOutput:
-        try:
-            draft = self._parser.parse(output.content)
-        except Exception:
-            raise _GenerationFailure(_invalid_response_from(output.result)) from None
-        return _ParsedOutput(draft=draft, result=output.result)
+    def _raise_parse_failure(self, output: Mapping[str, Any]) -> None:
+        result = output.get("result")
+        if not isinstance(result, LLMResult):
+            raise AnswerCompositionError("structured generation output is invalid")
+        raise _GenerationFailure(_invalid_response_from(result))
+
+    def _combine_output(self, output: Mapping[str, Any]) -> _ParsedOutput:
+        draft = output.get("draft")
+        result = output.get("result")
+        if not isinstance(draft, StructuredAnswerDraft) or not isinstance(
+            result,
+            LLMResult,
+        ):
+            raise AnswerCompositionError("structured generation output is invalid")
+        return _ParsedOutput(draft=draft, result=result)
 
 
 def _validate_question(value: object) -> str:
     if not isinstance(value, str) or not value.strip() or len(value) > 2000:
         raise AnswerCompositionError("question is invalid")
     return value.strip()
+
+
+def _call_budget(value: LLMCallBudget | None) -> LLMCallBudget:
+    if value is None:
+        return LLMCallBudget(max_calls=1)
+    if not isinstance(value, LLMCallBudget):
+        raise AnswerCompositionError("LLM call budget is invalid")
+    return value
+
+
+def _boundary_content(value: object) -> str:
+    if not isinstance(value, Mapping):
+        raise AnswerCompositionError("structured generation output is invalid")
+    content = value.get("content")
+    if not isinstance(content, str) or not content.strip():
+        raise AnswerCompositionError("structured generation output is invalid")
+    return content
 
 
 def _copy_plan(value: object) -> QueryPlan:
@@ -347,43 +410,115 @@ def _fixed_result(
         "no_evidence",
     ] | None = None,
 ) -> CompositionResult:
-    if evidence:
-        claims = tuple(
-            CitationClaim(
-                claim_id=f"fixed-{index + 1}",
-                text=item.snippet,
-                evidence_ids=(item.evidence_id,),
-            )
-            for index, item in enumerate(evidence[:3])
+    if plan.intent == "prohibited_advice" or fallback_reason == "blocked":
+        return _empty_fixed_result(
+            plan,
+            fallback_reason="blocked",
+            llm_result=llm_result,
+            citation_rejection_count=citation_rejection_count,
         )
-        citations = validate_citations(claims, plan, evidence)
-        draft_claims = tuple(
-            DraftClaim(
-                claim_id=claim.claim_id,
-                section="summary" if index == 0 else "facts",
-                text=claim.text,
-                evidence_ids=claim.evidence_ids,
-            )
-            for index, claim in enumerate(claims)
+    if not evidence:
+        return _empty_fixed_result(
+            plan,
+            fallback_reason=fallback_reason or "no_evidence",
+            llm_result=llm_result,
+            citation_rejection_count=citation_rejection_count,
         )
-        sections = AnswerSections.from_claims(draft_claims)
-    else:
-        claims = ()
-        citations = CitationValidationResult((), ())
-        key = (
-            "blocked"
-            if plan.intent == "prohibited_advice"
-            else fallback_reason or "no_evidence"
+
+    accepted_claims: list[CitationClaim] = []
+    accepted_citations: list[Citation] = []
+    accepted_evidence: list[Evidence] = []
+    fixed_rejection_count = 0
+    for index, item in enumerate(evidence[:3]):
+        claim = CitationClaim(
+            claim_id=f"fixed-{index + 1}",
+            text=item.snippet,
+            evidence_ids=(item.evidence_id,),
         )
-        sections = AnswerSections(summary=[_SAFE_FALLBACKS[key]])
+        try:
+            validation = validate_citations((claim,), plan, (item,))
+        except CitationValidationError:
+            fixed_rejection_count += 1
+            continue
+        if validation.rejections or not validation.citations:
+            fixed_rejection_count += max(1, len(validation.rejections))
+            continue
+        accepted_claims.append(claim)
+        accepted_citations.extend(validation.citations)
+        accepted_evidence.append(item.model_copy(deep=True))
+
+    if not accepted_claims:
+        return _empty_fixed_result(
+            plan,
+            fallback_reason="no_evidence",
+            llm_result=llm_result,
+            citation_rejection_count=(
+                citation_rejection_count + fixed_rejection_count
+            ),
+        )
+
+    draft_claims = tuple(
+        DraftClaim(
+            claim_id=claim.claim_id,
+            section="summary" if index == 0 else "facts",
+            text=claim.text,
+            evidence_ids=claim.evidence_ids,
+        )
+        for index, claim in enumerate(accepted_claims)
+    )
     return CompositionResult(
-        answer_sections=sections,
-        claims=claims,
-        citations=citations,
-        generation_mode="blocked" if plan.intent == "prohibited_advice" else "fixed_template",
+        answer_sections=AnswerSections.from_claims(draft_claims),
+        claims=tuple(accepted_claims),
+        citations=CitationValidationResult(
+            tuple(accepted_citations),
+            (),
+        ),
+        generation_mode="fixed_template",
         llm_result=llm_result.model_copy(deep=True) if llm_result else None,
         transmitted_evidence=(),
+        public_evidence=tuple(accepted_evidence),
+        citation_rejection_count=(
+            citation_rejection_count + fixed_rejection_count
+        ),
+    )
+
+
+def _empty_fixed_result(
+    plan: QueryPlan,
+    *,
+    fallback_reason: Literal[
+        "blocked",
+        "provider_failed",
+        "no_evidence",
+    ],
+    llm_result: LLMResult | None,
+    citation_rejection_count: int,
+) -> CompositionResult:
+    return CompositionResult(
+        answer_sections=AnswerSections(
+            summary=[_SAFE_FALLBACKS[fallback_reason]]
+        ),
+        claims=(),
+        citations=CitationValidationResult((), ()),
+        generation_mode=(
+            "blocked" if fallback_reason == "blocked" else "fixed_template"
+        ),
+        llm_result=llm_result.model_copy(deep=True) if llm_result else None,
+        transmitted_evidence=(),
+        public_evidence=(),
         citation_rejection_count=citation_rejection_count,
+    )
+
+
+def _citation_bound_evidence(
+    evidence: tuple[Evidence, ...],
+    citations: CitationValidationResult,
+) -> tuple[Evidence, ...]:
+    accepted_ids = {item.evidence_id for item in citations.citations}
+    return tuple(
+        item.model_copy(deep=True)
+        for item in evidence
+        if item.evidence_id in accepted_ids
     )
 
 
