@@ -19,6 +19,12 @@
   `Fix B8 observability token validation`
 - Planning base main push:
   `complete`
+- Plan publication SHA:
+  `8db690b80b7d117e32b6fcd4986d4bfbecc602b1`
+- Plan publication commit:
+  `docs: plan B9 release bundle`
+- Plan publication main push:
+  `complete`
 - B8 implementation:
   `PASS WITH REQUIRED FOLLOW-UP / complete`
 - B8 focused closure fix:
@@ -38,11 +44,15 @@
 - B9 planning:
   `ALLOWED`
 - B9 plan review:
-  `SELF-REVIEW CONDITIONAL PASS`
-- B9 plan supplement:
-  `IMPLEMENTED - external plan approval pending`
+  `PASS WITH REQUIRED FOLLOW-UP`
+- B9 required plan corrections:
+  `IMPLEMENTED`
+- Additional external plan review:
+  `NOT_REQUIRED`
+- B9-0:
+  `PASS / complete - preflight executed at 8db690b80b7d117e32b6fcd4986d4bfbecc602b1`
 - B9 implementation:
-  `NOT_APPROVED - allowed only after plan approval and B9-0 PASS`
+  `NOT_APPROVED - B9-A1 awaits user implementation approval; B9-A2 remains blocked`
 - B9-A local Docker verification:
   `BLOCKED - Docker executable not found in the planning environment`
 - B9-B remote deployment:
@@ -50,8 +60,10 @@
 - GitHub CI:
   `NOT_RUN - workflow does not exist at planning time`
 - Dependency and lock change:
-  `PROPOSED - exact Ruff addition requires plan approval`
-- Commit, push, PR, merge, deploy:
+  `TECHNICALLY APPROVED - execution waits for B9-0 PASS and user approval`
+- Current B9 plan/B9-0 docs-only commit and push:
+  `APPROVED`
+- B9 implementation commit/push, PR, merge, deploy:
   `NOT_APPROVED`
 
 This is the canonical B9 plan. Planning does not authorize implementation,
@@ -99,12 +111,16 @@ the separately approved remote deployment smoke remains blocked.
 
 ## 3. Verified Planning Baseline
 
-The planning inspection found:
+The review inspection found:
 
 - `HEAD` and `origin/main` both point to
-  `b9ddf7461306d16cf1da14634ce458050d78f7bc`.
-- The only observed working-tree items are pre-existing untracked B7 review
-  bundle artifacts. They are user-owned and must remain untouched.
+  `8db690b80b7d117e32b6fcd4986d4bfbecc602b1`.
+- At review start, the only observed working-tree items were pre-existing
+  untracked B7 review bundle artifacts.
+- This review then modified only this B9 Task Card and
+  `docs/agent_handoff/SOURCE_OF_TRUTH_INDEX.md`; those approved plan corrections
+  remain uncommitted until a separate Git approval.
+- The B7 artifacts are user-owned and must remain untouched.
 - No `.github/` workflow, `Dockerfile`, Compose file, or `.dockerignore`
   currently exists.
 - The repository has `pyproject.toml` and `uv.lock`.
@@ -245,12 +261,28 @@ Create `.github/workflows/ci.yml` with:
 - no live credential or secret context
 - concurrency cancellation for superseded branch or PR runs
 - bounded job timeout
+- runner: `ubuntu-24.04`
 - Python `3.11`, matching the declared minimum supported runtime
 - uv `0.11.32`, matching the approved local lock tool
 - locked installation:
 
 ```text
 uv sync --locked --all-extras --dev
+```
+
+- exact setup:
+
+```yaml
+- uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+- uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+  with:
+    version: "0.11.32"
+    python-version: "3.11"
+    enable-cache: true
+- run: uv sync --locked --all-extras --dev
+- run: >-
+    uv run --no-sync python -c
+    "import sys; assert sys.version_info[:2] == (3, 11)"
 ```
 
 - checks, in this order:
@@ -262,16 +294,16 @@ uv sync --locked --all-extras --dev
   6. container image build after the Dockerfile exists
 
 Third-party actions must be official project actions and pinned by full commit
-SHA. Candidate pins identified during planning are:
+SHA. Independent review verified these immutable release pins:
 
 - `actions/checkout`:
   `de0fac2e4500dabe0009e67214ff5f5447ce83dd`
 - `astral-sh/setup-uv`:
   `08807647e7069bb48b6ef5acd8ec9567f424441b`
 
-B9-0 must verify each candidate against its official release before adding the
-workflow. A mismatch or unavailable official record is a stop condition; do not
-replace a full SHA with a mutable tag.
+Do not repeat version exploration during B9-0. Reverification is required only
+if the approved full SHA, version, or workflow contract changes. Do not replace
+a full SHA with a mutable tag.
 
 GitHub CI remains `NOT_RUN` until the workflow is committed, pushed, and the
 exact run is observed. Local execution must not be described as CI success.
@@ -286,6 +318,32 @@ ruff==0.15.22
 
 as a development dependency and update `uv.lock` with the approved uv tool.
 Do not add a formatter, mypy, pyright, pre-commit, or another lint dependency.
+
+The only approved dependency and lock delta is:
+
+```text
+pyproject.toml:
+  add ruff==0.15.22 to project.optional-dependencies.dev
+
+uv.lock:
+  add the ruff 0.15.22 package entry and hashes
+  add ruff to questock package.optional-dependencies.dev
+  add the matching questock package.metadata requires-dist entry
+
+existing third-party package version/source movement:
+  0 allowed
+
+additional direct dependency:
+  0 allowed
+
+unexpected new transitive package:
+  0 allowed
+```
+
+Compare parsed package name, version, and source tuples before and after the
+lock update. Any existing package movement, unrelated lock reformat, or wider
+root metadata change is a stop condition. The exact expected delta needs no
+additional dependency review.
 
 The initial rule set is deliberately bounded:
 
@@ -329,6 +387,27 @@ Requirements:
 - no startup dependency on a live provider, LLM, or external network
 - deterministic startup with source mode defaulting to `unconfigured`
 - no database or persistent-data volume added
+
+The Docker builder dependency command is fixed:
+
+```text
+uv sync --locked --no-dev --no-install-project
+```
+
+Rules:
+
+- bind or copy only `pyproject.toml` and `uv.lock` for this dependency layer
+- do not use `--all-extras`, `--extra dev`, or `--dev`
+- do not modify the lockfile
+- copy the application source into a later image layer
+- copy only the locked runtime environment and application source into the
+  non-root runtime image
+- verify Ruff and pytest are absent from the runtime environment
+
+Do not assert that `httpx` is absent. It is a required transitive runtime
+dependency of the approved LiteLLM pin even when the Questock `dev` extra is
+not selected. Release-asset tests must distinguish a transitive runtime package
+from selection of the direct `dev` extra.
 
 The legacy `PROJECT_PLAN_FINAL_PASS.md` M4-05 checklist mentions
 `SQLite·data volume`. The newer post-M3-01 addendum classifies
@@ -374,6 +453,20 @@ Rules:
 The runtime factory may supply the existing glossary service in recorded mode.
 It must not silently enable a live source or LLM.
 
+Runtime lifetime is fixed:
+
+- validate runtime configuration once per API process at import/startup
+- load and validate the demo manifest/corpus once per API process
+- create one `RecordedDemoSourceGateway` over an immutable corpus
+- create one `InMemorySessionStore`
+- create one `ChatService` singleton per API process
+- make `get_chat_service()` return that same singleton for every request
+- deep-copy recorded documents and provider payloads on each gateway fetch
+
+Do not rebuild `ChatService`, session state, the manifest, or the corpus per
+request. Tests must assert singleton identity across dependency calls and
+preservation of an anonymous multi-turn session across two API requests.
+
 ### 6.5 Demo corpus contract
 
 Create a small, application-owned corpus under `data/demo/**`.
@@ -398,9 +491,17 @@ existing stable locator contract. A disclosure fallback test must return
 `no_data` without inventing a receipt or viewer URL.
 
 The required M4-06 normal scenario, `최근 공시 핵심`, is different from that
-fallback test. It requires a user-supplied and independently verified recorded
-disclosure item with its real receipt number and official viewer URL. Until
-that input is available:
+fallback test. It requires an independently verified recorded disclosure item
+with its real receipt number and official viewer URL. The item may be:
+
+- supplied by the user, or
+- found through separately approved read-only research of the official DART
+  public site
+
+The Human Owner must approve the exact receipt number, official URL, report
+title, company attribution, and recorded content before corpus inclusion.
+OpenDART API calls, credentials, bulk collection, and unapproved external
+network access remain outside B9. Until one item passes this gate:
 
 ```text
 Recorded disclosure fallback test: ALLOWED
@@ -498,7 +599,27 @@ pending`. M3-12 remains `NOT_ACTIVATED`.
 
 ### 6.8 Release evidence and Git order
 
-The evidence-producing order is fixed:
+Use three lifecycle checkpoints while keeping each important Git and deployment
+action separately approved:
+
+1. local B9 implementation result
+   - approve implementation commit
+   - after the commit exists, separately approve main push
+   - record commit and push as separate actions and outcomes
+   - observe GitHub CI only after the push
+2. deployment target and configuration
+   - separately approve remote deploy
+   - run smoke and rollback verification
+3. final B9/M4 result
+   - approve closure-doc commit
+   - after the commit exists, separately approve closure-doc main push
+   - record closure commit and push as separate actions and outcomes
+
+PR and merge are `N/A` while the approved workflow commits directly to `main`.
+They become separately approved actions only if the user selects a branch/PR
+workflow.
+
+The evidence-producing order is:
 
 ```text
 local implementation
@@ -506,16 +627,16 @@ local implementation
 -> implementation result and diff report
 -> implementation commit approval
 -> implementation commit
--> push approval
+-> implementation push approval
 -> main push
 -> GitHub CI observation on the exact pushed SHA
--> deployment target and deploy approval
+-> deployment target/config review and deploy approval
 -> immutable-SHA/image remote deployment
 -> remote smoke and rollback evidence
 -> Task Card/release/traceability factual synchronization
--> closure docs commit approval
+-> closure-doc commit approval
 -> closure docs commit
--> closure docs push approval
+-> closure-doc push approval
 -> closure docs main push
 -> B9 independent implementation review + M4 Gate review
 -> user result confirmation
@@ -545,6 +666,16 @@ M1-09 remains pending until its recorded independent-review status changes.
 
 ## 7. B9-0 Preflight Gate
 
+B9-0 is a preflight, not CI/Docker/demo implementation. It performs no
+application-code, fixture, dependency, lock, workflow, or container-file
+change. The only permitted write is factual B9-0 result logging in this Task
+Card after commands finish.
+
+B9-0 begins only after the user explicitly approves its execution. It may
+observe the approved plan-follow-up edits to this Task Card and
+`SOURCE_OF_TRUTH_INDEX.md`, but any dirty code, fixture, `pyproject.toml`, or
+`uv.lock` blocks the preflight.
+
 Use the approved local tools:
 
 ```powershell
@@ -571,6 +702,8 @@ Confirm:
 - `HEAD` equals `origin/main`
 - B8 closure SHA is
   `b9ddf7461306d16cf1da14634ce458050d78f7bc`
+- B9 plan publication SHA is
+  `8db690b80b7d117e32b6fcd4986d4bfbecc602b1`
 - the approved B9 Task Card is present
 - no newer commit changes a B9 contract
 - existing user-owned untracked artifacts remain untouched
@@ -602,8 +735,9 @@ docker compose version
 gh --version
 ```
 
-Missing Docker blocks B9-A container implementation and verification. Do not
-install Docker without explicit user approval.
+Missing Docker does not block B9-A1 CI/Ruff/release-asset preparation. It blocks
+B9-A2 container execution and B9-A completion. Do not install Docker without
+explicit user approval.
 
 ### 7.3 Regression
 
@@ -624,6 +758,10 @@ All must exit `0`. The M3 Gate must remain:
 - full `34/34`
 - Critical `17/17`
 - public exposure `0`
+
+The prior B8 closure recorded `1802 passed`; this is a reference, not a B9-0
+result. B9-0 reports the actual rerun count. Any count difference requires
+test-collection and Git-diff investigation before B9-A.
 
 Any failure blocks implementation. Do not update expected values to pass.
 
@@ -670,20 +808,26 @@ committed, rerun the normal tracked-file secret scan on the exact commit.
 
 Implementation order:
 
-1. Verify the official action release-to-SHA mappings.
+1. Use the already verified full action SHAs and exact setup inputs.
 2. Add exact Ruff dependency and update only the approved lock entries.
-3. Run the bounded Ruff audit before application edits.
-4. Add the least-privilege CI workflow.
-5. Add release-asset tests that parse the workflow and reject:
+3. Compare parsed pre/post lock package tuples and root metadata against the
+   approved Ruff-only delta.
+4. Run the bounded Ruff audit before application edits.
+5. Add the least-privilege CI workflow.
+6. Add release-asset tests that parse the workflow and reject:
    - mutable action tags
    - `pull_request_target`
    - write permissions
    - live credential use
+   - runner other than `ubuntu-24.04`
+   - uv version other than `0.11.32`
+   - Python version other than `3.11`
+   - missing Python 3.11 runtime assertion
    - missing locked install
    - missing required checks
-6. Run the explicit pre-commit release-asset secret/path scan.
-7. Run targeted and full regression locally.
-8. Record GitHub CI as `NOT_RUN` until a later approved push and observed run.
+7. Run the explicit pre-commit release-asset secret/path scan.
+8. Run targeted and full regression locally.
+9. Record GitHub CI as `NOT_RUN` until a later approved push and observed run.
 
 Targeted checks:
 
@@ -702,7 +846,9 @@ Implementation order:
 1. Add `.dockerignore`.
 2. Add the digest-pinned multi-stage `Dockerfile`.
 3. Add `compose.yaml` with API and UI services.
-4. Add static tests for release assets and secret exclusions.
+4. Add static tests that require the exact runtime sync command, reject every
+   dev-extra flag, and verify Ruff/pytest are absent without incorrectly
+   rejecting transitive runtime `httpx`.
 5. Build without cache in the clean Docker environment.
 6. Start both services and wait for health.
 7. Run bounded API and UI smoke.
@@ -750,11 +896,14 @@ Implementation order:
 1. Add the versioned `data/demo/**` corpus.
 2. Add a pure loader and `RecordedDemoSourceGateway`.
 3. Add a runtime factory for `unconfigured` and `recorded`.
-4. Wire the API dependency to the runtime factory without changing public
-   schemas.
-5. Add deterministic unit tests for loader, gateway, mode selection, mutation
-   isolation, and sanitized failure.
-6. Add integration tests for representative API and Streamlit flows.
+4. Construct runtime configuration, corpus, gateway, session store, and
+   `ChatService` once per API process.
+5. Wire the API dependency to return the same singleton without changing
+   public schemas.
+6. Add deterministic unit tests for loader, gateway, singleton identity,
+   one-time load, mode selection, mutation isolation, and sanitized failure.
+7. Add an exact two-request anonymous multi-turn API test.
+8. Add integration tests for representative API and Streamlit flows.
 
 Required scenarios:
 
@@ -945,6 +1094,8 @@ Do not create the final work-log entry before user result confirmation.
 ### CI and release assets
 
 - workflow uses full action SHAs
+- workflow pins `ubuntu-24.04`, uv `0.11.32`, and Python `3.11`
+- workflow asserts the effective Python runtime is exactly `3.11`
 - workflow has read-only permissions
 - workflow excludes `pull_request_target`
 - workflow uses locked uv sync
@@ -955,6 +1106,12 @@ Do not create the final work-log entry before user result confirmation.
 - no credential value is baked into release files
 - explicit pre-commit scanning covers every new or modified B9 text asset
 - tracked-file secret scan is rerun after the implementation commit
+- lock diff contains only Ruff plus the expected `questock` dev-extra metadata
+- every pre-existing third-party package keeps the same version and source
+- Docker uses
+  `uv sync --locked --no-dev --no-install-project`
+- Docker runtime excludes Ruff and pytest
+- Docker validation permits transitive runtime `httpx`
 
 ### Recorded runtime
 
@@ -972,6 +1129,9 @@ Do not create the final work-log entry before user result confirmation.
 - diagnostics and displayed basis date derive from that same clock
 - returned documents are deep copies
 - repeated runs are deterministic
+- `get_chat_service()` returns one process-level singleton
+- runtime config and demo corpus load once per process
+- two API requests preserve one anonymous multi-turn session
 - runtime has no `tests` import
 - no invented URL or disclosure receipt exists
 - verified recorded disclosure input is required for the normal disclosure demo
@@ -1088,8 +1248,8 @@ schedule impact, test impact, and current Git state.
 
 B9 may be recorded `PASS / complete` only when:
 
-- [ ] B9 plan is approved
-- [ ] B9-0 preflight passes
+- [x] B9 plan is approved
+- [x] B9-0 preflight passes
 - [ ] exact Ruff dependency and lock change are approved and verified
 - [ ] local Ruff passes
 - [ ] pre-commit release-asset secret/path scan passes
@@ -1128,30 +1288,39 @@ cannot close those items.
 
 ## 16. Required User Decisions
 
-Before implementation:
+Before B9-0:
 
-1. approve or reject `ruff==0.15.22` and the corresponding lock update
-2. approve or reject the application-owned `synthetic_demo` recorded corpus and
-   runtime gateway
-3. provide or approve access to a Docker-capable environment for B9-A
-4. provide one independently verified recorded disclosure item with its real
+1. approve read-only B9-0 preflight execution and factual Task Card result
+   logging
+
+After B9-0 PASS, before B9-A implementation:
+
+2. approve execution of the technically reviewed `ruff==0.15.22` lock update
+   and CI/release-asset work
+3. provide or approve access to a Docker-capable environment before B9-A2
+
+Before B9-B:
+
+4. approve the application-owned `synthetic_demo` recorded corpus and runtime
+   gateway
+5. provide one independently verified recorded disclosure item with its real
    receipt number and official viewer URL, or separately approve an M4-06 plan
    amendment
 
 Before remote deployment:
 
-5. select the deployment target
-6. approve target-specific configuration work, if any
-7. approve the deploy action separately
+6. select the deployment target
+7. approve target-specific configuration work, if any
+8. approve the deploy action separately
 
 Git actions remain separately gated:
 
-8. implementation commit approval
-9. implementation push approval
-10. closure docs commit approval
-11. closure docs push approval
-12. PR approval
-13. merge approval
+9. implementation commit approval
+10. implementation push approval
+11. closure docs commit approval
+12. closure docs push approval
+13. PR approval only if a branch/PR workflow is selected; otherwise `N/A`
+14. merge approval only if a branch/PR workflow is selected; otherwise `N/A`
 
 ---
 
@@ -1165,8 +1334,20 @@ Git actions remain separately gated:
   `CONDITIONAL PASS`
 - Mandatory plan supplement:
   `IMPLEMENTED`
-- External plan approval:
-  `NOT_RUN`
+- Independent plan review:
+  `PASS WITH REQUIRED FOLLOW-UP`
+- Independent plan corrections:
+  `IMPLEMENTED`
+- Additional plan review:
+  `NOT_REQUIRED`
+- Official checkout/setup-uv/uv/Ruff verification:
+  `PASS - official release and action contracts checked`
+- Reviewer corrections accepted:
+  `CI inputs, singleton lifetime, Docker runtime sync, three lifecycle checkpoints`
+- Reviewer corrections refined:
+  `Ruff lock root metadata allowed; runtime httpx allowed as LiteLLM dependency; Git actions remain separately approved`
+- B9-0 launch:
+  `APPROVED / COMPLETE`
 - Code changes:
   `NOT_RUN`
 - Dependency changes:
@@ -1181,26 +1362,55 @@ Git actions remain separately gated:
   `NOT_RUN - target and approval absent`
 - Commit/push:
   `NOT_RUN`
+- Plan-correction commit/push:
+  `APPROVED - current docs-only changeset`
 
 ### B9-0
 
 - Start SHA:
-  `NOT_RUN`
+  `8db690b80b7d117e32b6fcd4986d4bfbecc602b1`
 - Git/preflight:
-  `NOT_RUN`
+  `PASS - main; HEAD equals origin/main; only approved B9 docs and existing user-owned B7 review artifacts were dirty; all nine frozen blob SHAs matched`
 - Full pytest:
-  `NOT_RUN`
+  `PASS - final exit 0; 1802 passed, 2 warnings`
+  - Initial exact command:
+    `ENVIRONMENT_INVALID - exit 1; the existing pytest temp root was inaccessible`
+  - First fresh-temp retry:
+    `ENVIRONMENT_INVALID - exit 1; sandbox ACL made generated temp children inaccessible`
+  - Final rerun:
+    `task-scoped fresh temp parent, explicit --basetemp, cache provider disabled, sandbox escalation; no code or test expectation changes`
 - M3 Gate:
-  `NOT_RUN`
+  `PASS - exit 0; 34/34, Critical 17/17, public exposure 0, M3-12 NOT_ACTIVATED`
 - Secret scan:
-  `NOT_RUN`
+  `PASS - exit 0; []`
 - Compile:
-  `NOT_RUN`
+  `PASS - exit 0; no output`
 - Tool inventory:
+  - Python:
+    `3.14.3`
+  - uv:
+    `0.11.32`
+  - GitHub CLI:
+    `2.93.0`
+  - Docker:
+    `NOT_AVAILABLE - command not found`
+  - Docker Compose:
+    `NOT_AVAILABLE - Docker command not found`
+- B9-0 final status:
+  `PASS / complete`
+- B9-A1 implementation:
+  `READY after separate user approval`
+- B9-A2 implementation:
+  `BLOCKED - Docker/Compose unavailable`
+- Code, fixture, dependency, lock, workflow, and container changes:
   `NOT_RUN`
 
 ### B9-A
 
+- B9-A1 launch:
+  `AWAITING USER APPROVAL`
+- B9-A2 launch:
+  `BLOCKED - Docker/Compose unavailable`
 - Ruff:
   `NOT_RUN`
 - CI structure:

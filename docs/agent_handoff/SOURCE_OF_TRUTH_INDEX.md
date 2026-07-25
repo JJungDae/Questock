@@ -5,7 +5,7 @@
 > Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
 > Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
 > B9 planning base: `b9ddf7461306d16cf1da14634ce458050d78f7bc`
-> 상태: `B8 PASS WITH REQUIRED FOLLOW-UP / B9 PLANNING`
+> 상태: `B8 PASS WITH REQUIRED FOLLOW-UP / B9 PLAN PASS WITH REQUIRED FOLLOW-UP / B9-0 PASS`
 
 ## 1. 목적
 
@@ -74,12 +74,24 @@ B9
 
 B9 계획:
 docs/TASK_CARDS/B9-release-deployment-traceability.md
-B9 계획 자체 검수:
-CONDITIONAL PASS
+B9 독립 계획 검수:
+PASS WITH REQUIRED FOLLOW-UP
 B9 계획 필수 보완:
 반영 완료
-B9 외부 계획 승인:
-PENDING
+B9 계획 보완 commit/push:
+APPROVED - 현재 docs-only 변경 묶음
+B9 추가 계획 검수:
+NOT_REQUIRED
+B9-0:
+PASS / complete - 1802 passed, M3 Gate 34/34, Critical 17/17, public exposure 0
+B9-A1:
+별도 구현 승인 대기
+B9-A 완료:
+Docker 환경 확보 전까지 BLOCKED
+B9-B 원격 배포:
+대상·배포 승인 전까지 BLOCKED
+M4 Gate:
+B9 전체 완료 전까지 BLOCKED
 
 B8 구현:
 PASS WITH REQUIRED FOLLOW-UP / complete
@@ -91,7 +103,9 @@ public exposure 0
 closure SHA/main push:
 b9ddf7461306d16cf1da14634ce458050d78f7bc / complete
 B9 계획 ALLOWED
-B9 구현은 외부 승인된 B9 계획과 preflight PASS 후 ALLOWED
+B9-0 PASS / complete
+B9-A1 구현은 별도 사용자 승인 후 ALLOWED
+B9-A2 구현은 Docker 환경 확보 및 별도 사용자 승인 후 ALLOWED
 
 M1-09:
 mandatory supplement implemented - final independent review pending
