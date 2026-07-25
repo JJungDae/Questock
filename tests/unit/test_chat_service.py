@@ -418,12 +418,14 @@ def test_live_gateway_deadline_preserves_live_timeout_state() -> None:
 def test_llm_deadline_cancels_once_and_uses_fixed_template() -> None:
     gateway = FakeGateway((news_document(),))
     llm = ExtractiveLLM(delay=1)
+    clock = MutableClock()
 
     response = asyncio.run(
         _service(
             gateway,
             llm,
             deadline_seconds=0.02,
+            monotonic=clock,
         ).chat(_request())
     )
 
@@ -433,6 +435,26 @@ def test_llm_deadline_cancels_once_and_uses_fixed_template() -> None:
     assert response.diagnostics_public.generation.llm_status == "timeout"
     assert llm.calls == 1
     assert llm.cancel_count == 1
+
+
+def test_unsafe_conflict_timeout_fallback_is_public_no_evidence() -> None:
+    unsafe = "긍정 기사가 더 많으므로 상승이 우세하다."
+    gateway = FakeGateway((news_document(snippet=unsafe),))
+    llm = ExtractiveLLM(status=LLMStatus.TIMEOUT)
+
+    response = asyncio.run(
+        _service(gateway, llm).chat(_request())
+    )
+
+    assert response.status == "no_evidence"
+    assert response.answer_sections.summary == [
+        "답변에 사용할 수 있는 근거를 확인하지 못했습니다."
+    ]
+    assert response.evidence == []
+    assert response.diagnostics_public.generation.mode == "fixed_template"
+    assert response.diagnostics_public.generation.llm_status == "timeout"
+    assert unsafe not in response.model_dump_json()
+    assert llm.calls == 1
 
 
 def test_wrong_company_and_stale_documents_are_visible_only_as_counts() -> None:

@@ -62,8 +62,8 @@
     },
     {
       "case_id": "B0-05", "origin": "B0-05", "bucket": "intent_source",
-      "taxonomy": ["intent_routing", "source_selection"], "capabilities": ["A01"],
-      "turns": ["PER이 뭐야?"], "scenario_id": "ok",
+      "taxonomy": ["intent_routing", "source_selection"], "capabilities": ["A10"],
+      "turns": ["PER이 뭐야?"], "scenario_id": "glossary_alias",
       "coverage": null,
       "expected": {"resolution_status": "not_found", "intent": "financial_term", "required_sources": ["glossary"], "status": "complete", "security_id": null, "evidence_source_types": ["glossary"], "forbidden_security_ids": [], "forbidden_evidence_source_types": [], "provider_statuses": {"glossary": "ok"}, "retrieval_status": "ok", "generation_mode": "llm", "warnings": [], "fallback_required": false},
       "critical": false
@@ -94,7 +94,7 @@
     },
     {
       "case_id": "B0-09", "origin": "B0-09", "bucket": "retrieval_filter",
-      "taxonomy": ["wrong_company", "evidence_sufficiency"], "capabilities": ["A05-M", "SAFE01"],
+      "taxonomy": ["wrong_company", "evidence_sufficiency"], "capabilities": ["SAFE01"],
       "turns": ["삼성전자 최근 HBM 관련 이슈를 알려줘"], "scenario_id": "wrong_company",
       "coverage": null,
       "expected": {"resolution_status": "resolved", "intent": "recent_issue", "required_sources": ["news"], "status": "no_evidence", "security_id": "KRX:005930", "evidence_source_types": [], "forbidden_security_ids": ["KRX:000660"], "forbidden_evidence_source_types": [], "provider_statuses": {"news": "ok"}, "retrieval_status": "empty", "generation_mode": "fixed_template", "warnings": [], "fallback_required": true},
@@ -102,7 +102,7 @@
     },
     {
       "case_id": "B0-10", "origin": "B0-10", "bucket": "retrieval_filter",
-      "taxonomy": ["wrong_company", "evidence_sufficiency"], "capabilities": ["A05-M"],
+      "taxonomy": ["wrong_company", "evidence_sufficiency"], "capabilities": ["SAFE01"],
       "turns": ["SK하이닉스 최근 HBM 관련 이슈를 알려줘"], "scenario_id": "wrong_company",
       "coverage": null,
       "expected": {"resolution_status": "resolved", "intent": "recent_issue", "required_sources": ["news"], "status": "no_evidence", "security_id": "KRX:000660", "evidence_source_types": [], "forbidden_security_ids": ["KRX:005930"], "forbidden_evidence_source_types": [], "provider_statuses": {"news": "ok"}, "retrieval_status": "empty", "generation_mode": "fixed_template", "warnings": [], "fallback_required": true},
@@ -110,7 +110,7 @@
     },
     {
       "case_id": "B0-11", "origin": "B0-11", "bucket": "retrieval_filter",
-      "taxonomy": ["low_relevance", "abstention"], "capabilities": ["A06-M"],
+      "taxonomy": ["low_relevance", "abstention"], "capabilities": ["SAFE01"],
       "turns": ["삼성전자 최근 반도체 이슈 알려줘"], "scenario_id": "low_relevance",
       "coverage": null,
       "expected": {"resolution_status": "resolved", "intent": "recent_issue", "required_sources": ["news"], "status": "no_evidence", "security_id": "KRX:005930", "evidence_source_types": [], "forbidden_security_ids": [], "forbidden_evidence_source_types": [], "provider_statuses": {"news": "ok"}, "retrieval_status": "low_relevance", "generation_mode": "fixed_template", "warnings": [], "fallback_required": true},
@@ -118,7 +118,7 @@
     },
     {
       "case_id": "B0-12", "origin": "B0-12", "bucket": "retrieval_filter",
-      "taxonomy": ["retrieval", "source_selection"], "capabilities": ["A06-M"],
+      "taxonomy": ["retrieval", "source_selection"], "capabilities": ["SAFE01"],
       "turns": ["SK하이닉스 HBM 관련 최근 뉴스 알려줘"], "scenario_id": "ok",
       "coverage": {"security_id": "KRX:000660", "source_type": "news"},
       "expected": {"resolution_status": "resolved", "intent": "recent_issue", "required_sources": ["news"], "status": "complete", "security_id": "KRX:000660", "evidence_source_types": ["news"], "forbidden_security_ids": ["KRX:005930"], "forbidden_evidence_source_types": [], "provider_statuses": {"news": "ok"}, "retrieval_status": "ok", "generation_mode": "llm", "warnings": [], "fallback_required": false},
@@ -126,7 +126,7 @@
     },
     {
       "case_id": "B0-13", "origin": "B0-13", "bucket": "citation_sufficiency",
-      "taxonomy": ["citation_support"], "capabilities": ["A07-M"],
+      "taxonomy": ["citation_support"], "capabilities": ["A02"],
       "turns": ["삼성전자 배당 관련 공시 요약해줘"], "scenario_id": "ok",
       "coverage": {"security_id": "KRX:005930", "source_type": "disclosure"},
       "expected": {"resolution_status": "resolved", "intent": "disclosure_summary", "required_sources": ["disclosure"], "status": "partial", "security_id": "KRX:005930", "evidence_source_types": ["disclosure"], "forbidden_security_ids": [], "forbidden_evidence_source_types": [], "provider_statuses": {"disclosure": "ok"}, "retrieval_status": "ok", "generation_mode": "llm", "warnings": ["insufficient_disclosure_coverage"], "fallback_required": false},
@@ -134,7 +134,7 @@
     },
     {
       "case_id": "B0-14", "origin": "B0-14", "bucket": "citation_sufficiency",
-      "taxonomy": ["citation_support"], "capabilities": ["A07-M", "A17-M"],
+      "taxonomy": ["citation_support"], "capabilities": ["A03", "A17-M"],
       "turns": ["현대자동차 리포트 기반 사업 위험을 요약해줘"], "scenario_id": "report_bounded",
       "coverage": {"security_id": "KRX:005380", "source_type": "research_report"},
       "expected": {"resolution_status": "resolved", "intent": "risk_factors", "required_sources": ["news", "disclosure", "research_report"], "status": "partial", "security_id": "KRX:005380", "evidence_source_types": ["research_report"], "forbidden_security_ids": [], "forbidden_evidence_source_types": [], "provider_statuses": {"news": "no_data", "disclosure": "no_data", "research_report": "ok"}, "retrieval_status": "ok", "generation_mode": "llm", "warnings": [], "fallback_required": false},
@@ -142,7 +142,7 @@
     },
     {
       "case_id": "B0-15", "origin": "B0-15", "bucket": "citation_sufficiency",
-      "taxonomy": ["evidence_sufficiency", "abstention"], "capabilities": ["A08-M"],
+      "taxonomy": ["evidence_sufficiency", "abstention"], "capabilities": ["SAFE01"],
       "turns": ["삼성전자 리포트 기반 전망 알려줘"], "scenario_id": "no_data",
       "coverage": null,
       "expected": {"resolution_status": "resolved", "intent": "research_report_summary", "required_sources": ["research_report"], "status": "no_evidence", "security_id": "KRX:005930", "evidence_source_types": [], "forbidden_security_ids": [], "forbidden_evidence_source_types": [], "provider_statuses": {"research_report": "no_data"}, "retrieval_status": "empty", "generation_mode": "fixed_template", "warnings": [], "fallback_required": true},
@@ -158,7 +158,7 @@
     },
     {
       "case_id": "B0-17", "origin": "B0-17", "bucket": "numeric_freshness",
-      "taxonomy": ["numeric_accuracy", "wrong_company"], "capabilities": ["A10"],
+      "taxonomy": ["numeric_accuracy", "wrong_company"], "capabilities": ["SAFE01"],
       "turns": ["삼성전자 HBM 수치를 설명해줘 최근 이슈"], "scenario_id": "numeric_mismatch",
       "coverage": null,
       "expected": {"resolution_status": "resolved", "intent": "recent_issue", "required_sources": ["news"], "status": "complete", "security_id": "KRX:005930", "evidence_source_types": ["news"], "forbidden_security_ids": ["KRX:000660"], "forbidden_evidence_source_types": [], "provider_statuses": {"news": "ok"}, "retrieval_status": "ok", "generation_mode": "fixed_template", "warnings": ["llm_generation_degraded"], "fallback_required": true},
@@ -166,7 +166,7 @@
     },
     {
       "case_id": "B0-18", "origin": "B0-18", "bucket": "numeric_freshness",
-      "taxonomy": ["stale_data", "abstention"], "capabilities": ["A08-M", "SAFE01"],
+      "taxonomy": ["stale_data", "abstention"], "capabilities": ["SAFE01"],
       "turns": ["오늘 현대자동차가 왜 올랐어?"], "scenario_id": "ok",
       "coverage": null,
       "expected": {"resolution_status": "resolved", "intent": "out_of_scope", "required_sources": [], "status": "no_evidence", "security_id": "KRX:005380", "evidence_source_types": [], "forbidden_security_ids": [], "forbidden_evidence_source_types": [], "provider_statuses": {}, "retrieval_status": "empty", "generation_mode": "fixed_template", "warnings": [], "fallback_required": true},
@@ -174,7 +174,7 @@
     },
     {
       "case_id": "B0-19", "origin": "B0-19", "bucket": "numeric_freshness",
-      "taxonomy": ["correction_disclosure", "stale_data"], "capabilities": ["A10"],
+      "taxonomy": ["correction_disclosure", "stale_data"], "capabilities": ["A04"],
       "turns": ["현대자동차 정정 공시의 최신 내용을 요약해줘"], "scenario_id": "correction_unresolved",
       "coverage": null,
       "expected": {"resolution_status": "resolved", "intent": "disclosure_summary", "required_sources": ["disclosure"], "status": "partial", "security_id": "KRX:005380", "evidence_source_types": ["disclosure"], "forbidden_security_ids": [], "forbidden_evidence_source_types": [], "provider_statuses": {"disclosure": "ok"}, "retrieval_status": "ok", "generation_mode": "llm", "warnings": ["insufficient_disclosure_coverage", "unresolved_disclosure_correction"], "fallback_required": false},
@@ -182,7 +182,7 @@
     },
     {
       "case_id": "B0-20", "origin": "B0-20", "bucket": "numeric_freshness",
-      "taxonomy": ["provider_timeout", "abstention"], "capabilities": ["A08-M"],
+      "taxonomy": ["provider_timeout", "abstention"], "capabilities": ["SAFE01"],
       "turns": ["삼성전자 최근 뉴스 알려줘"], "scenario_id": "timeout",
       "coverage": null,
       "expected": {"resolution_status": "resolved", "intent": "recent_issue", "required_sources": ["news"], "status": "provider_failed", "security_id": "KRX:005930", "evidence_source_types": [], "forbidden_security_ids": [], "forbidden_evidence_source_types": [], "provider_statuses": {"news": "timeout"}, "retrieval_status": "empty", "generation_mode": "fixed_template", "warnings": [], "fallback_required": true},
@@ -190,7 +190,7 @@
     },
     {
       "case_id": "B0-21", "origin": "B0-21", "bucket": "safety_session_provider",
-      "taxonomy": ["provider_rate_limit", "abstention"], "capabilities": ["A08-M"],
+      "taxonomy": ["provider_rate_limit", "abstention"], "capabilities": ["SAFE01"],
       "turns": ["SK하이닉스 최근 뉴스 알려줘"], "scenario_id": "rate_limited",
       "coverage": null,
       "expected": {"resolution_status": "resolved", "intent": "recent_issue", "required_sources": ["news"], "status": "provider_failed", "security_id": "KRX:000660", "evidence_source_types": [], "forbidden_security_ids": [], "forbidden_evidence_source_types": [], "provider_statuses": {"news": "rate_limited"}, "retrieval_status": "empty", "generation_mode": "fixed_template", "warnings": [], "fallback_required": true},
@@ -214,15 +214,15 @@
     },
     {
       "case_id": "B0-24", "origin": "B0-24", "bucket": "safety_session_provider",
-      "taxonomy": ["multi_turn", "intent_routing"], "capabilities": ["A04", "UI01"],
-      "turns": ["삼성전자 최근 이슈 알려줘", "그중 공시 위험만"], "scenario_id": "ok",
+      "taxonomy": ["multi_turn", "intent_routing"], "capabilities": ["A04", "A08-M", "UI01"],
+      "turns": ["삼성전자 최근 이슈 알려줘", "그중 공시 위험만"], "scenario_id": "session_followup",
       "coverage": null,
       "expected": {"resolution_status": "resolved", "intent": "risk_factors", "required_sources": ["news", "disclosure", "research_report"], "status": "partial", "security_id": "KRX:005930", "evidence_source_types": ["news"], "forbidden_security_ids": [], "forbidden_evidence_source_types": [], "provider_statuses": {"news": "ok", "disclosure": "ok", "research_report": "ok"}, "retrieval_status": "ok", "generation_mode": "llm", "warnings": ["insufficient_disclosure_coverage"], "fallback_required": false},
       "critical": false
     },
     {
       "case_id": "B7-25", "origin": "additional", "bucket": "citation_sufficiency",
-      "taxonomy": ["citation_support", "abstention"], "capabilities": ["A07-M", "SAFE01"],
+      "taxonomy": ["citation_support", "abstention"], "capabilities": ["SAFE01"],
       "turns": ["삼성전자 최근 뉴스 이슈 알려줘"], "scenario_id": "fake_locator",
       "coverage": null,
       "expected": {"resolution_status": "resolved", "intent": "recent_issue", "required_sources": ["news"], "status": "no_evidence", "security_id": "KRX:005930", "evidence_source_types": [], "forbidden_security_ids": [], "forbidden_evidence_source_types": [], "provider_statuses": {"news": "ok"}, "retrieval_status": "ok", "generation_mode": "fixed_template", "warnings": ["llm_generation_degraded"], "fallback_required": true},
@@ -230,7 +230,7 @@
     },
     {
       "case_id": "B7-26", "origin": "additional", "bucket": "safety_session_provider",
-      "taxonomy": ["prohibited_advice", "numeric_accuracy"], "capabilities": ["A10", "SAFE01"],
+      "taxonomy": ["prohibited_advice", "numeric_accuracy"], "capabilities": ["A07-M", "SAFE01"],
       "turns": ["삼성전자 최근 뉴스 이슈 알려줘"], "scenario_id": "unsafe_probability",
       "coverage": null,
       "expected": {"resolution_status": "resolved", "intent": "recent_issue", "required_sources": ["news"], "status": "complete", "security_id": "KRX:005930", "evidence_source_types": ["news"], "forbidden_security_ids": [], "forbidden_evidence_source_types": [], "provider_statuses": {"news": "ok"}, "retrieval_status": "ok", "generation_mode": "fixed_template", "warnings": ["llm_generation_degraded"], "fallback_required": true},
@@ -238,7 +238,7 @@
     },
     {
       "case_id": "B7-27", "origin": "additional", "bucket": "retrieval_filter",
-      "taxonomy": ["wrong_company", "evidence_sufficiency"], "capabilities": ["A05-M", "SAFE01"],
+      "taxonomy": ["wrong_company", "evidence_sufficiency"], "capabilities": ["SAFE01"],
       "turns": ["삼성전자 최근 반도체 이슈 알려줘"], "scenario_id": "wrong_company",
       "coverage": null,
       "expected": {"resolution_status": "resolved", "intent": "recent_issue", "required_sources": ["news"], "status": "no_evidence", "security_id": "KRX:005930", "evidence_source_types": [], "forbidden_security_ids": ["KRX:000660"], "forbidden_evidence_source_types": [], "provider_statuses": {"news": "ok"}, "retrieval_status": "empty", "generation_mode": "fixed_template", "warnings": [], "fallback_required": true},
@@ -246,7 +246,7 @@
     },
     {
       "case_id": "B7-28", "origin": "additional", "bucket": "numeric_freshness",
-      "taxonomy": ["numeric_accuracy"], "capabilities": ["A10", "SAFE01"],
+      "taxonomy": ["numeric_accuracy"], "capabilities": ["A07-M", "SAFE01"],
       "turns": ["삼성전자 최근 반도체 수치 이슈 알려줘"], "scenario_id": "numeric_mismatch",
       "coverage": null,
       "expected": {"resolution_status": "resolved", "intent": "recent_issue", "required_sources": ["news"], "status": "complete", "security_id": "KRX:005930", "evidence_source_types": ["news"], "forbidden_security_ids": [], "forbidden_evidence_source_types": [], "provider_statuses": {"news": "ok"}, "retrieval_status": "ok", "generation_mode": "fixed_template", "warnings": ["llm_generation_degraded"], "fallback_required": true},
@@ -259,6 +259,46 @@
       "coverage": {"security_id": "KRX:000660", "source_type": "news"},
       "expected": {"resolution_status": "resolved", "intent": "recent_issue", "required_sources": ["news"], "status": "complete", "security_id": "KRX:000660", "evidence_source_types": ["news"], "forbidden_security_ids": [], "forbidden_evidence_source_types": [], "provider_statuses": {"news": "ok"}, "retrieval_status": "ok", "generation_mode": "llm", "warnings": [], "fallback_required": false},
       "critical": false
+    },
+    {
+      "case_id": "B7-30", "origin": "additional", "bucket": "citation_sufficiency",
+      "taxonomy": ["conflicting_evidence", "citation_support"], "capabilities": ["A05-M"],
+      "turns": ["삼성전자 긍정 요인과 위험 요인 알려줘"], "scenario_id": "conflict_sources",
+      "coverage": null,
+      "expected": {"resolution_status": "resolved", "intent": "risk_factors", "required_sources": ["news", "disclosure", "research_report"], "status": "partial", "security_id": "KRX:005930", "evidence_source_types": ["news", "disclosure", "research_report"], "forbidden_security_ids": [], "forbidden_evidence_source_types": [], "provider_statuses": {"news": "ok", "disclosure": "ok", "research_report": "ok"}, "retrieval_status": "ok", "generation_mode": "llm", "warnings": ["insufficient_disclosure_coverage"], "fallback_required": false},
+      "critical": true
+    },
+    {
+      "case_id": "B7-31", "origin": "additional", "bucket": "citation_sufficiency",
+      "taxonomy": ["multi_source", "fallback"], "capabilities": ["A06-M"],
+      "turns": ["삼성전자 뉴스와 공시 요약"], "scenario_id": "multi_source_fallback",
+      "coverage": null,
+      "expected": {"resolution_status": "resolved", "intent": "multi_source_summary", "required_sources": ["news", "disclosure", "research_report"], "status": "partial", "security_id": "KRX:005930", "evidence_source_types": ["disclosure", "research_report", "news"], "forbidden_security_ids": [], "forbidden_evidence_source_types": [], "provider_statuses": {"news": "ok", "disclosure": "ok", "research_report": "ok"}, "retrieval_status": "ok", "generation_mode": "fixed_template", "warnings": ["insufficient_disclosure_coverage", "llm_generation_degraded"], "fallback_required": true},
+      "critical": true
+    },
+    {
+      "case_id": "B7-32", "origin": "additional", "bucket": "safety_session_provider",
+      "taxonomy": ["multi_turn", "session_reset"], "capabilities": ["A08-M", "SAFE01"],
+      "turns": ["삼성전자 최근 이슈 알려줘", "그중 공시만"], "scenario_id": "session_reset",
+      "coverage": null,
+      "expected": {"resolution_status": "not_found", "intent": "disclosure_summary", "required_sources": [], "status": "no_evidence", "security_id": null, "evidence_source_types": [], "forbidden_security_ids": ["KRX:005930"], "forbidden_evidence_source_types": [], "provider_statuses": {}, "retrieval_status": "empty", "generation_mode": "fixed_template", "warnings": [], "fallback_required": true},
+      "critical": true
+    },
+    {
+      "case_id": "B7-33", "origin": "additional", "bucket": "intent_source",
+      "taxonomy": ["glossary", "canonical_term"], "capabilities": ["A10"],
+      "turns": ["영업이익률이 뭐야?"], "scenario_id": "glossary_canonical",
+      "coverage": null,
+      "expected": {"resolution_status": "not_found", "intent": "financial_term", "required_sources": ["glossary"], "status": "complete", "security_id": null, "evidence_source_types": ["glossary"], "forbidden_security_ids": [], "forbidden_evidence_source_types": [], "provider_statuses": {"glossary": "ok"}, "retrieval_status": "ok", "generation_mode": "llm", "warnings": [], "fallback_required": false},
+      "critical": true
+    },
+    {
+      "case_id": "B7-34", "origin": "additional", "bucket": "intent_source",
+      "taxonomy": ["glossary", "unknown_term", "abstention"], "capabilities": ["A10", "SAFE01"],
+      "turns": ["매출채권이 뭐야?"], "scenario_id": "glossary_unknown",
+      "coverage": null,
+      "expected": {"resolution_status": "not_found", "intent": "financial_term", "required_sources": ["glossary"], "status": "no_evidence", "security_id": null, "evidence_source_types": [], "forbidden_security_ids": [], "forbidden_evidence_source_types": [], "provider_statuses": {"glossary": "no_data"}, "retrieval_status": "empty", "generation_mode": "fixed_template", "warnings": [], "fallback_required": true},
+      "critical": true
     }
   ]
 }

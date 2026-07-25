@@ -76,9 +76,13 @@ docs/TASK_CARDS/B7-integrated-implementation-plan.md
 
 B7 구현:
 보완 계획 승인 / B7-0 preflight PASS / B7-A~C 구현 완료
-로컬 full tests 1755 passed
-로컬 M3 Gate PASS: full 86.21%, Critical 100%, exposure 0
-독립 구현 검수 NOT_RUN
+초기 독립 구현 검수 CONDITIONAL PASS
+초기 독립 M3 Gate 검수 FAIL
+focused supplement 로컬 full tests 연속 2회 1763 passed
+focused supplement 로컬 M3 Gate PASS: full 88.24%, Critical 100%, exposure 0
+focused supplement 독립 closure review NOT_RUN
+focused supplement commit/push NOT_RUN
+B8 진입 BLOCKED
 
 B7 implementation SHA/main push:
 833336a002b1e02070b35cd4afe9aff279752d61 / complete

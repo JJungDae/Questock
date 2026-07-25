@@ -7,8 +7,8 @@ def test_executable_m3_gate_runs_real_local_pipeline() -> None:
     report = run_gate()
 
     assert report.gate_passed is True
-    assert report.total == 29
-    assert report.passed == 25
+    assert report.total == 34
+    assert report.passed == 30
     assert report.failed == 4
     assert report.percentage >= 80
     assert report.critical_percentage == 100
@@ -40,7 +40,14 @@ def test_gate_keeps_runtime_status_families_and_ui_projection_visible() -> None:
         "B7-26",
         "B7-27",
         "B7-28",
+        "B7-30",
+        "B7-31",
+        "B7-32",
+        "B7-33",
+        "B7-34",
     ):
         assert results[case_id].passed is True
     assert report.capabilities["UI01"].percentage == 100
     assert report.capabilities["A17-M"].percentage == 100
+    for capability in ("A05-M", "A06-M", "A07-M", "A08-M", "A10"):
+        assert report.capabilities[capability].percentage == 100

@@ -38,9 +38,9 @@
 - M3-15B:
   `IMPLEMENTED IN B7 - independent closure review pending`
 - B7-C:
-  `COMPLETE - 29 executable cases and local runner`
+  `FOCUSED SUPPLEMENT IMPLEMENTED LOCALLY - 34 executable cases and local runner`
 - M3 Gate:
-  `PASS - local executable gate; independent review NOT_RUN`
+  `independent review FAIL at 0c450b1; focused supplement local gate PASS; closure review pending`
 - M3-12:
   `NOT_ACTIVATED`
 - M1-09:
@@ -52,7 +52,7 @@
 - External GPT-based plan review:
   `NOT_RUN - reviewer service unavailable`
 - B7 implementation:
-  `IMPLEMENTED - local validation PASS; independent review NOT_RUN`
+  `CONDITIONAL PASS - focused supplement implemented locally; closure review pending`
 - B7-0 locked interpreter:
   `.deps/b6-streamlit-clean/Scripts/python.exe - Python 3.14.3, Streamlit 1.60.0`
 - B7-0 targeted:
@@ -66,7 +66,7 @@
 - Live source provider work:
   `NOT_INCLUDED / NOT_APPROVED`
 - Commit, push, PR, merge, deploy:
-  `B7 implementation commit/main push complete; further PR, merge, deploy NOT_APPROVED`
+  `initial B7 main push complete; supplement commit/push NOT_RUN; further PR, merge, deploy NOT_APPROVED`
 
 This Task Card is the canonical B7 bundle plan after the completed
 `B6-REMAINDER` bundle.
@@ -1435,6 +1435,25 @@ the internal EvidenceDecision remains complete. Rerun: 193 passed.
 Full unit:
 1755 passed, 2 warnings
 
+Focused supplement targeted:
+104 passed, 1 warning
+
+Focused supplement final B7-B2 targeted:
+155 passed, 1 warning
+
+Focused supplement final M3 Gate targeted:
+9 passed, 1 warning
+
+Focused supplement B7 composition regression:
+196 passed, 2 warnings
+
+Focused supplement full unit, consecutive runs:
+run 1: 1763 passed, 2 warnings
+run 2: 1763 passed, 2 warnings
+
+Deterministic LLM deadline repeat:
+20/20 passed
+
 AppTest:
 8 passed, 1 warning
 
@@ -1443,18 +1462,25 @@ PASS - finite headless startup on port 8517; /_stcore/health returned 200 ok;
 server stopped after verification
 
 M3 Gate runner:
-PASS - exit code 0
+Initial local numerical run PASS - exit code 0
+Independent review FAIL - capability evidence, clean execution, and full
+regression evidence required correction
+Focused supplement direct script PASS - exit code 0
+Direct script stderr PASS - empty; no local path warning output
 
 Full golden:
-25/29 passed = 86.21%
+Initial: 25/29 passed = 86.21%
+Focused supplement: 30/34 passed = 88.24%
 Expected retained failures: B0-09, B0-10, B0-12, B0-17. Their original HBM
 queries conflict with the current approved foreign-uppercase-ticker boundary
-and resolve as unsupported. Additional executable cases preserve Critical
-wrong-company, numeric, and SK Hynix news coverage without changing the
-QueryPlanner contract in B7.
+and resolve as unsupported. Focused supplement cases directly cover A05-M
+conflicting Evidence, A06-M three-source fallback, A07-M numeric/probability
+rejection, A08-M context inheritance and reset, and A10 canonical/alias/unknown
+glossary behavior without changing the QueryPlanner contract.
 
 Critical:
-12/12 passed = 100%
+Initial: 12/12 passed = 100%
+Focused supplement: 17/17 passed = 100%
 
 Exposure findings:
 0
@@ -1466,7 +1492,10 @@ Compile:
 PASS - exit code 0
 
 Diff:
-PASS - git diff --check exit code 0; line-ending warnings only
+Initial working-tree check PASS, but independent base-to-head review found an
+EOF blank-line error.
+Focused supplement working-tree and base-to-working-tree checks PASS - exit
+code 0; line-ending warnings only
 
 Public schema changed:
 NO
@@ -1489,8 +1518,13 @@ NOT_RUN / NOT_APPROVED
 GitHub CI:
 NOT_RUN
 
-Independent pytest:
-NOT_RUN - external independent review environment unavailable
+Independent implementation review:
+CONDITIONAL PASS at
+0c450b1de477530839fc8be9d96507a30ac2fc4c
+Reviewer full suite: 1754 passed / 1 failed / 2 warnings
+
+Focused supplement independent pytest:
+NOT_RUN - closure review pending
 
 B7 implementation SHA:
 833336a002b1e02070b35cd4afe9aff279752d61
@@ -1502,21 +1536,25 @@ B7 implementation main push:
 complete
 
 B7 implementation review:
-NOT_RUN - external independent reviewer unavailable
-Implementation-agent local verification PASS
+CONDITIONAL PASS
+Focused supplement implementation-agent local verification PASS
+Final independent closure review NOT_RUN
 
 M3-15:
 M3-15A complete; M3-15B implemented and locally verified;
 independent closure review pending
 
 M3 Gate:
-PASS - local executable gate
+Independent review FAIL at 0c450b1
+Focused supplement local executable gate PASS
+Final independent gate review NOT_RUN
 
 B8 planning:
 BLOCKED until independent B7 implementation closure PASS
 
 Commit/push/PR/merge/deploy:
 B7 implementation commit/main push complete
+Focused supplement commit/push NOT_RUN
 Further PR/merge/deploy NOT_APPROVED
 ```
 

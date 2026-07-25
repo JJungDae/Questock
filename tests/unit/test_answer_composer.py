@@ -283,6 +283,56 @@ def test_llm_failure_preserves_fixed_extractive_answer() -> None:
     assert len(client.calls) == 1
 
 
+def test_llm_failure_rejects_unsafe_conflict_fallback_without_retry() -> None:
+    unsafe = "긍정 기사가 더 많으므로 상승이 우세하다."
+    client = FakeLLMClient(None, status=LLMStatus.TIMEOUT)
+    document = _document()
+    evidence = _evidence(snippet=unsafe)
+
+    result = asyncio.run(
+        AnswerComposer(client).compose(
+            question="삼성전자 긍정 요인과 위험 요인",
+            plan=_plan(),
+            selected_evidence=[evidence],
+            documents_by_id={document.document_id: document},
+            timeout_seconds=2,
+        )
+    )
+
+    assert result.generation_mode == "fixed_template"
+    assert result.answer_sections.summary == [
+        "답변에 사용할 수 있는 근거를 확인하지 못했습니다."
+    ]
+    assert result.claims == ()
+    assert result.citations.citations == ()
+    assert result.public_evidence == ()
+    assert unsafe not in result.answer_sections.model_dump_json()
+    assert len(client.calls) == 1
+
+
+def test_fixed_fallback_keeps_neutral_fact_after_conflict_rejection() -> None:
+    unsafe = _evidence(
+        evidence_id="evidence:news:unsafe",
+        snippet="긍정 감성 점수는 80점이다.",
+    )
+    neutral = _evidence(
+        evidence_id="evidence:news:neutral",
+        snippet="뉴스는 공급 일정과 원가 변수를 각각 설명했다.",
+    )
+
+    result = AnswerComposer(FakeLLMClient(_draft())).compose_fixed(
+        plan=_plan(),
+        selected_evidence=[unsafe, neutral],
+    )
+
+    assert result.generation_mode == "fixed_template"
+    assert result.answer_sections.summary == [neutral.snippet]
+    assert [item.evidence_id for item in result.public_evidence] == [
+        neutral.evidence_id
+    ]
+    assert unsafe.snippet not in result.answer_sections.model_dump_json()
+
+
 @pytest.mark.parametrize("permission", [False, None, "true", 1])
 def test_research_report_requires_exact_external_permission(
     permission: object,

@@ -5,12 +5,29 @@ import asyncio
 import json
 import re
 import sys
+import warnings
 from collections import Counter, defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
+
+if __package__ in {None, ""}:
+    _REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+    if str(_REPOSITORY_ROOT) not in sys.path:
+        sys.path.insert(0, str(_REPOSITORY_ROOT))
+
+if __name__ == "__main__":
+    warnings.filterwarnings(
+        "ignore",
+        message=(
+            "Core Pydantic V1 functionality isn't compatible with "
+            "Python 3.14 or greater."
+        ),
+        category=UserWarning,
+        module=r"langchain_core\.output_parsers\.json",
+    )
 
 from app.answer.composer import AnswerComposer
 from app.api.schemas import ChatRequest, ChatResponse
@@ -71,6 +88,13 @@ SCENARIOS = frozenset(
         "report_bounded",
         "fake_locator",
         "unsafe_probability",
+        "conflict_sources",
+        "multi_source_fallback",
+        "session_followup",
+        "session_reset",
+        "glossary_canonical",
+        "glossary_alias",
+        "glossary_unknown",
     }
 )
 EXPECTED_KEYS = frozenset(
@@ -126,6 +150,15 @@ _REPORT_SENTENCES = (
     "원가 상승은 위험 조건이다.",
     "실제 수요는 추가 확인이 필요하다.",
 )
+_CONFLICT_SUMMARY = "긍정 요인과 위험 요인이 함께 확인됐다."
+_CONFLICT_POSITIVE = "삼성전자 수요 증가는 긍정 요인이다."
+_CONFLICT_RISK = "삼성전자 원가 상승은 위험 요인이다."
+_CONFLICT_UNCERTAINTY = "삼성전자 실제 영향은 추가 확인이 필요하다."
+_MULTI_SOURCE_SNIPPETS = {
+    "news": "삼성전자 뉴스는 설비 투자 계획을 설명했다.",
+    "disclosure": "삼성전자 공시는 투자 결정을 설명했다.",
+    "research_report": "삼성전자 리포트는 수요 조건을 설명했다.",
+}
 
 
 class M3GateFixtureError(ValueError):
@@ -267,17 +300,24 @@ async def _run_case(case: GoldenCase) -> CaseResult:
         utc_now=lambda: BASIS_AT,
     )
     responses: list[ChatResponse] = []
-    for turn in case.turns:
+    for index, turn in enumerate(case.turns):
+        session_suffix = (
+            f"-reset-{index}"
+            if case.scenario_id == "session_reset" and index > 0
+            else ""
+        )
         responses.append(
             await service.chat(
                 ChatRequest(
                     message=turn,
-                    session_id=f"gate-{case.case_id.casefold()}",
+                    session_id=(
+                        f"gate-{case.case_id.casefold()}{session_suffix}"
+                    ),
                 )
             )
         )
     response = responses[-1]
-    failures = _evaluate_case(case, response)
+    failures = _evaluate_case(case, tuple(responses))
     exposure_count = _exposure_count(response)
     if exposure_count:
         failures.append("public_output_exposure")
@@ -490,6 +530,14 @@ def _document_text(query: str, source_type: str, scenario_id: str) -> str:
         return "원자재 운송과 해외 산업 통계에 관한 일반 자료다."
     if scenario_id == "numeric_mismatch":
         return "삼성전자 HBM 출하량은 10만 개다."
+    if scenario_id == "conflict_sources":
+        return {
+            "news": f"{_CONFLICT_SUMMARY} {_CONFLICT_POSITIVE}",
+            "disclosure": _CONFLICT_RISK,
+            "research_report": _CONFLICT_UNCERTAINTY,
+        }[source_type]
+    if scenario_id == "multi_source_fallback":
+        return _MULTI_SOURCE_SNIPPETS[source_type]
     if scenario_id == "report_bounded" and source_type == "research_report":
         return " ".join(_REPORT_SENTENCES)
     source_labels = {
@@ -532,7 +580,54 @@ def _llm_content(
     evidence: tuple[tuple[str, str, str], ...],
 ) -> str:
     first_id, _source_type, first_snippet = evidence[0]
-    if scenario_id == "numeric_mismatch":
+    evidence_by_source = {
+        source_type: (evidence_id, snippet)
+        for evidence_id, source_type, snippet in evidence
+    }
+    if scenario_id == "conflict_sources":
+        claims = [
+            {
+                "claim_id": "summary",
+                "section": "summary",
+                "text": _CONFLICT_SUMMARY,
+                "evidence_ids": [evidence_by_source["news"][0]],
+            },
+            {
+                "claim_id": "positive",
+                "section": "positive_factors",
+                "text": _CONFLICT_POSITIVE,
+                "evidence_ids": [evidence_by_source["news"][0]],
+            },
+            {
+                "claim_id": "risk",
+                "section": "risk_factors",
+                "text": _CONFLICT_RISK,
+                "evidence_ids": [evidence_by_source["disclosure"][0]],
+            },
+            {
+                "claim_id": "uncertainty",
+                "section": "uncertainty",
+                "text": _CONFLICT_UNCERTAINTY,
+                "evidence_ids": [evidence_by_source["research_report"][0]],
+            },
+        ]
+    elif scenario_id == "multi_source_fallback":
+        claims = [
+            {
+                "claim_id": "unsupported-causal",
+                "section": "inference",
+                "text": "따라서 실적은 반드시 개선될 것이다.",
+                "evidence_ids": [
+                    evidence_by_source[source_type][0]
+                    for source_type in (
+                        "news",
+                        "disclosure",
+                        "research_report",
+                    )
+                ],
+            }
+        ]
+    elif scenario_id == "numeric_mismatch":
         claims = [
             {
                 "claim_id": "summary",
@@ -583,7 +678,11 @@ def _llm_content(
     return json.dumps({"claims": claims}, ensure_ascii=False)
 
 
-def _evaluate_case(case: GoldenCase, response: ChatResponse) -> list[str]:
+def _evaluate_case(
+    case: GoldenCase,
+    responses: tuple[ChatResponse, ...],
+) -> list[str]:
+    response = responses[-1]
     expected = case.expected
     process = response.diagnostics_public
     actual_security_id = process.security.security_id
@@ -668,6 +767,91 @@ def _evaluate_case(case: GoldenCase, response: ChatResponse) -> list[str]:
         or process.query_plan.required_sources
     ):
         failures.append("m3_12_activated")
+    failures.extend(
+        _evaluate_capability_behavior(case, responses)
+    )
+    return failures
+
+
+def _evaluate_capability_behavior(
+    case: GoldenCase,
+    responses: tuple[ChatResponse, ...],
+) -> list[str]:
+    response = responses[-1]
+    sections = response.answer_sections
+    failures: list[str] = []
+    source_types = [
+        item.source_type for item in response.evidence
+    ]
+
+    if "A05-M" in case.capabilities and (
+        case.scenario_id != "conflict_sources"
+        or sections.positive_factors != [_CONFLICT_POSITIVE]
+        or sections.risk_factors != [_CONFLICT_RISK]
+        or sections.uncertainty != [_CONFLICT_UNCERTAINTY]
+        or source_types
+        != ["news", "disclosure", "research_report"]
+    ):
+        failures.append("a05_conflict_parallelism")
+
+    if "A06-M" in case.capabilities:
+        rendered = {
+            *sections.summary,
+            *sections.facts,
+        }
+        if (
+            case.scenario_id != "multi_source_fallback"
+            or len(source_types) != 3
+            or set(source_types)
+            != {"news", "disclosure", "research_report"}
+            or rendered != set(_MULTI_SOURCE_SNIPPETS.values())
+            or sections.interpretation
+            or sections.inference
+        ):
+            failures.append("a06_source_specific_fallback")
+
+    if "A07-M" in case.capabilities:
+        rendered = response.answer_sections.model_dump_json()
+        if (
+            case.scenario_id == "numeric_mismatch"
+            and ("100만" in rendered or "10만 개" not in rendered)
+        ) or (
+            case.scenario_id == "unsafe_probability"
+            and "80%" in rendered
+        ):
+            failures.append("a07_numeric_validation")
+
+    if "A08-M" in case.capabilities:
+        first = responses[0].diagnostics_public.security
+        final = response.diagnostics_public.security
+        if case.scenario_id == "session_followup":
+            if (
+                len(responses) < 2
+                or first.security_id is None
+                or final.security_id != first.security_id
+            ):
+                failures.append("a08_context_inheritance")
+        elif case.scenario_id == "session_reset":
+            if (
+                len(responses) < 2
+                or first.security_id is None
+                or final.security_id is not None
+                or final.resolution_status != "not_found"
+            ):
+                failures.append("a08_session_reset")
+
+    if "A10" in case.capabilities:
+        if case.scenario_id in {"glossary_canonical", "glossary_alias"}:
+            if (
+                response.status != "complete"
+                or source_types != ["glossary"]
+            ):
+                failures.append("a10_glossary_resolution")
+        elif case.scenario_id == "glossary_unknown" and (
+            response.status != "no_evidence"
+            or response.evidence
+        ):
+            failures.append("a10_glossary_unknown")
     return failures
 
 
@@ -814,6 +998,7 @@ def _validate_inventory(
     }
     if capability_coverage != CAPABILITIES:
         raise M3GateFixtureError("M3 gate fixture is invalid")
+    _validate_capability_evidence(cases)
     expected_matrix = {
         (security_id, source_type)
         for security_id in SECURITY_IDS
@@ -823,6 +1008,86 @@ def _validate_inventory(
         case.coverage for case in cases if case.coverage is not None
     }
     if not expected_matrix.issubset(actual_matrix):
+        raise M3GateFixtureError("M3 gate fixture is invalid")
+
+
+def _validate_capability_evidence(cases: tuple[GoldenCase, ...]) -> None:
+    required_scenarios = {
+        "A05-M": {"conflict_sources"},
+        "A06-M": {"multi_source_fallback"},
+        "A07-M": {"numeric_mismatch", "unsafe_probability"},
+        "A08-M": {"session_followup", "session_reset"},
+        "A10": {
+            "glossary_canonical",
+            "glossary_alias",
+            "glossary_unknown",
+        },
+    }
+    by_capability = {
+        capability: tuple(
+            case for case in cases if capability in case.capabilities
+        )
+        for capability in required_scenarios
+    }
+    if any(
+        {case.scenario_id for case in by_capability[capability]}
+        != scenarios
+        for capability, scenarios in required_scenarios.items()
+    ):
+        raise M3GateFixtureError("M3 gate fixture is invalid")
+
+    three_sources = {"news", "disclosure", "research_report"}
+    a05 = by_capability["A05-M"][0]
+    a06 = by_capability["A06-M"][0]
+    if (
+        a05.expected["intent"] != "risk_factors"
+        or set(a05.expected["evidence_source_types"]) != three_sources
+        or len(a05.expected["evidence_source_types"]) != 3
+        or a05.expected["generation_mode"] != "llm"
+        or a06.expected["intent"] != "multi_source_summary"
+        or set(a06.expected["evidence_source_types"]) != three_sources
+        or len(a06.expected["evidence_source_types"]) != 3
+        or a06.expected["generation_mode"] != "fixed_template"
+        or a06.expected["fallback_required"] is not True
+    ):
+        raise M3GateFixtureError("M3 gate fixture is invalid")
+
+    if any(
+        case.expected["generation_mode"] != "fixed_template"
+        or case.expected["fallback_required"] is not True
+        for case in by_capability["A07-M"]
+    ):
+        raise M3GateFixtureError("M3 gate fixture is invalid")
+
+    session_cases = {
+        case.scenario_id: case for case in by_capability["A08-M"]
+    }
+    if (
+        any(len(case.turns) < 2 for case in session_cases.values())
+        or session_cases["session_followup"].expected["security_id"] is None
+        or session_cases["session_reset"].expected["security_id"] is not None
+        or session_cases["session_reset"].expected["resolution_status"]
+        != "not_found"
+    ):
+        raise M3GateFixtureError("M3 gate fixture is invalid")
+
+    glossary_cases = {
+        case.scenario_id: case for case in by_capability["A10"]
+    }
+    if any(
+        case.expected["intent"] != "financial_term"
+        or case.expected["required_sources"] != ["glossary"]
+        for case in glossary_cases.values()
+    ) or any(
+        glossary_cases[scenario].expected["evidence_source_types"]
+        != ["glossary"]
+        for scenario in {"glossary_canonical", "glossary_alias"}
+    ) or (
+        glossary_cases["glossary_unknown"].expected[
+            "evidence_source_types"
+        ]
+        != []
+    ):
         raise M3GateFixtureError("M3 gate fixture is invalid")
 
 

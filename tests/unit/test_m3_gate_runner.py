@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -17,7 +20,7 @@ from scripts.m3_gate import (
 def test_golden_fixture_migrates_all_b0_cases_and_coverage_matrix() -> None:
     cases = load_golden_cases()
 
-    assert len(cases) == 29
+    assert len(cases) == 34
     assert [case.origin for case in cases if case.origin != "additional"] == [
         f"B0-{index:02d}" for index in range(1, 25)
     ]
@@ -99,3 +102,42 @@ def test_main_returns_zero_for_approved_local_gate(
     assert output["percentage"] >= 80
     assert output["critical"]["percentage"] == 100
 
+
+def test_capability_labels_require_matching_executable_scenarios(
+    tmp_path: Path,
+) -> None:
+    payload = json.loads(
+        Path("tests/fixtures/evaluation/m3_golden_cases.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    by_id = {item["case_id"]: item for item in payload["cases"]}
+    by_id["B7-30"]["capabilities"] = ["A06-M"]
+    by_id["B7-31"]["capabilities"] = ["A05-M"]
+    fixture = tmp_path / "semantic-mismatch.json"
+    fixture.write_text(
+        json.dumps(payload, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(M3GateFixtureError):
+        load_golden_cases(fixture)
+
+
+def test_direct_script_runs_from_clean_repository_shell() -> None:
+    repository_root = Path(__file__).resolve().parents[2]
+    environment = os.environ.copy()
+    environment.pop("PYTHONPATH", None)
+
+    completed = subprocess.run(
+        [sys.executable, "scripts/m3_gate.py"],
+        cwd=repository_root,
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert completed.stderr == ""
+    assert json.loads(completed.stdout)["gate_passed"] is True

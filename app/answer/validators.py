@@ -175,6 +175,7 @@ def is_unsafe_answer_text(value: str, *, intent: str) -> bool:
         or _GUARANTEE.search(normalized)
         or _FUTURE_CERTAINTY.search(normalized)
         or _DIRECTION_PROBABILITY.search(normalized)
+        or _UNSUPPORTED_CONFLICT_CONCLUSION.search(normalized)
     )
 
 
