@@ -39,11 +39,19 @@ def test_ci_uses_immutable_actions_and_exact_toolchain() -> None:
     workflow = _read(CI_PATH)
 
     assert "quality-gate:" in workflow
+    assert (
+        "concurrency:\n"
+        "  group: quality-gate-${{ github.workflow }}-${{ github.ref }}\n"
+        "  cancel-in-progress: true"
+        in workflow
+    )
+    assert "timeout-minutes: 30" in workflow
     assert "runs-on: ubuntu-24.04" in workflow
     assert f"actions/checkout@{CHECKOUT_SHA}" in workflow
     assert f"astral-sh/setup-uv@{SETUP_UV_SHA}" in workflow
     assert 'version: "0.11.32"' in workflow
     assert 'python-version: "3.11"' in workflow
+    assert "enable-cache: true" in workflow
     assert "permissions:\n  contents: read" in workflow
     assert "pull_request_target" not in workflow
 
@@ -274,6 +282,7 @@ def test_recorded_release_manifest_and_docs_are_versioned_and_truthful() -> None
     release = _read(MVP_RELEASE_PATH)
     scenarios = _read(DEMO_SCENARIOS_PATH)
     traceability = _read(TRACEABILITY_PATH)
+    readme = " ".join(_read(ROOT / "README.md").split())
 
     assert manifest == {
         "corpus_type": "recorded_demo",
@@ -295,7 +304,13 @@ def test_recorded_release_manifest_and_docs_are_versioned_and_truthful() -> None
     )
     assert "Remote deployment | `PASS - run 30207335981`" in release
     assert "M4 Gate | `NOT_RUN`" in release
-    assert "no live connectivity" in scenarios
+    assert "실시간 연결이 없다는 사실" in scenarios
+    assert "QUESTOCK_SOURCE_MODE=unconfigured" in scenarios
+    assert "`provider_failed`" in scenarios
+    assert "`data_mode=unconfigured`" in scenarios
+    assert "`live_connectivity_checked=false`" in scenarios
+    assert "Human Owner-approved receipt and six verified body facts" in readme
+    assert "listing metadata only" not in readme
     assert "Remote recorded deployment" in traceability
     assert "PASS; rollback target captured, execution NOT_RUN" in traceability
     assert "M4 Gate | B9 release evidence | independent review | NOT_RUN" in (

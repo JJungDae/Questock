@@ -4,7 +4,7 @@
 
 - Project: `Questock`
 - Repository: `JJungDae/Questock`
-- Branch: `docs/b9-remote-release-closure`
+- Branch: `fix/b9-m4-gate-closure`
 - Bundle: `B9`
 - Included checkpoints:
   - `B9-0` preflight and B8 closure verification
@@ -56,7 +56,7 @@
 - B9 implementation base:
   `74214b75575fd9f1594ac545b42bbf3908066e77`
 - B9 implementation:
-  `B9-A1+A2 PASS / B9-B remote recorded release PASS / independent review and M4 Gate pending`
+  `B9-A1+A2 PASS / B9-B remote recorded release PASS / B9 review PASS WITH REQUIRED FOLLOW-UP / M4 Gate HOLD`
 - B9-A local Docker verification:
   `PASS - locked image build, API/UI health, smoke, and runtime inspection complete`
 - B9-B remote deployment:
@@ -91,13 +91,21 @@
   `active - PR, quality-gate, deletion, and force-push protections`
 - B9-B remote deploy:
   `PASS - release SHA 67fa43dd5a7ec74e7785713eb1adcfa402baab85`
+- B9 M4 Gate closure base:
+  `390c248a47032c3babe07eb6dbbc111668a17ead`
+- B9 independent implementation review:
+  `PASS WITH REQUIRED FOLLOW-UP`
+- M4 Gate:
+  `HOLD - CI/document closure and Human Owner confirmation pending`
 
 This is the canonical B9 plan. The implementation instruction authorized B9-A1
 and B9-A2 foundation work through merge and observed CI. B9-B local
 implementation was merged before this focused closure. The focused closure and
 two deployment hotfixes were merged through reviewed PRs. The approved
 exact-SHA remote deployment and recorded smoke passed. Independent B9 review
-and M4 Gate remain separate pending steps.
+is `PASS WITH REQUIRED FOLLOW-UP`. M4 Gate remains `HOLD` until this
+CI/document closure is merged, its quality gate passes, and the Human Owner
+confirms the required release explanation.
 
 ### 1.1 Reviewed V2 execution supplement
 
@@ -351,7 +359,7 @@ Create `.github/workflows/ci.yml` with:
 - locked installation:
 
 ```text
-uv sync --locked --all-extras --dev
+uv sync --locked --extra dev
 ```
 
 - exact setup:
@@ -363,7 +371,7 @@ uv sync --locked --all-extras --dev
     version: "0.11.32"
     python-version: "3.11"
     enable-cache: true
-- run: uv sync --locked --all-extras --dev
+- run: uv sync --locked --extra dev
 - run: >-
     uv run --no-sync python -c
     "import sys; assert sys.version_info[:2] == (3, 11)"
@@ -594,7 +602,7 @@ M4-06 normal disclosure demo: PASS WITH DECLARED COVERAGE LIMITATION
 B9 focused closure local verification: PASS
 B9 remote deployment and recorded smoke: PASS
 B9 rollback target: VERIFIED; execution NOT_RUN
-M4 Gate: NOT_RUN - independent review pending
+M4 Gate: HOLD - CI/document closure and Human Owner confirmation pending
 ```
 
 Do not substitute a synthetic receipt, a test fixture, or a fabricated URL.
@@ -1612,11 +1620,11 @@ Git actions remain separately gated:
 - GitHub CI for B9-B:
   `PASS - exact release quality-gate run 30207273750`
 - B9 review:
-  `NOT_RUN`
+  `PASS WITH REQUIRED FOLLOW-UP`
 - M4 Gate:
-  `NOT_RUN`
+  `HOLD - CI/document closure and Human Owner confirmation pending`
 - B9-B current status:
-  `remote release PASS / independent B9 review and M4 Gate pending`
+  `remote release PASS / B9 review PASS WITH REQUIRED FOLLOW-UP / M4 Gate HOLD`
 
 ### B9 Focused Closure
 
@@ -1706,8 +1714,8 @@ Git actions remain separately gated:
 - Remote release closure:
   `PASS`
 - B9 independent implementation review:
-  `NOT_RUN`
+  `PASS WITH REQUIRED FOLLOW-UP`
 - M4 Gate independent review:
-  `NOT_RUN`
+  `HOLD - CI/document closure and Human Owner confirmation pending`
 - B9 current status:
-  `REMOTE RELEASE PASS / independent B9 review and M4 Gate pending`
+  `REMOTE RELEASE PASS / B9 review PASS WITH REQUIRED FOLLOW-UP / M4 Gate HOLD`

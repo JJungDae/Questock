@@ -5,7 +5,7 @@
 > Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
 > Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
 > B9 planning base: `b9ddf7461306d16cf1da14634ce458050d78f7bc`
-> 상태: `B8 complete / B9 remote recorded release PASS / B9 independent review and M4 Gate pending`
+> 상태: `B8 complete / B9 remote recorded release PASS / B9 independent review PASS WITH REQUIRED FOLLOW-UP / M4 Gate HOLD`
 
 ## 1. 목적
 
@@ -138,8 +138,10 @@ recorded API/UI health and external UI health PASS
 7-scenario recorded smoke PASS; disclosure remains partial with
 insufficient_disclosure_coverage
 rollback target captured; rollback execution NOT_RUN because deployment passed
+B9 independent review:
+PASS WITH REQUIRED FOLLOW-UP
 M4 Gate:
-NOT_RUN - B9 independent review and M4 Gate review pending
+HOLD - CI/document closure and Human Owner confirmation pending
 
 B8 구현:
 PASS WITH REQUIRED FOLLOW-UP / complete
@@ -154,7 +156,9 @@ B9 계획 ALLOWED
 B9-0 PASS / complete
 B9-A1+A2 foundation 구현과 local verification ALLOWED
 B9 current implementation commit/main push는 승인 완료
-B9-B remote deploy PASS; independent B9 review and M4 Gate remain pending
+B9-B remote deploy PASS; B9 independent review is PASS WITH REQUIRED
+FOLLOW-UP; M4 Gate remains HOLD pending CI/document closure and Human Owner
+confirmation
 
 M1-09:
 mandatory supplement implemented - final independent review pending
