@@ -64,8 +64,18 @@ jobs:
           previous_image_id="$(
             ssh -i "$HOME/.ssh/questock_key" \
               "$GCE_USER@$GCE_HOST" \
-              "docker image inspect 'questock:$previous_sha' \
-                --format '{{.Id}}' 2>/dev/null || printf 'NONE\n'"
+              "bash -s -- '$previous_sha'" <<'IMAGE_ID'
+          set -euo pipefail
+          previous_sha="$1"
+          if image_id="$(
+            docker image inspect "questock:$previous_sha" \
+              --format '{{.Id}}' 2>/dev/null
+          )"; then
+            printf '%s\n' "$image_id"
+          else
+            printf 'NONE\n'
+          fi
+          IMAGE_ID
           )"
           if [ "$previous_image_id" != "NONE" ]; then
             [[ "$previous_image_id" =~ ^sha256:[0-9a-f]{64}$ ]]
