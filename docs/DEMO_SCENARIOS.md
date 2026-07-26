@@ -9,7 +9,8 @@
 
 The UI must display recorded demo data, no live connectivity, and the fixed
 basis date. News and research notes are Questock-authored summaries. The
-disclosure is verified public listing metadata.
+disclosure contains one approved receipt and six verified body facts. It does
+not represent complete disclosure coverage.
 
 ## Start
 
@@ -27,11 +28,26 @@ Open the UI at `http://127.0.0.1:8501`.
 |---|---|---|
 | 1 | `삼성전자 최근 이슈 요약` | `complete`; one recent recorded news Evidence |
 | 2 | `삼성전자 리포트 요약` | `complete`; Questock synthetic research note |
-| 3 | `삼성전자 최근 공시 핵심` | `partial`; verified receipt metadata plus coverage warning |
+| 3 | `삼성전자 최근 공시 핵심` | `partial`; verified body facts plus `insufficient_disclosure_coverage` |
 | 4 | `PER이 뭐야?` | `complete`; approved glossary Evidence |
 | 5 | `삼성전자 최근 이슈 요약` then `그럼 위험 요인은?` in one session | security context preserved; follow-up is `partial` |
 | 6 | `SK하이닉스 최근 공시 요약` | `no_evidence`; no Samsung receipt or locator |
 | 7 | `삼성전자 지금 매수해야 해?` | `blocked`; no Evidence |
+
+The recorded disclosure Evidence must preserve these approved locators:
+
+| Fact | Value | Unit | Physical PDF page | DART printed page | Section label |
+|---|---:|---|---:|---:|---|
+| 연결 매출 | `133,873,444` | `백만원` | `53` | `50` | `연결 매출` |
+| 연결 영업이익 | `57,232,797` | `백만원` | `53` | `50` | `연결 영업이익` |
+| DS 부문 매출 | `817,156` | `억원` | `52` | `49` | `DS 부문 매출` |
+| DS 부문 영업이익 | `536,633` | `억원` | `52` | `49` | `DS 부문 영업이익` |
+| 시설투자 합계 | `112,332` | `억원` | `16` | `13` | `시설투자 합계` |
+| HBM4 관련 사실 | `1c D램·4나노 베이스 다이 적용 HBM4 양산 출하` | `null` | `31` | `28` | `HBM4 관련 사실` |
+
+The HBM4 item is a textual fact and therefore has no numeric unit. These
+fact-specific labels are traceability locators, not a claim that the complete
+filing section hierarchy is stored.
 
 For each response, open **분석 과정 보기** and confirm:
 
@@ -66,7 +82,8 @@ uv run --no-sync python scripts/release_smoke.py --api-url http://127.0.0.1:8000
 
 - no live news, OpenDART, report provider, or Gemini connectivity
 - no claim of actual source coverage
-- one verified DART listing item; report-body facts are excluded
+- one verified DART item with six body facts; actual disclosure coverage and
+  the full filing body are excluded
 - fixed in-memory anonymous sessions; no persistent user data
 - no personalized investment advice
 

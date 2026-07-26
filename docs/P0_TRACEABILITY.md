@@ -25,7 +25,7 @@ test, CI job, deployment, or live-provider check.
 | Process visibility UI | `app/ui`, `app/services/observability.py` | M3-15/B7/B8 Task Cards and tests | complete |
 | Golden quality and observability | `scripts/m3_gate.py`, B8 files | M3 Gate `34/34`, Critical `17/17`, exposure `0` | complete at B8 closure |
 | CI and clean container foundation | CI workflow, Dockerfile, Compose | B9-A local checks plus PR/main CI | complete |
-| Recorded release runtime | `app/runtime.py`, `app/services/demo_source_gateway.py`, `data/demo` | B9 unit/integration, clean Docker health, and 7-scenario release smoke | local PASS |
+| Recorded release runtime | `app/runtime.py`, `app/services/demo_source_gateway.py`, `data/demo` | B9 unit/integration, one verified disclosure body-fact scenario, clean Docker health, and 7-scenario release smoke | local PASS with declared disclosure coverage limitation |
 | Remote recorded deployment | manual GCE workflow | remote health, smoke, and rollback | NOT_RUN |
 | M4 Gate | B9 release evidence | independent review | NOT_RUN |
 
@@ -35,7 +35,7 @@ test, CI job, deployment, or live-provider check.
 |---|---|
 | wrong-company exclusion | hard-filter tests and B9 wrong-company scenario |
 | prohibited direct advice | QueryPlanner, answer validation, golden Critical cases, B9 blocked scenario |
-| no invented citation locator | citation validation and verified receipt-only B9 disclosure |
+| no invented citation locator | citation validation and verified B9 receipt/body-fact pages and section labels |
 | no secret or local path exposure | secret scanner, public payload tests, release asset scan |
 | deterministic basis date | recorded manifest, runtime clock injection, API/UI integration tests |
 | caller mutation isolation | gateway/runtime unit tests |

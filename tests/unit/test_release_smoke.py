@@ -9,7 +9,7 @@ from scripts.release_smoke import ReleaseSmokeError, run_release_smoke
 
 
 def _payload(status: str, source_type: str | None) -> dict[str, Any]:
-    return {
+    payload = {
         "status": status,
         "basis_date": "2026-07-26",
         "evidence": (
@@ -20,6 +20,24 @@ def _payload(status: str, source_type: str | None) -> dict[str, Any]:
             "live_connectivity_checked": False,
         },
     }
+    if source_type == "disclosure":
+        payload["warnings"] = ["insufficient_disclosure_coverage"]
+        payload["answer_sections"] = {
+            "summary": " ".join(release_smoke._DISCLOSURE_ANSWER_FACTS)
+        }
+        payload["evidence"][0].update(
+            {
+                "document_id": release_smoke._DISCLOSURE_DOCUMENT_ID,
+                "locator": {
+                    "receipt_no": "20260515002181",
+                    "viewer_url": release_smoke._DISCLOSURE_VIEWER_URL,
+                    "content_level": "verified_body_facts",
+                    "section": "verified body facts",
+                    "facts": release_smoke._DISCLOSURE_FACTS,
+                },
+            }
+        )
+    return payload
 
 
 def test_release_smoke_runs_deterministic_recorded_scenarios(
@@ -84,3 +102,19 @@ def test_release_smoke_rejects_live_or_malformed_public_result() -> None:
             expected_status="complete",
             expected_source="news",
         )
+
+
+def test_release_smoke_rejects_metadata_only_disclosure() -> None:
+    bad = _payload("partial", "disclosure")
+    bad["answer_sections"] = {"summary": "접수번호 20260515002181"}
+
+    with pytest.raises(ReleaseSmokeError):
+        release_smoke._assert_disclosure_response(bad)
+
+
+def test_release_smoke_rejects_non_list_disclosure_warning() -> None:
+    bad = _payload("partial", "disclosure")
+    bad["warnings"] = "insufficient_disclosure_coverage"
+
+    with pytest.raises(ReleaseSmokeError):
+        release_smoke._assert_disclosure_response(bad)

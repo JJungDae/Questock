@@ -4,6 +4,8 @@ import json
 import tomllib
 from pathlib import Path
 
+import pytest
+
 
 ROOT = Path(__file__).resolve().parents[2]
 CI_PATH = ROOT / ".github" / "workflows" / "ci.yml"
@@ -149,11 +151,93 @@ def test_gce_deploy_is_manual_exact_sha_recorded_and_scoped() -> None:
     assert "python scripts/release_smoke.py" in workflow
     assert "127.0.0.1:8000/health" in workflow
     assert "8501/_stcore/health" in workflow
+    assert "rollback_release()" in workflow
+    assert 'git switch --detach "$previous_sha"' in workflow
+    assert "previous_image_id" in workflow
+    assert "docker compose rm --stop --force" in workflow
+    assert "rollback_result=failed" in workflow
     assert "push:" not in workflow
     assert "git reset" not in workflow
     assert "docker system prune" not in workflow
     assert "GEMINI_API_KEY" not in workflow
     assert "OPENDART_API_KEY" not in workflow
+
+
+@pytest.mark.parametrize(
+    "failure_stage",
+    [
+        "docker compose up -d --wait",
+        "http://127.0.0.1:8000/health",
+        "http://127.0.0.1:8501/_stcore/health",
+        "python scripts/release_smoke.py",
+        '"http://$GCE_HOST:8501/_stcore/health"',
+    ],
+)
+def test_each_deploy_failure_stage_is_inside_rollback_guard(
+    failure_stage: str,
+) -> None:
+    workflow = _read(DEPLOY_PATH)
+    guarded = workflow.split("if ! (", maxsplit=1)[1].split(
+        "); then",
+        maxsplit=1,
+    )[0]
+    failure_branch = workflow.split("); then", maxsplit=1)[1]
+
+    assert failure_stage in guarded
+    assert "rollback_release" in failure_branch
+    assert "exit 1" in failure_branch
+
+
+def test_rollback_restores_previous_health_or_removes_failed_release() -> None:
+    workflow = _read(DEPLOY_PATH)
+    rollback = workflow.split("rollback_release() {", maxsplit=1)[1].split(
+        "ROLLBACK\n          }",
+        maxsplit=1,
+    )[0]
+
+    assert 'docker image inspect "$previous_image_id"' in rollback
+    assert (
+        'docker image tag "$previous_image_id" "questock:$previous_sha"'
+        in rollback
+    )
+    assert 'git switch --detach "$previous_sha"' in rollback
+    assert 'export QUESTOCK_IMAGE_TAG="$previous_sha"' in rollback
+    assert "docker compose up -d --wait" in rollback
+    assert "http://127.0.0.1:8000/health" in rollback
+    assert "http://127.0.0.1:8501/_stcore/health" in rollback
+    assert "docker compose rm --stop --force" in rollback
+    assert "docker system prune" not in rollback
+
+
+def test_deploy_preflight_fails_before_the_rollback_guard() -> None:
+    workflow = _read(DEPLOY_PATH)
+    preflight = workflow.split("rollback_release() {", maxsplit=1)[0]
+    guarded = workflow.split("if ! (", maxsplit=1)[1]
+
+    assert 'test -z "$(git status --porcelain)"' in preflight
+    assert "git fetch origin main" in preflight
+    assert "git cat-file -e" in preflight
+    assert "git merge-base --is-ancestor" in preflight
+    assert 'test -z "$(git status --porcelain)"' not in guarded
+    assert "git fetch origin main" not in guarded
+
+
+def test_previous_image_id_is_captured_before_build_and_used_for_rollback() -> None:
+    workflow = _read(DEPLOY_PATH)
+    pre_guard = workflow.split("if ! (", maxsplit=1)[0]
+    guarded = workflow.split("if ! (", maxsplit=1)[1]
+
+    assert "previous_image_id=\"$(" in pre_guard
+    assert (
+        "\"docker image inspect 'questock:$previous_sha' \\"
+        in pre_guard
+    )
+    assert "sha256:[0-9a-f]{64}" in pre_guard
+    assert "'$previous_image_id'" in guarded
+    assert (
+        'docker image tag "$previous_image_id" "questock:$previous_sha"'
+        in pre_guard
+    )
 
 
 def test_recorded_release_manifest_and_docs_are_versioned_and_truthful() -> None:

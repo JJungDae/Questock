@@ -80,29 +80,81 @@
         "KRX:005930"
       ],
       "mentioned_security_ids": [],
-      "title": "삼성전자 공시 메타데이터: 분기보고서 (2026.03)",
+      "title": "삼성전자 공시 핵심: 분기보고서 (2026.03)",
       "published_at": "2026-05-15T00:00:00+09:00",
       "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002181",
-      "text": "삼성전자의 최근 공시 목록에는 2026년 5월 15일 제출된 분기보고서 (2026.03)가 있다. 이 recorded 항목은 접수번호와 공식 viewer URL이 확인된 listing metadata이며, 본문 수치와 세부 사실, 페이지와 section은 포함하지 않는다.",
+      "text": "삼성전자 분기보고서 (2026.03)의 검증된 본문 fact: 연결 매출 133,873,444백만원, 연결 영업이익 57,232,797백만원, DS 부문 매출 817,156억원, DS 부문 영업이익 536,633억원, 시설투자 합계 112,332억원. HBM4 관련 사실은 1c D램·4나노 베이스 다이 적용 HBM4 양산 출하이다.",
       "locator": {
         "provider": "recorded_demo",
         "content_origin": "verified_public_recorded",
         "receipt_no": "20260515002181",
-        "viewer_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002181"
+        "viewer_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002181",
+        "content_level": "verified_body_facts",
+        "section": "verified body facts",
+        "facts": [
+          {
+            "fact": "연결 매출",
+            "value": "133,873,444",
+            "unit": "백만원",
+            "physical_pdf_page": 53,
+            "dart_printed_page": 50,
+            "section": "연결 매출"
+          },
+          {
+            "fact": "연결 영업이익",
+            "value": "57,232,797",
+            "unit": "백만원",
+            "physical_pdf_page": 53,
+            "dart_printed_page": 50,
+            "section": "연결 영업이익"
+          },
+          {
+            "fact": "DS 부문 매출",
+            "value": "817,156",
+            "unit": "억원",
+            "physical_pdf_page": 52,
+            "dart_printed_page": 49,
+            "section": "DS 부문 매출"
+          },
+          {
+            "fact": "DS 부문 영업이익",
+            "value": "536,633",
+            "unit": "억원",
+            "physical_pdf_page": 52,
+            "dart_printed_page": 49,
+            "section": "DS 부문 영업이익"
+          },
+          {
+            "fact": "시설투자 합계",
+            "value": "112,332",
+            "unit": "억원",
+            "physical_pdf_page": 16,
+            "dart_printed_page": 13,
+            "section": "시설투자 합계"
+          },
+          {
+            "fact": "HBM4 관련 사실",
+            "value": "1c D램·4나노 베이스 다이 적용 HBM4 양산 출하",
+            "unit": null,
+            "physical_pdf_page": 31,
+            "dart_printed_page": 28,
+            "section": "HBM4 관련 사실"
+          }
+        ]
       },
       "metadata": {
         "document_type": "disclosure_listing",
         "report_type": "분기보고서",
-        "content_level": "listing_metadata",
+        "content_level": "verified_body_facts",
         "content_origin": "verified_public_recorded",
         "verification_status": "human_approved",
         "reference_title": "분기보고서 (2026.03)",
         "reference_publisher": "금융감독원 전자공시시스템 DART",
         "reference_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002181",
         "reference_published_at": "2026-05-15",
-        "reference_section": "listing metadata",
+        "reference_section": "verified body facts",
         "summary_author": "Questock",
-        "usage_note": "Human-approved receipt metadata only; report body facts are not included.",
+        "usage_note": "Human-approved receipt and six verified body facts only; the full filing body is not included.",
         "is_correction": false,
         "has_subsequent_correction": false,
         "is_withdrawn": false

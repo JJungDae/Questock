@@ -9,6 +9,7 @@
 | Python 3.11 CI compatibility fix | `0e703b6fd0bcc13b33c39ff539a27c523176fe0d` |
 | Foundation PR and main `quality-gate` | `PASS` |
 | Main protection Ruleset | `active` |
+| B9-B merged main SHA | `c807be1d4b62acd0d45dea42b884bd16dd366652` |
 | Recorded release candidate SHA | `TO_BE_RECORDED after reviewed PR merge` |
 | Remote deployment | `NOT_RUN - separate deploy approval required` |
 | M4 Gate | `NOT_RUN` |
@@ -41,11 +42,12 @@ Data usage:
 
 - Samsung Newsroom item: short Questock-authored Korean summary
 - Samsung IR earnings material: short Questock-authored research note
-- DART receipt `20260515002181`: verified listing metadata only
+- DART receipt `20260515002181`: receipt plus six verified body facts
 
 The corpus stores public reference URLs but not source PDF bodies. The DART
-record does not include unverified values, units, pages, sections, or inferred
-report-family links.
+record preserves the approved values/units, physical PDF pages, DART printed
+pages, and fact-specific section labels. It does not include the full filing
+body, inferred report-family links, or actual disclosure coverage.
 
 ## Health and Smoke
 
@@ -91,12 +93,15 @@ It does not auto-deploy on a main push and does not expose the API host port.
 
 ## Rollback
 
-If the new service fails health:
+If Compose startup, API/UI health, recorded smoke, or external UI health fails:
 
 - use the previous clean Git SHA and immutable image when available
-- restore recorded mode and rerun Compose health
+- capture the previous immutable image ID before rebuilding, including when
+  the previous SHA equals the requested release SHA
+- restore recorded mode and recheck previous API/UI health
 - on the first failed deployment with no previous image, remove only the
   Questock Compose services
+- fail remote preflight before entering the rollback guard
 - do not reset the repository, prune global Docker resources, or expose secrets
 
 Remote rollback remains `NOT_RUN` until a separately approved deployment.
@@ -119,6 +124,21 @@ B9-B local results:
 - API/UI health and seven recorded smoke scenarios: `PASS`
 - Ruff, secret/path scans, and compile: `PASS`
 - M3 Gate: `34/34`, Critical `17/17`, public exposure `0`
+
+Focused closure local results:
+
+- M4-06 disclosure scenario:
+  `PASS WITH DECLARED COVERAGE LIMITATION`
+- final disclosure status:
+  `partial` with `insufficient_disclosure_coverage`
+- focused targeted pytest:
+  `41 passed, 2 warnings`
+- full pytest:
+  `1851 passed, 2 warnings`
+- rollback workflow static tests:
+  `16 passed, 1 cache warning`
+- remote deployment and rollback:
+  `NOT_RUN`
 
 Local results are not GitHub CI or remote evidence. Exact release-candidate
 GitHub and remote results remain open until the separately approved lifecycle

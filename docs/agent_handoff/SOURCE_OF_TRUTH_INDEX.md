@@ -5,7 +5,7 @@
 > Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
 > Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
 > B9 planning base: `b9ddf7461306d16cf1da14634ce458050d78f7bc`
-> 상태: `B8 complete / B9-0 PASS / B9-A merged and CI PASS / B9-B local PASS, remote closure pending`
+> 상태: `B8 complete / B9-A and B9-B merged / B9 focused closure local PASS / remote closure pending`
 
 ## 1. 목적
 
@@ -106,14 +106,25 @@ PASS - B9-A PR and merged main runs observed
 B9 implementation SHA:
 1a14efbb85669a03340442e1a73b6416adbf2bed - B9-A merge baseline
 B9-B:
-LOCAL PASS on release/b9-recorded-deployment
+main merge complete; focused closure local PASS on fix/b9-focused-closure
 B9-B local verification:
 targeted/full regression, M3 Gate 34/34, Critical 17/17, public exposure 0,
 Ruff, secret/compile, clean Docker build, API/UI health, and 7-scenario smoke PASS
 B9-B release-candidate commit/PR/CI:
 implementation commit 6ed6c13a143f5798157aed2344d09ae126ced00b
 release branch push complete
-PR / merge / B9-B GitHub CI NOT_RUN
+PR #2 / main merge complete
+merged main SHA c807be1d4b62acd0d45dea42b884bd16dd366652
+B9-B merged-main GitHub CI was not independently queried in this focused
+closure
+B9 focused closure:
+single verified disclosure body-fact supplement and post-startup rollback
+local targeted/full regression, M3 Gate, Ruff, secret/compile PASS
+M4-06 disclosure scenario PASS WITH DECLARED COVERAGE LIMITATION
+final status partial with insufficient_disclosure_coverage
+implementation SHA d70e17a95046f5ebcbca05970ff574c1121acb1c
+implementation commit and origin/fix/b9-focused-closure push complete
+focused closure PR/CI/merge NOT_RUN
 B9-B 원격 배포:
 GCE target selected / deployment approval pending
 M4 Gate:

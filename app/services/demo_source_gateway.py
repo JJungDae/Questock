@@ -30,6 +30,65 @@ _VERIFIED_ORIGIN = "verified_public_recorded"
 _DEFAULT_MANIFEST_PATH = Path("data/demo/manifest.json")
 _DEFAULT_DOCUMENTS_PATH = Path("data/demo/documents.json")
 _RECEIPT_NO = re.compile(r"^\d{14}$")
+_DISCLOSURE_CONTENT_LEVEL = "verified_body_facts"
+_DISCLOSURE_SECTION = "verified body facts"
+_DISCLOSURE_BODY_TEXT = (
+    "삼성전자 분기보고서 (2026.03)의 검증된 본문 fact: "
+    "연결 매출 133,873,444백만원, 연결 영업이익 57,232,797백만원, "
+    "DS 부문 매출 817,156억원, DS 부문 영업이익 536,633억원, "
+    "시설투자 합계 112,332억원. HBM4 관련 사실은 "
+    "1c D램·4나노 베이스 다이 적용 HBM4 양산 출하이다."
+)
+_VERIFIED_DISCLOSURE_FACTS = (
+    {
+        "fact": "연결 매출",
+        "value": "133,873,444",
+        "unit": "백만원",
+        "physical_pdf_page": 53,
+        "dart_printed_page": 50,
+        "section": "연결 매출",
+    },
+    {
+        "fact": "연결 영업이익",
+        "value": "57,232,797",
+        "unit": "백만원",
+        "physical_pdf_page": 53,
+        "dart_printed_page": 50,
+        "section": "연결 영업이익",
+    },
+    {
+        "fact": "DS 부문 매출",
+        "value": "817,156",
+        "unit": "억원",
+        "physical_pdf_page": 52,
+        "dart_printed_page": 49,
+        "section": "DS 부문 매출",
+    },
+    {
+        "fact": "DS 부문 영업이익",
+        "value": "536,633",
+        "unit": "억원",
+        "physical_pdf_page": 52,
+        "dart_printed_page": 49,
+        "section": "DS 부문 영업이익",
+    },
+    {
+        "fact": "시설투자 합계",
+        "value": "112,332",
+        "unit": "억원",
+        "physical_pdf_page": 16,
+        "dart_printed_page": 13,
+        "section": "시설투자 합계",
+    },
+    {
+        "fact": "HBM4 관련 사실",
+        "value": "1c D램·4나노 베이스 다이 적용 HBM4 양산 출하",
+        "unit": None,
+        "physical_pdf_page": 31,
+        "dart_printed_page": 28,
+        "section": "HBM4 관련 사실",
+    },
+)
 
 
 class DemoCorpusValidationError(ValueError):
@@ -283,7 +342,16 @@ def _validate_disclosure_provenance(
         or document.document_id != f"disclosure:{receipt_no}"
         or document.source_url != expected_url
         or document.locator.get("viewer_url") != expected_url
-        or document.metadata.get("content_level") != "listing_metadata"
+        or document.locator.get("content_level")
+        != _DISCLOSURE_CONTENT_LEVEL
+        or document.locator.get("section") != _DISCLOSURE_SECTION
+        or document.locator.get("facts")
+        != [dict(item) for item in _VERIFIED_DISCLOSURE_FACTS]
+        or document.metadata.get("content_level")
+        != _DISCLOSURE_CONTENT_LEVEL
+        or document.metadata.get("reference_section")
+        != _DISCLOSURE_SECTION
+        or document.text != _DISCLOSURE_BODY_TEXT
         or document.metadata.get("is_correction") is not False
         or document.metadata.get("has_subsequent_correction") is not False
         or document.metadata.get("is_withdrawn") is not False

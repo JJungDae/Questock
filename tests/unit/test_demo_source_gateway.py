@@ -49,6 +49,63 @@ def test_load_demo_corpus_has_fixed_version_basis_and_origins() -> None:
         "synthetic_project_owned",
         "verified_public_recorded",
     ]
+    disclosure = corpus.documents[2]
+    assert disclosure.metadata["content_level"] == "verified_body_facts"
+    assert disclosure.locator["receipt_no"] == "20260515002181"
+    assert disclosure.locator["viewer_url"] == (
+        "https://dart.fss.or.kr/dsaf001/main.do"
+        "?rcpNo=20260515002181"
+    )
+    assert disclosure.locator["facts"] == [
+        {
+            "fact": "연결 매출",
+            "value": "133,873,444",
+            "unit": "백만원",
+            "physical_pdf_page": 53,
+            "dart_printed_page": 50,
+            "section": "연결 매출",
+        },
+        {
+            "fact": "연결 영업이익",
+            "value": "57,232,797",
+            "unit": "백만원",
+            "physical_pdf_page": 53,
+            "dart_printed_page": 50,
+            "section": "연결 영업이익",
+        },
+        {
+            "fact": "DS 부문 매출",
+            "value": "817,156",
+            "unit": "억원",
+            "physical_pdf_page": 52,
+            "dart_printed_page": 49,
+            "section": "DS 부문 매출",
+        },
+        {
+            "fact": "DS 부문 영업이익",
+            "value": "536,633",
+            "unit": "억원",
+            "physical_pdf_page": 52,
+            "dart_printed_page": 49,
+            "section": "DS 부문 영업이익",
+        },
+        {
+            "fact": "시설투자 합계",
+            "value": "112,332",
+            "unit": "억원",
+            "physical_pdf_page": 16,
+            "dart_printed_page": 13,
+            "section": "시설투자 합계",
+        },
+        {
+            "fact": "HBM4 관련 사실",
+            "value": "1c D램·4나노 베이스 다이 적용 HBM4 양산 출하",
+            "unit": None,
+            "physical_pdf_page": 31,
+            "dart_printed_page": 28,
+            "section": "HBM4 관련 사실",
+        },
+    ]
 
 
 @pytest.mark.parametrize(
@@ -107,6 +164,40 @@ def test_loader_failure_is_typed_and_does_not_expose_path() -> None:
 
     assert str(sentinel) not in str(exc_info.value)
     assert "sentinel" not in str(exc_info.value)
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        lambda disclosure: disclosure["metadata"].__setitem__(
+            "content_level",
+            "listing_metadata",
+        ),
+        lambda disclosure: disclosure["locator"]["facts"][0].__setitem__(
+            "value",
+            "133,873,445",
+        ),
+        lambda disclosure: disclosure["locator"]["facts"][0].__setitem__(
+            "physical_pdf_page",
+            50,
+        ),
+        lambda disclosure: disclosure["locator"]["facts"][0].__setitem__(
+            "section",
+            "",
+        ),
+        lambda disclosure: disclosure.__setitem__(
+            "text",
+            "접수번호만 있는 metadata-only 문서",
+        ),
+    ],
+)
+def test_disclosure_body_fact_contract_rejects_mutation(mutation) -> None:
+    manifest, payload = _raw_corpus()
+    disclosure = payload["documents"][2]
+    mutation(disclosure)
+
+    with pytest.raises(DemoCorpusValidationError):
+        build_demo_corpus(manifest, payload)
 
 
 def test_recorded_gateway_preserves_order_status_and_deep_copy() -> None:

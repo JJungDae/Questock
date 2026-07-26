@@ -37,31 +37,83 @@ jobs:
           chmod 600 "$HOME/.ssh/questock_key"
           ssh-keyscan -H "$GCE_HOST" > "$HOME/.ssh/known_hosts"
 
-      - name: Deploy exact recorded release
+      - name: Deploy and verify exact recorded release
         env:
           GCE_HOST: ${{ secrets.GCE_HOST }}
           GCE_USER: ${{ secrets.GCE_USER }}
           RELEASE_SHA: ${{ inputs.release_sha }}
         run: |
           set -euo pipefail
-          ssh -i "$HOME/.ssh/questock_key" \
-            "$GCE_USER@$GCE_HOST" "bash -s -- '$RELEASE_SHA'" <<'REMOTE'
+          previous_sha="$(
+            ssh -i "$HOME/.ssh/questock_key" \
+              "$GCE_USER@$GCE_HOST" \
+              "bash -s -- '$RELEASE_SHA'" <<'PREFLIGHT'
           set -euo pipefail
           release_sha="$1"
+          cd "$HOME/Questock"
+
+          [[ "$release_sha" =~ ^[0-9a-f]{40}$ ]]
+          test -z "$(git status --porcelain)"
+          git fetch origin main
+          git cat-file -e "$release_sha^{commit}"
+          git merge-base --is-ancestor "$release_sha" origin/main
+          git rev-parse HEAD
+          PREFLIGHT
+          )"
+          [[ "$previous_sha" =~ ^[0-9a-f]{40}$ ]]
+          previous_image_id="$(
+            ssh -i "$HOME/.ssh/questock_key" \
+              "$GCE_USER@$GCE_HOST" \
+              "docker image inspect 'questock:$previous_sha' \
+                --format '{{.Id}}' 2>/dev/null || printf 'NONE\n'"
+          )"
+          if [ "$previous_image_id" != "NONE" ]; then
+            [[ "$previous_image_id" =~ ^sha256:[0-9a-f]{64}$ ]]
+          fi
+
+          rollback_release() {
+            ssh -i "$HOME/.ssh/questock_key" \
+              "$GCE_USER@$GCE_HOST" \
+              "bash -s -- '$previous_sha' '$previous_image_id'" <<'ROLLBACK'
+          set -euo pipefail
+          previous_sha="$1"
+          previous_image_id="$2"
+          repo_dir="$HOME/Questock"
+          cd "$repo_dir"
+
+          if [ "$previous_image_id" != "NONE" ] \
+            && docker image inspect "$previous_image_id" >/dev/null 2>&1; then
+            docker image tag "$previous_image_id" "questock:$previous_sha"
+            git switch --detach "$previous_sha"
+            export QUESTOCK_IMAGE_TAG="$previous_sha"
+            export QUESTOCK_SOURCE_MODE=recorded
+            docker compose up -d --wait
+            curl --fail --show-error --max-time 10 \
+              http://127.0.0.1:8000/health
+            curl --fail --show-error --max-time 10 \
+              http://127.0.0.1:8501/_stcore/health
+            printf 'rollback_release_sha=%s\n' "$previous_sha"
+          else
+            docker compose rm --stop --force
+            printf 'rollback_release_sha=NONE\n'
+          fi
+          ROLLBACK
+          }
+
+          if ! (
+            ssh -i "$HOME/.ssh/questock_key" \
+              "$GCE_USER@$GCE_HOST" \
+              "bash -s -- '$RELEASE_SHA' '$previous_sha' \
+                '$previous_image_id'" <<'REMOTE'
+          set -euo pipefail
+          release_sha="$1"
+          previous_sha="$2"
+          previous_image_id="$3"
           repo_dir="$HOME/Questock"
           cd "$repo_dir"
 
           [[ "$release_sha" =~ ^[0-9a-f]{40}$ ]]
-          test -z "$(git status --porcelain)"
-          previous_sha="$(git rev-parse HEAD)"
-          previous_image_id="NONE"
-          if inspected_image_id="$(docker image inspect \
-            "questock:$previous_sha" --format '{{.Id}}' 2>&1)"; then
-            previous_image_id="$inspected_image_id"
-          fi
-          git fetch origin main
-          git cat-file -e "$release_sha^{commit}"
-          git merge-base --is-ancestor "$release_sha" origin/main
+          [[ "$previous_sha" =~ ^[0-9a-f]{40}$ ]]
 
           git switch --detach "$release_sha"
           export QUESTOCK_IMAGE_TAG="$release_sha"
@@ -69,17 +121,7 @@ jobs:
           docker compose build --pull --no-cache
           image_id="$(docker image inspect "questock:$release_sha" --format '{{.Id}}')"
 
-          if ! docker compose up -d --wait; then
-            if [ "$previous_image_id" != "NONE" ]; then
-              git switch --detach "$previous_sha"
-              export QUESTOCK_IMAGE_TAG="$previous_sha"
-              docker compose up -d --wait
-            else
-              docker compose rm --stop --force
-            fi
-            exit 1
-          fi
-
+          docker compose up -d --wait
           docker compose ps
           curl --fail --show-error --max-time 10 \
             http://127.0.0.1:8000/health
@@ -93,10 +135,11 @@ jobs:
           printf 'previous_image_id=%s\n' "$previous_image_id"
           REMOTE
 
-      - name: Verify external UI health
-        env:
-          GCE_HOST: ${{ secrets.GCE_HOST }}
-        run: |
-          set -euo pipefail
-          curl --fail --show-error --max-time 10 \
-            "http://$GCE_HOST:8501/_stcore/health"
+            curl --fail --show-error --max-time 10 \
+              "http://$GCE_HOST:8501/_stcore/health"
+          ); then
+            if ! rollback_release; then
+              printf 'rollback_result=failed\n' >&2
+            fi
+            exit 1
+          fi
