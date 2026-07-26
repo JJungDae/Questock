@@ -288,8 +288,16 @@ def test_recorded_release_manifest_and_docs_are_versioned_and_truthful() -> None
     }
     assert "QUESTOCK_SOURCE_MODE=" in env_example
     assert "QUESTOCK_IMAGE_TAG=" in env_example
-    assert "Remote deployment | `NOT_RUN" in release
+    assert (
+        "Recorded release candidate SHA | "
+        "`67fa43dd5a7ec74e7785713eb1adcfa402baab85`"
+        in release
+    )
+    assert "Remote deployment | `PASS - run 30207335981`" in release
     assert "M4 Gate | `NOT_RUN`" in release
     assert "no live connectivity" in scenarios
     assert "Remote recorded deployment" in traceability
-    assert "NOT_RUN" in traceability
+    assert "PASS; rollback target captured, execution NOT_RUN" in traceability
+    assert "M4 Gate | B9 release evidence | independent review | NOT_RUN" in (
+        traceability
+    )

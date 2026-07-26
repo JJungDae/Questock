@@ -1,11 +1,11 @@
 # QUESTOCK SOURCE OF TRUTH INDEX
 
-> 기준일: 2026-07-26
+> 기준일: 2026-07-27
 > 기준 branch: `main`
 > Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
 > Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
 > B9 planning base: `b9ddf7461306d16cf1da14634ce458050d78f7bc`
-> 상태: `B8 complete / B9-A and B9-B merged / B9 focused closure local PASS / remote closure pending`
+> 상태: `B8 complete / B9 remote recorded release PASS / B9 independent review and M4 Gate pending`
 
 ## 1. 목적
 
@@ -106,7 +106,7 @@ PASS - B9-A PR and merged main runs observed
 B9 implementation SHA:
 1a14efbb85669a03340442e1a73b6416adbf2bed - B9-A merge baseline
 B9-B:
-main merge complete; focused closure local PASS on fix/b9-focused-closure
+main merge complete; focused closure and remote recorded release PASS
 B9-B local verification:
 targeted/full regression, M3 Gate 34/34, Critical 17/17, public exposure 0,
 Ruff, secret/compile, clean Docker build, API/UI health, and 7-scenario smoke PASS
@@ -124,11 +124,22 @@ M4-06 disclosure scenario PASS WITH DECLARED COVERAGE LIMITATION
 final status partial with insufficient_disclosure_coverage
 implementation SHA d70e17a95046f5ebcbca05970ff574c1121acb1c
 implementation commit and origin/fix/b9-focused-closure push complete
-focused closure PR/CI/merge NOT_RUN
+focused closure PR #3 / merge SHA
+8dc9c322af89e395aa62e614c69b0840e7aedbae / quality-gate PASS
+B9 deployment hotfixes:
+PR #4 merge SHA 331c41cbf09cc5541f03a17feb9194c0e442e81b
+PR #5 merge/release SHA 67fa43dd5a7ec74e7785713eb1adcfa402baab85
+release quality-gate run 30207273750 PASS - 1852 passed, M3 Gate 34/34,
+Critical 17/17, public exposure 0
 B9-B 원격 배포:
-GCE target selected / deployment approval pending
+PASS - deploy run 30207335981
+release image sha256:56df8f16ed3ed58de659e9ec46c9e24b7d3ddc896dc8a022102f68f351d7b928
+recorded API/UI health and external UI health PASS
+7-scenario recorded smoke PASS; disclosure remains partial with
+insufficient_disclosure_coverage
+rollback target captured; rollback execution NOT_RUN because deployment passed
 M4 Gate:
-B9 전체 완료 전까지 BLOCKED
+NOT_RUN - B9 independent review and M4 Gate review pending
 
 B8 구현:
 PASS WITH REQUIRED FOLLOW-UP / complete
@@ -143,7 +154,7 @@ B9 계획 ALLOWED
 B9-0 PASS / complete
 B9-A1+A2 foundation 구현과 local verification ALLOWED
 B9 current implementation commit/main push는 승인 완료
-B9-B remote deploy는 별도 승인 필요
+B9-B remote deploy PASS; independent B9 review and M4 Gate remain pending
 
 M1-09:
 mandatory supplement implemented - final independent review pending

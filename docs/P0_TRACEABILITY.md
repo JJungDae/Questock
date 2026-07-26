@@ -25,8 +25,8 @@ test, CI job, deployment, or live-provider check.
 | Process visibility UI | `app/ui`, `app/services/observability.py` | M3-15/B7/B8 Task Cards and tests | complete |
 | Golden quality and observability | `scripts/m3_gate.py`, B8 files | M3 Gate `34/34`, Critical `17/17`, exposure `0` | complete at B8 closure |
 | CI and clean container foundation | CI workflow, Dockerfile, Compose | B9-A local checks plus PR/main CI | complete |
-| Recorded release runtime | `app/runtime.py`, `app/services/demo_source_gateway.py`, `data/demo` | B9 unit/integration, one verified disclosure body-fact scenario, clean Docker health, and 7-scenario release smoke | local PASS with declared disclosure coverage limitation |
-| Remote recorded deployment | manual GCE workflow | remote health, smoke, and rollback | NOT_RUN |
+| Recorded release runtime | `app/runtime.py`, `app/services/demo_source_gateway.py`, `data/demo` | B9 unit/integration, one verified disclosure body-fact scenario, clean Docker health, and 7-scenario local/remote release smoke | PASS with declared disclosure coverage limitation |
+| Remote recorded deployment | manual GCE workflow | exact SHA/image, internal API/UI health, external UI health, and 7-scenario smoke in run `30207335981` | PASS; rollback target captured, execution NOT_RUN |
 | M4 Gate | B9 release evidence | independent review | NOT_RUN |
 
 ## Safety Controls
@@ -44,12 +44,10 @@ test, CI job, deployment, or live-provider check.
 
 ## Open Closure Items
 
-- exact B9 release-candidate SHA and image identifier
-- release-candidate GitHub `quality-gate`
-- separately approved GCE deployment and external UI smoke
-- rollback evidence
+- rollback execution evidence, if a separately approved failure-path exercise is required
 - B9 independent implementation review
 - M4 Gate independent review
 - Human Owner three-minute flow confirmation
 
-Until those items are observed, B9 and M4 are not complete.
+Remote release closure is complete. B9 and M4 remain open until their
+independent reviews and remaining Human Owner confirmation are recorded.
