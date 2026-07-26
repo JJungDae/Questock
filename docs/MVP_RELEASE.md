@@ -10,12 +10,15 @@
 | Foundation PR and main `quality-gate` | `PASS` |
 | Main protection Ruleset | `active` |
 | B9-B merged main SHA | `c807be1d4b62acd0d45dea42b884bd16dd366652` |
-| Recorded release candidate SHA | `TO_BE_RECORDED after reviewed PR merge` |
-| Remote deployment | `NOT_RUN - separate deploy approval required` |
+| Recorded release candidate SHA | `67fa43dd5a7ec74e7785713eb1adcfa402baab85` |
+| Release image ID | `sha256:56df8f16ed3ed58de659e9ec46c9e24b7d3ddc896dc8a022102f68f351d7b928` |
+| Release `quality-gate` | `PASS - run 30207273750` |
+| Remote deployment | `PASS - run 30207335981` |
 | M4 Gate | `NOT_RUN` |
 
-This document describes a recorded-only MVP. It is not evidence of live
-provider, LLM, production coverage, or remote deployment.
+This document describes a remotely deployed recorded-only MVP. It is not
+evidence of live provider connectivity, production coverage, or live LLM
+operation.
 
 ## Environment Matrix
 
@@ -23,8 +26,8 @@ provider, LLM, production coverage, or remote deployment.
 |---|---|---|
 | local Python | recorded | targeted and full regression executed locally |
 | local Docker | recorded | clean build, API/UI health, and 7-scenario smoke PASS |
-| GitHub Actions | recorded image build | pending exact release-candidate PR |
-| GCE | recorded | target selected; deploy and smoke not run |
+| GitHub Actions | recorded image build | exact release SHA quality-gate PASS |
+| GCE | recorded | exact-SHA deploy, API/UI health, and 7-scenario smoke PASS |
 
 The Windows local environment may need an installed `tzdata` package for
 `ZoneInfo("Asia/Seoul")`; B9 adds no dependency for that deferred clean-build
@@ -60,8 +63,9 @@ UI:  http://127.0.0.1:8501/_stcore/health
 
 Required recorded smoke is implemented in `scripts/release_smoke.py`. The local
 Docker run passed all seven scenarios, including the anonymous two-turn flow.
-GitHub CI for this release candidate, remote smoke, and M4 Gate remain
-`NOT_RUN`.
+The approved GCE deployment also passed all seven scenarios. The disclosure
+scenario remains `partial` with `insufficient_disclosure_coverage`; M4 Gate
+remains `NOT_RUN`.
 
 ## GCE Runbook
 
@@ -104,7 +108,11 @@ If Compose startup, API/UI health, recorded smoke, or external UI health fails:
 - fail remote preflight before entering the rollback guard
 - do not reset the repository, prune global Docker resources, or expose secrets
 
-Remote rollback remains `NOT_RUN` until a separately approved deployment.
+The successful deployment captured previous release
+`331c41cbf09cc5541f03a17feb9194c0e442e81b` and immutable previous image
+`sha256:a9168da00ebbbe9157e6b235c86e3600a58aaa2e470cb0001484f6fd66b480ae`
+as the rollback target. Rollback execution remains `NOT_RUN` because the
+deployment and smoke passed and did not enter the failure path.
 
 ## Quality Evidence
 
@@ -137,12 +145,19 @@ Focused closure local results:
   `1851 passed, 2 warnings`
 - rollback workflow static tests:
   `16 passed, 1 cache warning`
-- remote deployment and rollback:
-  `NOT_RUN`
+- release hotfix targeted/full local regression:
+  `17 passed`; `1826 passed, 2 warnings`
+- exact release quality-gate:
+  `PASS - 1852 passed, 1 warning; M3 Gate 34/34; Critical 17/17; exposure 0`
+- remote deployment and health:
+  `PASS - run 30207335981; internal API/UI and external UI health`
+- remote recorded smoke:
+  `PASS - 7 scenarios; data_mode recorded; live connectivity false`
+- remote rollback:
+  `target captured; execution NOT_RUN because deployment passed`
 
-Local results are not GitHub CI or remote evidence. Exact release-candidate
-GitHub and remote results remain open until the separately approved lifecycle
-steps run.
+Local results remain distinct from the observed GitHub CI and remote evidence.
+Independent B9 review, M4 Gate, and Human Owner flow confirmation remain open.
 
 ## Known Risks and Deferrals
 
@@ -153,5 +168,5 @@ steps run.
 - M1-09 final independent review: pending
 - M3-12: `NOT_ACTIVATED`
 - GCE external IP may be ephemeral and is not documented as a permanent URL
-- remote deploy, smoke, rollback, independent B9 review, and M4 Gate remain
-  separate closure evidence
+- rollback execution, independent B9 review, Human Owner flow confirmation,
+  and M4 Gate remain separate closure evidence

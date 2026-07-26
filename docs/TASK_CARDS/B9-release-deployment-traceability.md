@@ -4,7 +4,7 @@
 
 - Project: `Questock`
 - Repository: `JJungDae/Questock`
-- Branch: `fix/b9-focused-closure`
+- Branch: `docs/b9-remote-release-closure`
 - Bundle: `B9`
 - Included checkpoints:
   - `B9-0` preflight and B8 closure verification
@@ -56,11 +56,11 @@
 - B9 implementation base:
   `74214b75575fd9f1594ac545b42bbf3908066e77`
 - B9 implementation:
-  `B9-A1+A2 PASS / B9-B main merge complete / focused closure local PASS / remote closure pending`
+  `B9-A1+A2 PASS / B9-B remote recorded release PASS / independent review and M4 Gate pending`
 - B9-A local Docker verification:
   `PASS - locked image build, API/UI health, smoke, and runtime inspection complete`
 - B9-B remote deployment:
-  `TARGET SELECTED - GCE deployment remains separately approval-gated`
+  `PASS - exact release SHA deployed in recorded mode; run 30207335981`
 - GitHub CI:
   `PASS - PR and main quality-gate observed on B9-A foundation merge`
 - Dependency and lock change:
@@ -86,17 +86,18 @@
 - B9 focused closure implementation SHA:
   `d70e17a95046f5ebcbca05970ff574c1121acb1c`
 - B9 focused closure:
-  `LOCAL PASS - implementation commit and branch push complete; PR, CI, merge, and remote deployment NOT_RUN`
+  `PASS - PR #3 merged at 8dc9c322af89e395aa62e614c69b0840e7aedbae`
 - Main protection Ruleset:
   `active - PR, quality-gate, deletion, and force-push protections`
 - B9-B remote deploy:
-  `NOT_RUN - separate approval required`
+  `PASS - release SHA 67fa43dd5a7ec74e7785713eb1adcfa402baab85`
 
 This is the canonical B9 plan. The implementation instruction authorized B9-A1
 and B9-A2 foundation work through merge and observed CI. B9-B local
-implementation was merged before this focused closure. The focused closure
-implementation commit and branch push are complete; PR, merge, and remote
-deploy remain separately approval-gated.
+implementation was merged before this focused closure. The focused closure and
+two deployment hotfixes were merged through reviewed PRs. The approved
+exact-SHA remote deployment and recorded smoke passed. Independent B9 review
+and M4 Gate remain separate pending steps.
 
 ### 1.1 Reviewed V2 execution supplement
 
@@ -591,8 +592,9 @@ and six body facts for the focused closure:
 Recorded disclosure fallback test: ALLOWED
 M4-06 normal disclosure demo: PASS WITH DECLARED COVERAGE LIMITATION
 B9 focused closure local verification: PASS
-B9 remote deployment and rollback: NOT_RUN
-M4 Gate: BLOCKED
+B9 remote deployment and recorded smoke: PASS
+B9 rollback target: VERIFIED; execution NOT_RUN
+M4 Gate: NOT_RUN - independent review pending
 ```
 
 Do not substitute a synthetic receipt, a test fixture, or a fabricated URL.
@@ -1338,7 +1340,7 @@ B9 may be recorded `PASS / complete` only when:
 - [x] exact Ruff dependency and lock change are approved and verified
 - [x] local Ruff passes
 - [x] pre-commit release-asset secret/path scan passes
-- [ ] GitHub CI passes on the exact release candidate SHA
+- [x] GitHub CI passes on the exact release candidate SHA
 - [x] clean local image build passes
 - [x] local API and UI health/smoke pass
 - [x] recorded demo mode passes without live claims or invented locators
@@ -1346,11 +1348,11 @@ B9 may be recorded `PASS / complete` only when:
 - [x] verified recent-disclosure normal scenario passes
 - [x] remote target is separately approved
 - [x] one canonical target deployment command is documented
-- [ ] the primary remote release runs in `recorded` mode
-- [ ] remote deployment and smoke pass
-- [ ] rollback method is verified
+- [x] the primary remote release runs in `recorded` mode
+- [x] remote deployment and smoke pass
+- [x] rollback method and immutable target are verified; execution was not triggered
 - [x] README and release/demo docs match the local implementation candidate
-- [ ] P0 traceability is complete
+- [x] P0 traceability records the observed remote result and remaining gates
 - [x] full local tests pass
 - [x] M3 Gate remains `34/34`
 - [x] Critical remains `17/17`
@@ -1363,7 +1365,7 @@ B9 may be recorded `PASS / complete` only when:
 - [ ] the Human Owner confirms the three-minute code-flow explanation
 - [ ] user confirms the result
 - [ ] the confirmed Step is recorded in the dated work log
-- [ ] any commit, push, PR, merge, or deploy has its own approval
+- [x] any commit, push, PR, merge, or deploy has its own approval
 
 An unavailable Docker runtime, unselected remote target, or missing verified
 recorded disclosure input leaves B9 and M4 Gate blocked. Documentation alone
@@ -1594,27 +1596,27 @@ Git actions remain separately gated:
 - Scoped Docker cleanup:
   `PASS - B9 API/UI containers and Compose network removed; images and unrelated resources preserved`
 - Remote target:
-  `GCE SELECTED - deployment not approved`
+  `GCE SELECTED / deployment approved and executed`
 - Deployment workflow:
-  `IMPLEMENTED / NOT_RUN - manual exact-SHA workflow only`
+  `PASS - manual exact-SHA workflow; deploy run 30207335981`
 - Remote deployment:
-  `NOT_RUN - separate approval required`
+  `PASS - release SHA 67fa43dd5a7ec74e7785713eb1adcfa402baab85`
 - Remote smoke:
-  `NOT_RUN`
+  `PASS - API/UI health, external UI health, and 7 recorded scenarios`
 - Rollback:
-  `NOT_RUN - workflow path documented but no remote release exists`
+  `READY - previous SHA/image captured; execution NOT_RUN because deploy passed`
 - Release docs:
   `LOCAL PASS - README, MVP release, demo scenarios, and runbook drafted`
 - P0 traceability:
-  `LOCAL DRAFT COMPLETE - remote and independent closure rows remain open`
+  `REMOTE RESULT SYNCED - independent B9 and M4 Gate rows remain open`
 - GitHub CI for B9-B:
-  `NOT_RUN - branch push does not trigger the main/pull_request quality-gate`
+  `PASS - exact release quality-gate run 30207273750`
 - B9 review:
   `NOT_RUN`
 - M4 Gate:
   `NOT_RUN`
 - B9-B current status:
-  `main merge complete / focused closure local PASS / remote deployment pending`
+  `remote release PASS / independent B9 review and M4 Gate pending`
 
 ### B9 Focused Closure
 
@@ -1665,8 +1667,47 @@ Git actions remain separately gated:
 - Workflow YAML parse:
   `PASS`
 - Remote deployment, remote smoke, and remote rollback:
-  `NOT_RUN - separate deploy approval required`
+  `deployment and smoke PASS; rollback target captured; execution NOT_RUN`
 - Focused closure PR, CI, merge:
-  `NOT_RUN - separate approval required`
+  `PASS - PR #3 merged; exact main quality-gate passed`
 - Focused closure status:
-  `BRANCH PUSH COMPLETE / ready for focused closure review`
+  `PASS / complete`
+
+### B9 Remote Release Closure
+
+- First deployment preflight correction:
+  `PR #4; merge SHA 331c41cbf09cc5541f03a17feb9194c0e442e81b`
+- Recorded smoke propagation correction:
+  `PR #5; release SHA 67fa43dd5a7ec74e7785713eb1adcfa402baab85`
+- Release quality-gate:
+  `PASS - run 30207273750; 1852 passed, 1 warning`
+- Release M3 Gate:
+  `PASS - 34/34; Critical 17/17; public exposure 0; M3-12 NOT_ACTIVATED`
+- Deployment workflow:
+  `PASS - run 30207335981`
+- Release image:
+  `sha256:56df8f16ed3ed58de659e9ec46c9e24b7d3ddc896dc8a022102f68f351d7b928`
+- Previous release:
+  `331c41cbf09cc5541f03a17feb9194c0e442e81b`
+- Previous immutable image:
+  `sha256:a9168da00ebbbe9157e6b235c86e3600a58aaa2e470cb0001484f6fd66b480ae`
+- Remote mode:
+  `recorded; live_connectivity_checked=false; basis_at=2026-07-26T00:00:00Z`
+- Remote API/UI health:
+  `PASS - internal API, internal Streamlit, and external Streamlit`
+- Remote recorded smoke:
+  `PASS - 7 scenarios: recent_issue complete, disclosure partial, research_report complete, glossary complete, wrong_company no_evidence, blocked blocked, multi_turn partial`
+- M4-06 remote disclosure:
+  `PASS WITH DECLARED COVERAGE LIMITATION - receipt 20260515002181, verified body facts, and insufficient_disclosure_coverage`
+- Rollback readiness:
+  `PASS - previous immutable target captured and rollback path retained`
+- Rollback execution:
+  `NOT_RUN - successful deployment did not enter the failure path`
+- Remote release closure:
+  `PASS`
+- B9 independent implementation review:
+  `NOT_RUN`
+- M4 Gate independent review:
+  `NOT_RUN`
+- B9 current status:
+  `REMOTE RELEASE PASS / independent B9 review and M4 Gate pending`
