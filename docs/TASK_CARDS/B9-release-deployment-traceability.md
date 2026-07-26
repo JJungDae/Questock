@@ -4,7 +4,7 @@
 
 - Project: `Questock`
 - Repository: `JJungDae/Questock`
-- Branch: `fix/b9-m4-gate-closure`
+- Branch: `main`
 - Bundle: `B9`
 - Included checkpoints:
   - `B9-0` preflight and B8 closure verification
@@ -56,7 +56,7 @@
 - B9 implementation base:
   `74214b75575fd9f1594ac545b42bbf3908066e77`
 - B9 implementation:
-  `B9-A1+A2 PASS / B9-B remote recorded release PASS / B9 review PASS WITH REQUIRED FOLLOW-UP / M4 Gate HOLD`
+  `PASS / complete`
 - B9-A local Docker verification:
   `PASS - locked image build, API/UI health, smoke, and runtime inspection complete`
 - B9-B remote deployment:
@@ -95,17 +95,28 @@
   `390c248a47032c3babe07eb6dbbc111668a17ead`
 - B9 independent implementation review:
   `PASS WITH REQUIRED FOLLOW-UP`
+- B9 independent review follow-up:
+  `CLOSED`
+- B9 M4 Gate closure implementation SHA:
+  `76d8ad2fc3a2565e022774333f1958ebbbae709f`
+- B9 M4 Gate closure merge/main SHA:
+  `c97f1af461753c7d05fb8ed9a9f7365182d91f2b`
+- B9 M4 Gate merged-main quality-gate:
+  `PASS - run 30210025937`
+- Human Owner confirmation:
+  `PASS - 2026-07-27`
 - M4 Gate:
-  `HOLD - CI/document closure and Human Owner confirmation pending`
+  `PASS`
 
 This is the canonical B9 plan. The implementation instruction authorized B9-A1
 and B9-A2 foundation work through merge and observed CI. B9-B local
 implementation was merged before this focused closure. The focused closure and
 two deployment hotfixes were merged through reviewed PRs. The approved
 exact-SHA remote deployment and recorded smoke passed. Independent B9 review
-is `PASS WITH REQUIRED FOLLOW-UP`. M4 Gate remains `HOLD` until this
-CI/document closure is merged, its quality gate passes, and the Human Owner
-confirms the required release explanation.
+was `PASS WITH REQUIRED FOLLOW-UP`; its required CI/document closure was merged
+through PR #7, the merged-main quality gate passed, and the Human Owner
+confirmed the required release explanation. B9 is `PASS / complete` and M4
+Gate is `PASS`.
 
 ### 1.1 Reviewed V2 execution supplement
 
@@ -602,7 +613,7 @@ M4-06 normal disclosure demo: PASS WITH DECLARED COVERAGE LIMITATION
 B9 focused closure local verification: PASS
 B9 remote deployment and recorded smoke: PASS
 B9 rollback target: VERIFIED; execution NOT_RUN
-M4 Gate: HOLD - CI/document closure and Human Owner confirmation pending
+M4 Gate: PASS - closure merged, merged-main quality gate passed, and Human Owner confirmed
 ```
 
 Do not substitute a synthetic receipt, a test fixture, or a fabricated URL.
@@ -1367,12 +1378,12 @@ B9 may be recorded `PASS / complete` only when:
 - [x] public exposure remains `0`
 - [x] secret scan passes
 - [x] compile passes
-- [ ] implementation diff is reviewed
-- [ ] B9 independent implementation review passes
-- [ ] M4 Gate independent review passes
-- [ ] the Human Owner confirms the three-minute code-flow explanation
-- [ ] user confirms the result
-- [ ] the confirmed Step is recorded in the dated work log
+- [x] implementation diff is reviewed
+- [x] B9 independent implementation review passes
+- [x] M4 Gate independent review passes
+- [x] the Human Owner confirms the three-minute code-flow explanation
+- [x] user confirms the result
+- [x] the confirmed Step is recorded in the dated work log
 - [x] any commit, push, PR, merge, or deploy has its own approval
 
 An unavailable Docker runtime, unselected remote target, or missing verified
@@ -1620,11 +1631,11 @@ Git actions remain separately gated:
 - GitHub CI for B9-B:
   `PASS - exact release quality-gate run 30207273750`
 - B9 review:
-  `PASS WITH REQUIRED FOLLOW-UP`
+  `PASS WITH REQUIRED FOLLOW-UP - required follow-up CLOSED`
 - M4 Gate:
-  `HOLD - CI/document closure and Human Owner confirmation pending`
+  `PASS`
 - B9-B current status:
-  `remote release PASS / B9 review PASS WITH REQUIRED FOLLOW-UP / M4 Gate HOLD`
+  `PASS / complete`
 
 ### B9 Focused Closure
 
@@ -1714,8 +1725,29 @@ Git actions remain separately gated:
 - Remote release closure:
   `PASS`
 - B9 independent implementation review:
-  `PASS WITH REQUIRED FOLLOW-UP`
+  `PASS WITH REQUIRED FOLLOW-UP - required follow-up CLOSED`
 - M4 Gate independent review:
-  `HOLD - CI/document closure and Human Owner confirmation pending`
+  `PASS`
 - B9 current status:
-  `REMOTE RELEASE PASS / B9 review PASS WITH REQUIRED FOLLOW-UP / M4 Gate HOLD`
+  `PASS / complete`
+
+### B9 M4 Gate Final Closure
+
+- Closure implementation SHA:
+  `76d8ad2fc3a2565e022774333f1958ebbbae709f`
+- Closure implementation commit:
+  `Fix B9 M4 gate closure`
+- Closure branch push:
+  `complete - origin/fix/b9-m4-gate-closure`
+- Closure PR and main merge:
+  `PASS - PR #7; merge SHA c97f1af461753c7d05fb8ed9a9f7365182d91f2b`
+- Merged-main quality-gate:
+  `PASS - run 30210025937`
+- Human Owner confirmation:
+  `PASS - 2026-07-27`
+- B9 final status:
+  `PASS / complete`
+- M4 Gate:
+  `PASS`
+- Next:
+  `A15-M activation check planning`
