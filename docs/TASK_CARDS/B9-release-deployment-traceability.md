@@ -4,7 +4,7 @@
 
 - Project: `Questock`
 - Repository: `JJungDae/Questock`
-- Branch: `main`
+- Branch: `release/b9-recorded-deployment`
 - Bundle: `B9`
 - Included checkpoints:
   - `B9-0` preflight and B8 closure verification
@@ -56,26 +56,32 @@
 - B9 implementation base:
   `74214b75575fd9f1594ac545b42bbf3908066e77`
 - B9 implementation:
-  `B9-A1+A2 FOUNDATION LOCAL PASS - implementation commit/main push approval pending`
+  `B9-A1+A2 PASS / main merge complete; B9-B local implementation PASS / remote closure pending`
 - B9-A local Docker verification:
   `PASS - locked image build, API/UI health, smoke, and runtime inspection complete`
 - B9-B remote deployment:
   `TARGET SELECTED - GCE deployment remains separately approval-gated`
 - GitHub CI:
-  `NOT_RUN - workflow exists locally but has not been pushed or observed`
+  `PASS - PR and main quality-gate observed on B9-A foundation merge`
 - Dependency and lock change:
   `APPROVED - exact ruff==0.15.22 delta only`
 - Current B9 plan/B9-0 docs-only commit and push:
   `complete - 74214b75575fd9f1594ac545b42bbf3908066e77`
 - B9 implementation commit/main push:
-  `APPROVED - current B9-A1+A2 foundation changeset`
-- B9 PR, merge, Ruleset mutation, deploy:
+  `complete - 71ac117690f494f05a337d852abc917b5b2addd8`
+- B9-A CI compatibility fix:
+  `complete - 0e703b6fd0bcc13b33c39ff539a27c523176fe0d`
+- B9-A PR merge/main SHA:
+  `complete - 1a14efbb85669a03340442e1a73b6416adbf2bed`
+- Main protection Ruleset:
+  `active - PR, quality-gate, deletion, and force-push protections`
+- B9-B release PR, merge, and deploy:
   `NOT_APPROVED`
 
 This is the canonical B9 plan. The implementation instruction authorized B9-A1
-and B9-A2 foundation work through local verification. The current follow-up
-authorizes the resulting implementation commit and first main push. It does
-not authorize a PR, merge, Ruleset mutation, or deployment.
+and B9-A2 foundation work through merge and observed CI. B9-B local
+implementation proceeds on the planned release branch. Its commit, push, PR,
+merge, and remote deploy remain separately approval-gated.
 
 ### 1.1 Reviewed V2 execution supplement
 
@@ -110,8 +116,9 @@ Confirmed product and provenance boundary:
 - approved synthetic news and Questock research-note records must cite
   inspectable public references and use `synthetic_project_owned`.
 - the approved Samsung Electronics DART receipt
-  `20260515002181` may use `verified_public_recorded` only after exact value,
-  unit, physical PDF page, DART printed page, and section are verified.
+  `20260515002181` may use `verified_public_recorded` for its approved receipt
+  and listing metadata. Report-body values, units, pages, printed pages, and
+  sections remain excluded until separately verified.
 - the full DART PDF and copyrighted report bodies must not be committed.
 
 Confirmed deployment boundary:
@@ -1308,28 +1315,28 @@ B9 may be recorded `PASS / complete` only when:
 
 - [x] B9 plan is approved
 - [x] B9-0 preflight passes
-- [ ] exact Ruff dependency and lock change are approved and verified
-- [ ] local Ruff passes
-- [ ] pre-commit release-asset secret/path scan passes
+- [x] exact Ruff dependency and lock change are approved and verified
+- [x] local Ruff passes
+- [x] pre-commit release-asset secret/path scan passes
 - [ ] GitHub CI passes on the exact release candidate SHA
-- [ ] clean local image build passes
-- [ ] local API and UI health/smoke pass
-- [ ] recorded demo mode passes without live claims or invented locators
-- [ ] recorded runtime uses manifest `basis_at` consistently
-- [ ] verified recent-disclosure normal scenario passes
-- [ ] remote target is separately approved
-- [ ] one canonical target deployment command is documented
+- [x] clean local image build passes
+- [x] local API and UI health/smoke pass
+- [x] recorded demo mode passes without live claims or invented locators
+- [x] recorded runtime uses manifest `basis_at` consistently
+- [x] verified recent-disclosure normal scenario passes
+- [x] remote target is separately approved
+- [x] one canonical target deployment command is documented
 - [ ] the primary remote release runs in `recorded` mode
 - [ ] remote deployment and smoke pass
 - [ ] rollback method is verified
-- [ ] README and release/demo docs match the release candidate
+- [x] README and release/demo docs match the local implementation candidate
 - [ ] P0 traceability is complete
-- [ ] full tests pass
-- [ ] M3 Gate remains `34/34`
-- [ ] Critical remains `17/17`
-- [ ] public exposure remains `0`
-- [ ] secret scan passes
-- [ ] compile passes
+- [x] full local tests pass
+- [x] M3 Gate remains `34/34`
+- [x] Critical remains `17/17`
+- [x] public exposure remains `0`
+- [x] secret scan passes
+- [x] compile passes
 - [ ] implementation diff is reviewed
 - [ ] B9 independent implementation review passes
 - [ ] M4 Gate independent review passes
@@ -1472,7 +1479,11 @@ Git actions remain separately gated:
 - Implementation base:
   `74214b75575fd9f1594ac545b42bbf3908066e77`
 - Implementation SHA:
-  `TO_BE_REPORTED - current implementation commit`
+  `71ac117690f494f05a337d852abc917b5b2addd8`
+- Python 3.11 CI compatibility fix SHA:
+  `0e703b6fd0bcc13b33c39ff539a27c523176fe0d`
+- PR merge/main SHA:
+  `1a14efbb85669a03340442e1a73b6416adbf2bed`
 - Dependency/lock delta:
   `PASS - ruff==0.15.22 only; existing package name/version/source records unchanged`
 - Ruff:
@@ -1480,7 +1491,7 @@ Git actions remain separately gated:
 - CI structure:
   `PASS - immutable actions, uv 0.11.32, Python 3.11 assertion, locked dev sync, required checks, and Docker build command`
 - GitHub CI:
-  `NOT_RUN - no implementation push; local results are not CI results`
+  `PASS - B9-A PR and merged-main quality-gate runs observed`
 - Release-asset targeted pytest:
   `PASS - exit 0; 11 passed, 3 warnings on final post-document recheck`
 - Full pytest:
@@ -1510,29 +1521,73 @@ Git actions remain separately gated:
 - Final recheck environment note:
   `The sandboxed uv wrapper could not initialize the user uv cache and exited before test execution. The same locked .venv executables then passed targeted pytest, Ruff, secret scan, and compile; this is an environment retry, not a code/test failure.`
 - Implementation commit/main push:
-  `APPROVED - current B9-A1+A2 foundation changeset`
+  `complete`
 - Ruleset activation:
-  `NOT_RUN - requires first main push and exact-SHA quality-gate success`
+  `PASS - main PR, quality-gate, deletion, and force-push protections active`
 - B9-A final status:
-  `LOCAL PASS - current implementation commit/main push approved`
+  `PASS / complete`
 
 ### B9-B
 
 - Recorded demo:
-  `NOT_RUN`
+  `LOCAL PASS - deterministic recorded corpus and runtime verified`
+- Implementation base:
+  `1a14efbb85669a03340442e1a73b6416adbf2bed`
+- Implementation branch:
+  `release/b9-recorded-deployment`
+- Implementation SHA:
+  `NOT_CREATED - local working tree only`
+- Implementation commit/push/PR/merge:
+  `NOT_RUN - separate approval required`
+- Local targeted pytest:
+  `PASS - exit 0; 42 passed, 2 warnings`
+- Full local pytest:
+  `PASS - exit 0; 1836 passed, 2 warnings`
+- Local Python environment:
+  `3.14.3; local results are not Python 3.11 CI evidence`
+- M3 Gate:
+  `PASS - 34/34, Critical 17/17, public exposure 0, M3-12 NOT_ACTIVATED`
+- Ruff:
+  `PASS - exact E4,E7,E9,F scope`
+- Secret/path scan:
+  `PASS - project scanner [] and explicit modified/new B9 text scan []`
+- Compile:
+  `PASS - no output`
+- Clean Docker build:
+  `PASS - no-cache build; runtime Python 3.11.15`
+- Docker runtime inspection:
+  `PASS - uid/gid 999, pytest and Ruff absent, corpus schema b9-recorded-v1`
+- Local API/UI health:
+  `PASS - API recorded health and Streamlit health`
+- Local recorded release smoke:
+  `PASS - 7 scenarios: recent issue, disclosure, research report, glossary, wrong company, blocked advice, and multi-turn`
+- Runtime follow-up correction:
+  `Blocked/no-source responses now inherit the configured gateway data_mode; the recorded blocked scenario exposes recorded rather than unconfigured. Existing public schemas and source contracts are unchanged.`
+- Startup validation:
+  `PASS - FastAPI lifespan initializes the process singleton; invalid source mode fails startup with a sanitized RuntimeConfigurationError`
+- Log inspection:
+  `PASS - structured observation fields only; no question text, secret, raw exception, source payload, or local filesystem path observed`
+- Scoped Docker cleanup:
+  `PASS - B9 API/UI containers and Compose network removed; images and unrelated resources preserved`
 - Remote target:
   `GCE SELECTED - deployment not approved`
+- Deployment workflow:
+  `IMPLEMENTED / NOT_RUN - manual exact-SHA workflow only`
 - Remote deployment:
-  `NOT_RUN`
+  `NOT_RUN - separate approval required`
 - Remote smoke:
   `NOT_RUN`
 - Rollback:
-  `NOT_RUN`
+  `NOT_RUN - workflow path documented but no remote release exists`
 - Release docs:
-  `NOT_RUN`
+  `LOCAL PASS - README, MVP release, demo scenarios, and runbook drafted`
 - P0 traceability:
-  `NOT_RUN`
+  `LOCAL DRAFT COMPLETE - remote and independent closure rows remain open`
+- GitHub CI for B9-B:
+  `NOT_RUN - no release-candidate commit or PR`
 - B9 review:
   `NOT_RUN`
 - M4 Gate:
   `NOT_RUN`
+- B9-B current status:
+  `LOCAL PASS / remote deployment and independent closure pending`

@@ -1,16 +1,23 @@
 from __future__ import annotations
 
+import json
 import tomllib
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
 CI_PATH = ROOT / ".github" / "workflows" / "ci.yml"
+DEPLOY_PATH = ROOT / ".github" / "workflows" / "deploy-gce.yml"
 DOCKERFILE_PATH = ROOT / "Dockerfile"
 COMPOSE_PATH = ROOT / "compose.yaml"
 DOCKERIGNORE_PATH = ROOT / ".dockerignore"
 PYPROJECT_PATH = ROOT / "pyproject.toml"
 LOCK_PATH = ROOT / "uv.lock"
+ENV_EXAMPLE_PATH = ROOT / ".env.example"
+DEMO_MANIFEST_PATH = ROOT / "data" / "demo" / "manifest.json"
+MVP_RELEASE_PATH = ROOT / "docs" / "MVP_RELEASE.md"
+DEMO_SCENARIOS_PATH = ROOT / "docs" / "DEMO_SCENARIOS.md"
+TRACEABILITY_PATH = ROOT / "docs" / "P0_TRACEABILITY.md"
 
 CHECKOUT_SHA = "de0fac2e4500dabe0009e67214ff5f5447ce83dd"
 SETUP_UV_SHA = "08807647e7069bb48b6ef5acd8ec9567f424441b"
@@ -94,7 +101,7 @@ def test_compose_uses_one_image_and_safe_host_bindings() -> None:
     assert '"8501:8501"' in compose
     assert "QUESTOCK_API_URL: http://api:8000/api/chat" in compose
     assert "QUESTOCK_UI_TIMEOUT_SECONDS: \"21\"" in compose
-    assert "QUESTOCK_SOURCE_MODE: ${QUESTOCK_SOURCE_MODE:-unconfigured}" in compose
+    assert "QUESTOCK_SOURCE_MODE: ${QUESTOCK_SOURCE_MODE:-recorded}" in compose
     assert "API_BASE_URL" not in compose
     assert "GEMINI_API_KEY" not in compose
     assert "OPENDART_API_KEY" not in compose
@@ -123,3 +130,54 @@ def test_dockerignore_excludes_local_and_secret_bearing_assets() -> None:
         "tests",
         "docs",
     } <= patterns
+
+
+def test_gce_deploy_is_manual_exact_sha_recorded_and_scoped() -> None:
+    workflow = _read(DEPLOY_PATH)
+
+    assert "workflow_dispatch:" in workflow
+    assert "release_sha:" in workflow
+    assert "^[0-9a-f]{40}$" in workflow
+    assert 'repo_dir="$HOME/Questock"' in workflow
+    assert "git fetch origin main" in workflow
+    assert "git cat-file -e" in workflow
+    assert "git merge-base --is-ancestor" in workflow
+    assert "git switch --detach" in workflow
+    assert "QUESTOCK_SOURCE_MODE=recorded" in workflow
+    assert "docker compose build --pull --no-cache" in workflow
+    assert "docker compose up -d --wait" in workflow
+    assert "python scripts/release_smoke.py" in workflow
+    assert "127.0.0.1:8000/health" in workflow
+    assert "8501/_stcore/health" in workflow
+    assert "push:" not in workflow
+    assert "git reset" not in workflow
+    assert "docker system prune" not in workflow
+    assert "GEMINI_API_KEY" not in workflow
+    assert "OPENDART_API_KEY" not in workflow
+
+
+def test_recorded_release_manifest_and_docs_are_versioned_and_truthful() -> None:
+    manifest = json.loads(_read(DEMO_MANIFEST_PATH))
+    env_example = _read(ENV_EXAMPLE_PATH)
+    release = _read(MVP_RELEASE_PATH)
+    scenarios = _read(DEMO_SCENARIOS_PATH)
+    traceability = _read(TRACEABILITY_PATH)
+
+    assert manifest == {
+        "corpus_type": "recorded_demo",
+        "schema_version": "b9-recorded-v1",
+        "basis_at": "2026-07-26T00:00:00Z",
+        "documents_file": "documents.json",
+        "document_ids": [
+            "demo:news:samsung-broadcom-20260725",
+            "demo:research-report:samsung-1q26",
+            "disclosure:20260515002181",
+        ],
+    }
+    assert "QUESTOCK_SOURCE_MODE=" in env_example
+    assert "QUESTOCK_IMAGE_TAG=" in env_example
+    assert "Remote deployment | `NOT_RUN" in release
+    assert "M4 Gate | `NOT_RUN`" in release
+    assert "no live connectivity" in scenarios
+    assert "Remote recorded deployment" in traceability
+    assert "NOT_RUN" in traceability

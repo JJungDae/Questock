@@ -132,6 +132,8 @@ def _render_sidebar_status(response: ChatResponse) -> None:
     st.sidebar.caption(f"자료 모드: {mode_labels[process.data_mode]}")
     live_label = "확인됨" if process.live_connectivity_checked else "확인 안 함"
     st.sidebar.caption(f"실시간 연결: {live_label}")
+    if process.data_mode == "recorded":
+        st.sidebar.caption("고정 데모 자료 · 실시간 연결 아님")
 
 
 def _render_response(response: ChatResponse) -> None:

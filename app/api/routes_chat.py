@@ -3,14 +3,14 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.schemas import ChatRequest, ChatResponse
+from app.runtime import get_chat_service as get_runtime_chat_service
 from app.services.chat_service import ChatService, ChatServiceError
 
 chat_router = APIRouter()
-_DEFAULT_CHAT_SERVICE = ChatService()
 
 
 def get_chat_service() -> ChatService:
-    return _DEFAULT_CHAT_SERVICE
+    return get_runtime_chat_service()
 
 
 @chat_router.post("/api/chat", response_model=ChatResponse)

@@ -275,12 +275,13 @@ class ChatService:
         started_at: float,
     ) -> SourceGatewayResult:
         if plan.requires_clarification or not plan.required_sources:
-            return SourceGatewayResult(
-                documents=(),
-                provider_results_by_source={},
-                documents_by_id={},
-                data_mode="unconfigured",
-                live_connectivity_checked=False,
+            return create_source_gateway_timeout_result(
+                getattr(
+                    self._source_gateway,
+                    "timeout_descriptor",
+                    None,
+                ),
+                required_sources=plan.required_sources,
             )
         remaining = self._remaining(started_at)
         try:
