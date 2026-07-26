@@ -148,7 +148,8 @@ def test_gce_deploy_is_manual_exact_sha_recorded_and_scoped() -> None:
     assert "QUESTOCK_SOURCE_MODE=recorded" in workflow
     assert "docker compose build --pull --no-cache" in workflow
     assert "docker compose up -d --wait" in workflow
-    assert "python scripts/release_smoke.py" in workflow
+    assert "docker compose exec -T api python -" in workflow
+    assert "< scripts/release_smoke.py" in workflow
     assert "127.0.0.1:8000/health" in workflow
     assert "8501/_stcore/health" in workflow
     assert "rollback_release()" in workflow
@@ -169,7 +170,7 @@ def test_gce_deploy_is_manual_exact_sha_recorded_and_scoped() -> None:
         "docker compose up -d --wait",
         "http://127.0.0.1:8000/health",
         "http://127.0.0.1:8501/_stcore/health",
-        "python scripts/release_smoke.py",
+        "docker compose exec -T api python -",
         '"http://$GCE_HOST:8501/_stcore/health"',
     ],
 )
@@ -177,15 +178,37 @@ def test_each_deploy_failure_stage_is_inside_rollback_guard(
     failure_stage: str,
 ) -> None:
     workflow = _read(DEPLOY_PATH)
-    guarded = workflow.split("if ! (", maxsplit=1)[1].split(
-        "); then",
+    guarded = workflow.split("deployment_failed=0", maxsplit=1)[1].split(
+        'if [ "$deployment_failed" -ne 0 ]; then',
         maxsplit=1,
     )[0]
-    failure_branch = workflow.split("); then", maxsplit=1)[1]
+    failure_branch = workflow.split(
+        'if [ "$deployment_failed" -ne 0 ]; then',
+        maxsplit=1,
+    )[1]
 
     assert failure_stage in guarded
+    assert "deployment_failed=1" in guarded
     assert "rollback_release" in failure_branch
     assert "exit 1" in failure_branch
+
+
+def test_remote_failure_cannot_be_masked_by_external_ui_health() -> None:
+    workflow = _read(DEPLOY_PATH)
+    deployment = workflow.split("deployment_failed=0", maxsplit=1)[1]
+    remote, after_remote = deployment.split("REMOTE\n          then", maxsplit=1)
+    external, failure_branch = after_remote.split(
+        'if [ "$deployment_failed" -ne 0 ]; then',
+        maxsplit=1,
+    )
+
+    assert "if ! ssh" in remote
+    assert "deployment_failed=1" in after_remote
+    assert 'if [ "$deployment_failed" -eq 0 ]; then' in external
+    assert '"http://$GCE_HOST:8501/_stcore/health"' in external
+    assert "deployment_failed=1" in external
+    assert "rollback_release" in failure_branch
+    assert "if ! (" not in deployment
 
 
 def test_rollback_restores_previous_health_or_removes_failed_release() -> None:
@@ -212,7 +235,7 @@ def test_rollback_restores_previous_health_or_removes_failed_release() -> None:
 def test_deploy_preflight_fails_before_the_rollback_guard() -> None:
     workflow = _read(DEPLOY_PATH)
     preflight = workflow.split("rollback_release() {", maxsplit=1)[0]
-    guarded = workflow.split("if ! (", maxsplit=1)[1]
+    guarded = workflow.split("deployment_failed=0", maxsplit=1)[1]
 
     assert 'test -z "$(git status --porcelain)"' in preflight
     assert "git fetch origin main" in preflight
@@ -224,8 +247,8 @@ def test_deploy_preflight_fails_before_the_rollback_guard() -> None:
 
 def test_previous_image_id_is_captured_before_build_and_used_for_rollback() -> None:
     workflow = _read(DEPLOY_PATH)
-    pre_guard = workflow.split("if ! (", maxsplit=1)[0]
-    guarded = workflow.split("if ! (", maxsplit=1)[1]
+    pre_guard = workflow.split("deployment_failed=0", maxsplit=1)[0]
+    guarded = workflow.split("deployment_failed=0", maxsplit=1)[1]
 
     assert "previous_image_id=\"$(" in pre_guard
     image_capture = pre_guard.split("<<'IMAGE_ID'", maxsplit=1)[1].split(
