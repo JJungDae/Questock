@@ -1,12 +1,11 @@
 import asyncio
 import json
 from collections.abc import Sequence
-from dataclasses import replace
 
 import pytest
 
 from app.config import ProviderConfig
-from app.core.models import DateRange, FinancialDocument, ProviderResult, SecurityIdentifier
+from app.core.models import DateRange, FinancialDocument, ProviderResult
 from app.core.resolver import SecurityResolver, security_id_for
 from app.core.status import ProviderStatus
 from app.health import (

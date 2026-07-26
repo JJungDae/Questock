@@ -9,8 +9,6 @@ from streamlit.testing.v1 import AppTest
 from app.api.schemas import ChatRequest
 from app.core.models import Evidence
 from app.services.chat_service import ChatService
-from app.ui.app import run
-
 NOW = datetime(2026, 7, 25, 3, tzinfo=UTC)
 
 

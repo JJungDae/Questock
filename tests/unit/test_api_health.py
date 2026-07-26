@@ -19,6 +19,27 @@ def test_get_health_ok_response_contract():
     assert body["phase_slice"]["financial_document_count"] == 4
 
 
+def test_explicit_unconfigured_mode_is_healthy_without_fixture_claims(monkeypatch):
+    monkeypatch.setenv("QUESTOCK_SOURCE_MODE", " unconfigured ")
+
+    response = TestClient(app).get("/health")
+    body = response.json()
+
+    assert response.status_code == 200
+    assert body == {
+        "status": "ok",
+        "version": "b9-foundation",
+        "mode": "unconfigured",
+        "data_mode": "unconfigured",
+        "live_connectivity_checked": False,
+        "sources": {},
+        "phase_slice": {
+            "status": "unconfigured",
+            "scope": "recorded_mvp",
+        },
+    }
+
+
 def test_get_health_degraded_and_error_map_to_503(monkeypatch):
     async def degraded():
         return {"status": "degraded", "mode": "fixture_readiness", "live_connectivity_checked": False}

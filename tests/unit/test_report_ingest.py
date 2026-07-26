@@ -1,9 +1,8 @@
-import copy
 import hashlib
 import json
 import traceback
 from dataclasses import replace
-from datetime import UTC, date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -13,12 +12,10 @@ from app.ingest.reports import (
     REPORT_INGESTION_VERSION,
     REPORT_SOURCE_TYPE,
     NormalizedReportDocumentBundle,
-    NormalizedReportDocument,
     ReportBundleValidationError,
     ReportDocumentValidationError,
     ReportIngestValidationError,
     ReportManifestValidationError,
-    ReportManifest,
     build_manual_research_documents,
     calculate_report_coverage,
     load_normalized_report_documents,

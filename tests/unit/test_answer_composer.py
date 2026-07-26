@@ -14,7 +14,6 @@ from app.answer.composer import AnswerComposer
 from app.core.models import Evidence, FinancialDocument, QueryPlan, SecurityIdentifier
 from app.evidence.budget import LLMCallBudget
 from app.llm.base import (
-    LLMMessage,
     LLMRequest,
     LLMResult,
     LLMStatus,

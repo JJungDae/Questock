@@ -18,7 +18,6 @@ from app.core.status import ProviderStatus, RetrievalStatus
 from app.evidence import budget as budget_module
 from app.evidence.budget import (
     ContextBudgetLimits,
-    ContextBudgetResult,
     ContextBudgetValidationError,
     LLMCallBudget,
     LLMCallBudgetExceededError,

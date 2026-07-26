@@ -12,7 +12,6 @@ from app.ingest.glossary import (
     GLOSSARY_INGESTION_VERSION,
     GLOSSARY_SOURCE_TYPE,
     MANUAL_GLOSSARY_PROVIDER,
-    GlossaryCorpusBundle,
     GlossaryCorpusValidationError,
     GlossaryEntryValidationError,
     GlossaryIndex,

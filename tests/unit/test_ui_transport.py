@@ -260,7 +260,9 @@ def test_timeout_must_be_finite_and_positive(timeout: float) -> None:
 
 
 def test_ui_config_defaults_and_sanitized_invalid_values() -> None:
-    empty = lambda _: None
+    def empty(_: str) -> None:
+        return None
+
     config = load_ui_config(empty)
 
     assert config.endpoint == DEFAULT_CHAT_ENDPOINT

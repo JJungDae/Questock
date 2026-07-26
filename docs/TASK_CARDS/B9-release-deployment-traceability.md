@@ -51,23 +51,81 @@
   `NOT_REQUIRED`
 - B9-0:
   `PASS / complete - preflight executed at 8db690b80b7d117e32b6fcd4986d4bfbecc602b1`
+- B9 remaining implementation plan:
+  `REVIEWED V2 / approved as the current execution supplement`
+- B9 implementation base:
+  `74214b75575fd9f1594ac545b42bbf3908066e77`
 - B9 implementation:
-  `NOT_APPROVED - B9-A1 awaits user implementation approval; B9-A2 remains blocked`
+  `B9-A1+A2 FOUNDATION LOCAL PASS - implementation commit/main push approval pending`
 - B9-A local Docker verification:
-  `BLOCKED - Docker executable not found in the planning environment`
+  `PASS - locked image build, API/UI health, smoke, and runtime inspection complete`
 - B9-B remote deployment:
-  `BLOCKED - deployment target and deploy approval are not provided`
+  `TARGET SELECTED - GCE deployment remains separately approval-gated`
 - GitHub CI:
-  `NOT_RUN - workflow does not exist at planning time`
+  `NOT_RUN - workflow exists locally but has not been pushed or observed`
 - Dependency and lock change:
-  `TECHNICALLY APPROVED - execution waits for B9-0 PASS and user approval`
+  `APPROVED - exact ruff==0.15.22 delta only`
 - Current B9 plan/B9-0 docs-only commit and push:
-  `APPROVED`
-- B9 implementation commit/push, PR, merge, deploy:
+  `complete - 74214b75575fd9f1594ac545b42bbf3908066e77`
+- B9 implementation commit/main push:
+  `APPROVED - current B9-A1+A2 foundation changeset`
+- B9 PR, merge, Ruleset mutation, deploy:
   `NOT_APPROVED`
 
-This is the canonical B9 plan. Planning does not authorize implementation,
-dependency installation, a commit, a push, a PR, a merge, or deployment.
+This is the canonical B9 plan. The implementation instruction authorized B9-A1
+and B9-A2 foundation work through local verification. The current follow-up
+authorizes the resulting implementation commit and first main push. It does
+not authorize a PR, merge, Ruleset mutation, or deployment.
+
+### 1.1 Reviewed V2 execution supplement
+
+The reviewed V2 supplement fixes the remaining execution order:
+
+```text
+Gate B9-R0
+-> B9-A1 Ruff and CI
+-> B9-A2 Dockerfile and Compose foundation
+-> unconfigured local image build and health
+-> local full verification
+-> Human Owner approval
+-> implementation commit and first main push
+-> exact-SHA quality-gate SUCCESS
+-> Ruleset activation
+-> release/b9-recorded-deployment branch
+-> B9-B1 through B9-B4
+-> B9 independent review
+-> M4 Gate
+```
+
+B9-A1 and A2 foundation are one first-push lifecycle checkpoint. The first CI
+push must contain the Dockerfile and release-asset tests, so CI cannot fail
+merely because the container foundation is absent.
+
+Confirmed product and provenance boundary:
+
+- B9 is a `recorded-only MVP`.
+- live Gemini, news, DART, and research-report providers remain
+  `NOT_IMPLEMENTED`.
+- post-B9 live integration remains `PROPOSAL ONLY / NOT_ACTIVATED`.
+- approved synthetic news and Questock research-note records must cite
+  inspectable public references and use `synthetic_project_owned`.
+- the approved Samsung Electronics DART receipt
+  `20260515002181` may use `verified_public_recorded` only after exact value,
+  unit, physical PDF page, DART printed page, and section are verified.
+- the full DART PDF and copyrighted report bodies must not be committed.
+
+Confirmed deployment boundary:
+
+- target platform: Google Compute Engine
+- deployment user: `user`
+- external UI port: `8501`
+- API host binding: `127.0.0.1:8000`
+- UI host binding: `0.0.0.0:8501`
+- Compose UI endpoint: `http://api:8000/api/chat`
+- GitHub deployment secrets are configured by the Human Owner, but values are
+  never read, logged, or committed by this task.
+- remote deployment, Ruleset mutation, Git operations, and firewall changes
+  retain their explicit lifecycle approvals.
 
 ---
 
@@ -1408,28 +1466,62 @@ Git actions remain separately gated:
 ### B9-A
 
 - B9-A1 launch:
-  `AWAITING USER APPROVAL`
+  `APPROVED / COMPLETE - local implementation and verification`
 - B9-A2 launch:
-  `BLOCKED - Docker/Compose unavailable`
+  `APPROVED / COMPLETE - local implementation and verification`
+- Implementation base:
+  `74214b75575fd9f1594ac545b42bbf3908066e77`
+- Implementation SHA:
+  `TO_BE_REPORTED - current implementation commit`
+- Dependency/lock delta:
+  `PASS - ruff==0.15.22 only; existing package name/version/source records unchanged`
 - Ruff:
-  `NOT_RUN`
+  `PASS - exact E4,E7,E9,F command; baseline-only unused imports and one E731 were corrected without behavior changes`
 - CI structure:
-  `NOT_RUN`
+  `PASS - immutable actions, uv 0.11.32, Python 3.11 assertion, locked dev sync, required checks, and Docker build command`
 - GitHub CI:
-  `NOT_RUN`
+  `NOT_RUN - no implementation push; local results are not CI results`
+- Release-asset targeted pytest:
+  `PASS - exit 0; 11 passed, 3 warnings on final post-document recheck`
+- Full pytest:
+  `PASS - exit 0; 1809 passed, 2 warnings`
+- M3 Gate:
+  `PASS - exit 0; 34/34, Critical 17/17, public exposure 0, M3-12 NOT_ACTIVATED`
+- Secret scan:
+  `PASS - exit 0; tracked scan [] and explicit untracked release-asset scan []`
+- Compile:
+  `PASS - exit 0; no output`
 - Docker build:
-  `NOT_RUN`
+  `PASS - docker compose build --pull --no-cache and CI-equivalent docker build --pull --no-cache --tag questock:ci . both exit 0`
+- Docker runtime:
+  `PASS - Python 3.11.15, uid/gid questock 999, Ruff and pytest absent, no local review/test/docs assets in /app`
+- Compose:
+  `PASS - one shared image; API 127.0.0.1:8000; UI 8501; no volumes or live credentials`
 - Local API/UI smoke:
-  `NOT_RUN`
+  `PASS - API /health 200 in explicit unconfigured mode; UI health ok; chat returned sanitized provider_failed with data_mode unconfigured and live_connectivity_checked false`
+- Docker verification deviation:
+  `Initial compose wait returned unhealthy because the existing fixture-readiness /health contract expected test fixtures excluded from the image. A narrow explicit QUESTOCK_SOURCE_MODE=unconfigured health branch was added; default fixture-readiness behavior and tests remain unchanged. Rebuild, health, and smoke then passed.`
+- Python environments:
+  `Local uv environment 3.14.3; Docker runtime 3.11.15; GitHub CI Python 3.11 NOT_RUN`
 - Checkpoint HANDOFF:
-  `NOT_RUN`
+  `THIS RESULT LOG plus the implementation result report serve as the temporary HANDOFF; no separate formal HANDOFF file created`
+- Scoped Docker cleanup:
+  `PASS - questock-api-1, questock-ui-1, and questock_default removed; images and unrelated Docker resources preserved`
+- Final recheck environment note:
+  `The sandboxed uv wrapper could not initialize the user uv cache and exited before test execution. The same locked .venv executables then passed targeted pytest, Ruff, secret scan, and compile; this is an environment retry, not a code/test failure.`
+- Implementation commit/main push:
+  `APPROVED - current B9-A1+A2 foundation changeset`
+- Ruleset activation:
+  `NOT_RUN - requires first main push and exact-SHA quality-gate success`
+- B9-A final status:
+  `LOCAL PASS - current implementation commit/main push approved`
 
 ### B9-B
 
 - Recorded demo:
   `NOT_RUN`
 - Remote target:
-  `NOT_SELECTED`
+  `GCE SELECTED - deployment not approved`
 - Remote deployment:
   `NOT_RUN`
 - Remote smoke:

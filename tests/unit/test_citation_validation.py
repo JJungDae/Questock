@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import FrozenInstanceError, replace
 from datetime import date, datetime, timedelta, timezone
-import math
 
 import pytest
 
