@@ -1,76 +1,122 @@
 # Questock
 
-Questock is an evidence-grounded Korean stock RAG prototype. The current local slice verifies deterministic fixture readiness for one reference security and does not check live provider connectivity.
+Questock is an evidence-grounded Korean stock RAG prototype for Samsung
+Electronics, SK hynix, and Hyundai Motor. The release runtime is a deterministic
+recorded demo: it does not call live news, OpenDART, research-report, or LLM
+providers.
 
-## Requirements
+## Runtime Flow
 
-- Python 3.11 or newer
-- Run commands from the repository root
-
-Install the approved local dependencies:
-
-```powershell
-python -m pip install --target .deps "pydantic>=2.7,<3" "fastapi>=0.115,<1" "uvicorn>=0.30,<1" "pytest>=8,<9" "httpx>=0.27,<1"
+```text
+FastAPI ChatRequest
+-> process-level runtime and SourceGateway
+-> QueryPlanner and security resolution
+-> Evidence normalization, hard filter, and freshness
+-> lexical retrieval and EvidencePolicy
+-> context budget and citation validation
+-> fixed-template answer fallback
+-> public process summary
+-> Streamlit UI
 ```
 
-Empty environment placeholders are documented in `.env.example`. Keep real values in local environment variables or in an untracked environment file loaded by your shell or process manager. Questock does not automatically load `.env` files in M1-08.
+The main implementation boundaries are:
 
-## Fixture Readiness
+- `app/runtime.py`: mode selection, fixed demo clock, and singleton service
+- `app/services/demo_source_gateway.py`: recorded corpus loader and gateway
+- `app/services/chat_service.py`: orchestration
+- `app/ui/app.py`: user-facing answer and process view
+- `data/demo/manifest.json`: recorded corpus version and fixed basis timestamp
 
-M1-08 checks a fixed Samsung Electronics fixture slice using recorded news, recorded disclosure, synthetic manual research-report sections, and the approved local glossary corpus. `live_connectivity_checked` is always `false`; recorded fixtures do not prove NAVER, OpenDART, report-source, or LLM availability.
+## Setup
 
-Run the fixed CLI:
-
-```powershell
-$env:PYTHONPATH = ".deps;."; python scripts/m1_phase_slice.py
-```
-
-CLI exit codes:
-
-- `0`: ok
-- `1`: degraded
-- `2`: error
-
-## Health API
-
-Run the local API:
+Use the locked environment from the repository root:
 
 ```powershell
-$env:PYTHONPATH = ".deps;."; python -m uvicorn app.api.main:app --host 127.0.0.1 --port 8000
+uv sync --locked --extra dev
 ```
 
-Example request:
+Real credentials belong only in local environment variables or an untracked
+environment file. `.env.example` contains names and empty placeholders only.
+Questock does not automatically load `.env` files.
+
+## Local Run
+
+Recorded API:
 
 ```powershell
-Invoke-RestMethod http://127.0.0.1:8000/health
+$env:QUESTOCK_SOURCE_MODE = "recorded"
+uv run --no-sync uvicorn app.api.main:app --host 127.0.0.1 --port 8000
 ```
 
-`GET /health` reports fixture readiness only. It does not perform live API or LLM calls.
-
-## Secret Scan
-
-Run:
+Recorded UI in a second terminal:
 
 ```powershell
-python scripts/secret_scan.py
+$env:QUESTOCK_API_URL = "http://127.0.0.1:8000/api/chat"
+$env:QUESTOCK_UI_TIMEOUT_SECONDS = "21"
+uv run --no-sync streamlit run streamlit_app.py
 ```
 
-Secret scan exit codes:
+Endpoints:
 
-- `0`: no findings
-- `1`: one or more potential findings
-- `2`: scanner failure
+- API health: `http://127.0.0.1:8000/health`
+- API chat: `http://127.0.0.1:8000/api/chat`
+- UI: `http://127.0.0.1:8501`
 
-## Tests
+Unset or empty `QUESTOCK_SOURCE_MODE` selects `unconfigured`. That mode returns
+a truthful provider-unavailable fallback and does not silently switch to live
+data.
 
-Targeted M1-08 tests:
+## Container Run
+
+Compose uses one non-root image for API and UI. The API host port is loopback
+only; the UI is exposed on port 8501.
 
 ```powershell
-$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_health_phase_slice.py tests/unit/test_secret_scan.py tests/unit/test_api_health.py -q
+docker compose build --pull --no-cache
+docker compose up -d --wait
+docker compose ps
 ```
 
-M1-01 through M1-08 regression:
+Cleanup is scoped to this project:
 
 ```powershell
-$env:PYTHONPATH = ".deps;."; python -m pytest tests/unit/test_core_models.py tests/unit/test_status_contracts.py tests/unit/test_security_resolver.py tests/unit/test_provider_base.py tests/unit/test_config.py tests/unit/test_news_provider.py tests/unit/test_disclosure_provider.py tests/unit/test_report_ingest.py tests/unit/test_glossary_ingest.py tests/unit/test_health_phase_slice.py tests/unit/test_secret_scan.py tests/unit/test_api_health.py -q
+docker compose down
 ```
+
+## Configuration
+
+- `QUESTOCK_SOURCE_MODE`: `unconfigured` or `recorded`
+- `QUESTOCK_IMAGE_TAG`: immutable release SHA for release builds
+- `QUESTOCK_API_URL`: Streamlit chat endpoint
+- `QUESTOCK_UI_TIMEOUT_SECONDS`: UI request timeout
+- provider and LLM variable names remain documented for deferred work only
+
+The recorded release requires no provider or LLM credential.
+
+## Verification
+
+```powershell
+uv run --no-sync ruff check --select E4,E7,E9,F app tests scripts streamlit_app.py
+uv run --no-sync pytest tests -q
+uv run --no-sync python scripts/m3_gate.py
+uv run --no-sync python scripts/secret_scan.py
+uv run --no-sync python -m compileall app tests scripts -q
+```
+
+The release smoke script targets a running recorded API:
+
+```powershell
+uv run --no-sync python scripts/release_smoke.py --api-url http://127.0.0.1:8000/api/chat
+```
+
+## Data Boundary
+
+- News and research-note text is a short Questock-authored synthetic summary
+  with a public reference URL.
+- The DART item contains human-approved receipt and listing metadata only.
+- The fixed basis timestamp comes from the manifest, not the system clock.
+- The demo corpus is scenario evidence, not proof of actual source coverage.
+- Live Gemini and live provider integration remain not activated.
+
+Questock provides evidence-oriented information, not personalized investment
+advice, price targets, buy or sell instructions, or guaranteed forecasts.

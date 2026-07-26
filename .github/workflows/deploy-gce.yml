@@ -1,0 +1,102 @@
+name: deploy-recorded-gce
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        description: Exact main commit to deploy
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: questock-recorded-gce
+  cancel-in-progress: false
+
+jobs:
+  deploy-recorded:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Validate release input
+        env:
+          RELEASE_SHA: ${{ inputs.release_sha }}
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+
+      - name: Configure SSH
+        env:
+          GCE_HOST: ${{ secrets.GCE_HOST }}
+          GCE_SSH_KEY: ${{ secrets.GCE_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$GCE_SSH_KEY" > "$HOME/.ssh/questock_key"
+          chmod 600 "$HOME/.ssh/questock_key"
+          ssh-keyscan -H "$GCE_HOST" > "$HOME/.ssh/known_hosts"
+
+      - name: Deploy exact recorded release
+        env:
+          GCE_HOST: ${{ secrets.GCE_HOST }}
+          GCE_USER: ${{ secrets.GCE_USER }}
+          RELEASE_SHA: ${{ inputs.release_sha }}
+        run: |
+          set -euo pipefail
+          ssh -i "$HOME/.ssh/questock_key" \
+            "$GCE_USER@$GCE_HOST" "bash -s -- '$RELEASE_SHA'" <<'REMOTE'
+          set -euo pipefail
+          release_sha="$1"
+          repo_dir="$HOME/Questock"
+          cd "$repo_dir"
+
+          [[ "$release_sha" =~ ^[0-9a-f]{40}$ ]]
+          test -z "$(git status --porcelain)"
+          previous_sha="$(git rev-parse HEAD)"
+          previous_image_id="NONE"
+          if inspected_image_id="$(docker image inspect \
+            "questock:$previous_sha" --format '{{.Id}}' 2>&1)"; then
+            previous_image_id="$inspected_image_id"
+          fi
+          git fetch origin main
+          git cat-file -e "$release_sha^{commit}"
+          git merge-base --is-ancestor "$release_sha" origin/main
+
+          git switch --detach "$release_sha"
+          export QUESTOCK_IMAGE_TAG="$release_sha"
+          export QUESTOCK_SOURCE_MODE=recorded
+          docker compose build --pull --no-cache
+          image_id="$(docker image inspect "questock:$release_sha" --format '{{.Id}}')"
+
+          if ! docker compose up -d --wait; then
+            if [ "$previous_image_id" != "NONE" ]; then
+              git switch --detach "$previous_sha"
+              export QUESTOCK_IMAGE_TAG="$previous_sha"
+              docker compose up -d --wait
+            else
+              docker compose rm --stop --force
+            fi
+            exit 1
+          fi
+
+          docker compose ps
+          curl --fail --show-error --max-time 10 \
+            http://127.0.0.1:8000/health
+          curl --fail --show-error --max-time 10 \
+            http://127.0.0.1:8501/_stcore/health
+          python scripts/release_smoke.py \
+            --api-url http://127.0.0.1:8000/api/chat
+          printf 'release_sha=%s\n' "$release_sha"
+          printf 'image_id=%s\n' "$image_id"
+          printf 'previous_release_sha=%s\n' "$previous_sha"
+          printf 'previous_image_id=%s\n' "$previous_image_id"
+          REMOTE
+
+      - name: Verify external UI health
+        env:
+          GCE_HOST: ${{ secrets.GCE_HOST }}
+        run: |
+          set -euo pipefail
+          curl --fail --show-error --max-time 10 \
+            "http://$GCE_HOST:8501/_stcore/health"

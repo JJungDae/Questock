@@ -89,6 +89,10 @@ _GENERATION_LABELS = {
     "blocked": "제공 제한 응답",
     "not_called": "생성 호출 없음",
 }
+_CONTENT_ORIGIN_LABELS = {
+    "synthetic_project_owned": "Questock 작성 요약",
+    "verified_public_recorded": "검증된 공개 기록",
+}
 _LLM_LABELS = {
     "ok": "AI 정리 완료",
     "timeout": "AI 정리 시간 초과",
@@ -437,6 +441,14 @@ def _project_source(evidence: Evidence) -> BaselineSourceView:
         raise ProjectionError("근거를 화면에 표시할 수 없습니다.")
     details: list[ProcessField] = []
     locator = evidence.locator
+    origin = locator.get("content_origin")
+    if origin in _CONTENT_ORIGIN_LABELS:
+        details.append(
+            ProcessField(
+                "자료 성격",
+                _CONTENT_ORIGIN_LABELS[origin],
+            )
+        )
     if evidence.source_type == "news":
         _append_text_detail(details, "제공자", locator.get("provider"))
     elif evidence.source_type == "disclosure":

@@ -1,0 +1,11 @@
+{
+  "corpus_type": "recorded_demo",
+  "schema_version": "b9-recorded-v1",
+  "basis_at": "2026-07-26T00:00:00Z",
+  "documents_file": "documents.json",
+  "document_ids": [
+    "demo:news:samsung-broadcom-20260725",
+    "demo:research-report:samsung-1q26",
+    "disclosure:20260515002181"
+  ]
+}

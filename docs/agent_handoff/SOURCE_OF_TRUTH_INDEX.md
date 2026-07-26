@@ -5,7 +5,7 @@
 > Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
 > Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
 > B9 planning base: `b9ddf7461306d16cf1da14634ce458050d78f7bc`
-> 상태: `B8 PASS WITH REQUIRED FOLLOW-UP / B9-0 PASS / B9 A1+A2 LOCAL PASS / GIT APPROVED`
+> 상태: `B8 complete / B9-0 PASS / B9-A merged and CI PASS / B9-B local PASS, remote closure pending`
 
 ## 1. 목적
 
@@ -89,17 +89,31 @@ REVIEWED V2 / current execution supplement
 B9 implementation base:
 74214b75575fd9f1594ac545b42bbf3908066e77
 B9-A1+A2 foundation:
-LOCAL PASS / current implementation commit and main push approved
+PASS / implementation and main merge complete
+B9-A foundation implementation SHA:
+71ac117690f494f05a337d852abc917b5b2addd8
+B9-A Python 3.11 CI compatibility fix:
+0e703b6fd0bcc13b33c39ff539a27c523176fe0d
+B9-A merge/main SHA:
+1a14efbb85669a03340442e1a73b6416adbf2bed
 B9-A 완료:
 local Ruff, regression, M3 Gate, secret/compile, locked Docker build,
 API/UI health and smoke PASS
-first main push, exact-SHA GitHub quality-gate, and Ruleset activation pending
+PR quality-gate and merged-main quality-gate PASS
+main protection Ruleset active
 B9 GitHub CI:
-NOT_RUN - local workflow has not been pushed or observed
+PASS - B9-A PR and merged main runs observed
 B9 implementation SHA:
-TO_BE_REPORTED - current implementation commit
+1a14efbb85669a03340442e1a73b6416adbf2bed - B9-A merge baseline
 B9-B:
-NOT_STARTED - blocked by first-push lifecycle checkpoint
+LOCAL PASS on release/b9-recorded-deployment
+B9-B local verification:
+targeted/full regression, M3 Gate 34/34, Critical 17/17, public exposure 0,
+Ruff, secret/compile, clean Docker build, API/UI health, and 7-scenario smoke PASS
+B9-B release-candidate commit/PR/CI:
+implementation commit 6ed6c13a143f5798157aed2344d09ae126ced00b
+release branch push complete
+PR / merge / B9-B GitHub CI NOT_RUN
 B9-B 원격 배포:
 GCE target selected / deployment approval pending
 M4 Gate:

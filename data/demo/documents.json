@@ -1,0 +1,113 @@
+{
+  "schema_version": "b9-recorded-v1",
+  "documents": [
+    {
+      "document_id": "demo:news:samsung-broadcom-20260725",
+      "source_type": "news",
+      "provider": "recorded_demo",
+      "primary_security_ids": [
+        "KRX:005930"
+      ],
+      "mentioned_security_ids": [],
+      "title": "삼성전자 최근 이슈: Broadcom과 메모리·파운드리 협력 MOU",
+      "published_at": "2026-07-25T00:00:00Z",
+      "source_url": "https://news.samsung.com/global/samsung-electronics-and-broadcom-expand-strategic-collaboration-across-memory-and-foundry-technologies",
+      "text": "삼성전자와 Broadcom은 차세대 AI 인프라를 위해 메모리, 파운드리, 첨단 패키징 협력을 확대하는 양해각서를 발표했다. 메모리 공급 협력에는 HBM이 포함되지만, 협력 계획을 완료된 공급 실적으로 해석할 수 없다.",
+      "locator": {
+        "provider": "recorded_demo",
+        "content_origin": "synthetic_project_owned",
+        "source_url": "https://news.samsung.com/global/samsung-electronics-and-broadcom-expand-strategic-collaboration-across-memory-and-foundry-technologies",
+        "reference_section": "press release body"
+      },
+      "metadata": {
+        "document_type": "article",
+        "content_origin": "synthetic_project_owned",
+        "verification_status": "project_owned",
+        "reference_title": "Samsung Electronics and Broadcom Expand Strategic Collaboration Across Memory and Foundry Technologies",
+        "reference_publisher": "Samsung Global Newsroom",
+        "reference_url": "https://news.samsung.com/global/samsung-electronics-and-broadcom-expand-strategic-collaboration-across-memory-and-foundry-technologies",
+        "reference_published_at": "2026-07-25",
+        "reference_section": "press release body",
+        "summary_author": "Questock",
+        "usage_note": "Project-authored Korean summary of a public Samsung press release; not live news coverage."
+      },
+      "ingestion_version": "demo-corpus-b9-v1"
+    },
+    {
+      "document_id": "demo:research-report:samsung-1q26",
+      "source_type": "research_report",
+      "provider": "recorded_demo",
+      "primary_security_ids": [
+        "KRX:005930"
+      ],
+      "mentioned_security_ids": [],
+      "title": "삼성전자 리포트: 2026년 1분기 실적과 위험 요인",
+      "published_at": "2026-04-30T00:00:00Z",
+      "source_url": "https://images.samsung.com/is/content/samsung/assets/global/ir/docs/2026_1Q_conference_eng.pdf",
+      "text": "삼성전자 2026년 1분기 실적 자료는 연결 매출 133.9조 원과 영업이익 57.2조 원을 제시했다. DS 부문은 매출 81.7조 원과 영업이익 53.7조 원을 기록했다. HBM4E 샘플 공급은 예정 항목이며 실제 성과는 추가 확인이 필요하다. 거시경제, 환율, 원자재 가격과 주요 사업의 예상 밖 변화는 향후 결과의 불확실성으로 제시됐다.",
+      "locator": {
+        "provider": "recorded_demo",
+        "content_origin": "synthetic_project_owned",
+        "manifest_id": "demo-report-samsung-1q26",
+        "document_id": "demo:research-report:samsung-1q26",
+        "source_asset_id": "samsung-2026-1q-earnings-presentation",
+        "source_url": "https://images.samsung.com/is/content/samsung/assets/global/ir/docs/2026_1Q_conference_eng.pdf",
+        "page_basis": "source_section_only",
+        "page": null,
+        "section": "Disclaimer; 1Q 2026 Results; Results and Outlook; Appendices 1-2"
+      },
+      "metadata": {
+        "document_type": "synthetic_research_note",
+        "report_type": "synthetic_research_note",
+        "content_origin": "synthetic_project_owned",
+        "verification_status": "project_owned",
+        "reference_title": "Samsung Electronics Earnings Presentation 1Q 2026",
+        "reference_publisher": "Samsung Electronics",
+        "reference_url": "https://images.samsung.com/is/content/samsung/assets/global/ir/docs/2026_1Q_conference_eng.pdf",
+        "reference_published_at": "2026-04-30",
+        "reference_section": "Disclaimer; 1Q 2026 Results; Results and Outlook; Appendices 1-2",
+        "summary_author": "Questock",
+        "usage_note": "Project-authored research note based on public Samsung IR material; not a securities-firm report.",
+        "external_llm_processing_allowed": false
+      },
+      "ingestion_version": "demo-corpus-b9-v1"
+    },
+    {
+      "document_id": "disclosure:20260515002181",
+      "source_type": "disclosure",
+      "provider": "recorded_demo",
+      "primary_security_ids": [
+        "KRX:005930"
+      ],
+      "mentioned_security_ids": [],
+      "title": "삼성전자 공시 메타데이터: 분기보고서 (2026.03)",
+      "published_at": "2026-05-15T00:00:00+09:00",
+      "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002181",
+      "text": "삼성전자의 최근 공시 목록에는 2026년 5월 15일 제출된 분기보고서 (2026.03)가 있다. 이 recorded 항목은 접수번호와 공식 viewer URL이 확인된 listing metadata이며, 본문 수치와 세부 사실, 페이지와 section은 포함하지 않는다.",
+      "locator": {
+        "provider": "recorded_demo",
+        "content_origin": "verified_public_recorded",
+        "receipt_no": "20260515002181",
+        "viewer_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002181"
+      },
+      "metadata": {
+        "document_type": "disclosure_listing",
+        "report_type": "분기보고서",
+        "content_level": "listing_metadata",
+        "content_origin": "verified_public_recorded",
+        "verification_status": "human_approved",
+        "reference_title": "분기보고서 (2026.03)",
+        "reference_publisher": "금융감독원 전자공시시스템 DART",
+        "reference_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002181",
+        "reference_published_at": "2026-05-15",
+        "reference_section": "listing metadata",
+        "summary_author": "Questock",
+        "usage_note": "Human-approved receipt metadata only; report body facts are not included.",
+        "is_correction": false,
+        "has_subsequent_correction": false,
+        "is_withdrawn": false
+      },
+      "ingestion_version": "demo-corpus-b9-v1"
+    }
+  ]
+}

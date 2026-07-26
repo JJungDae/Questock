@@ -1,10 +1,20 @@
 from __future__ import annotations
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.api.main import app
 from app.api.routes_chat import get_chat_service
+from app.runtime import get_runtime_state
 from app.services.chat_service import ChatService, ChatServiceError
+
+
+@pytest.fixture(autouse=True)
+def _clear_runtime_cache(monkeypatch):
+    monkeypatch.setenv("QUESTOCK_SOURCE_MODE", "unconfigured")
+    get_runtime_state.cache_clear()
+    yield
+    get_runtime_state.cache_clear()
 
 
 def test_default_chat_endpoint_returns_explicit_unconfigured_response() -> None:
@@ -73,4 +83,3 @@ def test_service_error_maps_to_stable_503() -> None:
     assert response.status_code == 503
     assert response.json() == {"detail": "chat service unavailable"}
     assert "sentinel" not in response.text
-

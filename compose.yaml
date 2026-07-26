@@ -28,7 +28,7 @@ services:
       - --port
       - "8000"
     environment:
-      QUESTOCK_SOURCE_MODE: ${QUESTOCK_SOURCE_MODE:-unconfigured}
+      QUESTOCK_SOURCE_MODE: ${QUESTOCK_SOURCE_MODE:-recorded}
     ports:
       - "127.0.0.1:8000:8000"
     healthcheck:
@@ -53,7 +53,7 @@ services:
       - --server.headless=true
     environment:
       QUESTOCK_API_URL: http://api:8000/api/chat
-      QUESTOCK_SOURCE_MODE: ${QUESTOCK_SOURCE_MODE:-unconfigured}
+      QUESTOCK_SOURCE_MODE: ${QUESTOCK_SOURCE_MODE:-recorded}
       QUESTOCK_UI_TIMEOUT_SECONDS: "21"
     ports:
       - "8501:8501"
