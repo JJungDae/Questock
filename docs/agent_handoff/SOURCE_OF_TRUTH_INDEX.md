@@ -122,7 +122,9 @@ single verified disclosure body-fact supplement and post-startup rollback
 local targeted/full regression, M3 Gate, Ruff, secret/compile PASS
 M4-06 disclosure scenario PASS WITH DECLARED COVERAGE LIMITATION
 final status partial with insufficient_disclosure_coverage
-focused closure commit/push/PR/CI NOT_RUN
+implementation SHA d70e17a95046f5ebcbca05970ff574c1121acb1c
+implementation commit and origin/fix/b9-focused-closure push complete
+focused closure PR/CI/merge NOT_RUN
 B9-B 원격 배포:
 GCE target selected / deployment approval pending
 M4 Gate:

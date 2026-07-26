@@ -83,8 +83,10 @@
   `complete - PR #2; merged main SHA c807be1d4b62acd0d45dea42b884bd16dd366652`
 - B9 focused closure base:
   `c807be1d4b62acd0d45dea42b884bd16dd366652`
+- B9 focused closure implementation SHA:
+  `d70e17a95046f5ebcbca05970ff574c1121acb1c`
 - B9 focused closure:
-  `LOCAL PASS - commit, push, PR, CI, merge, and remote deployment NOT_RUN`
+  `LOCAL PASS - implementation commit and branch push complete; PR, CI, merge, and remote deployment NOT_RUN`
 - Main protection Ruleset:
   `active - PR, quality-gate, deletion, and force-push protections`
 - B9-B remote deploy:
@@ -92,8 +94,9 @@
 
 This is the canonical B9 plan. The implementation instruction authorized B9-A1
 and B9-A2 foundation work through merge and observed CI. B9-B local
-implementation proceeds on the planned release branch. Its commit, push, PR,
-merge, and remote deploy remain separately approval-gated.
+implementation was merged before this focused closure. The focused closure
+implementation commit and branch push are complete; PR, merge, and remote
+deploy remain separately approval-gated.
 
 ### 1.1 Reviewed V2 execution supplement
 
@@ -1619,6 +1622,12 @@ Git actions remain separately gated:
   `c807be1d4b62acd0d45dea42b884bd16dd366652`
 - Focused closure branch:
   `fix/b9-focused-closure`
+- Focused closure implementation SHA:
+  `d70e17a95046f5ebcbca05970ff574c1121acb1c`
+- Focused closure implementation commit:
+  `Fix B9 focused closure`
+- Focused closure branch push:
+  `complete - origin/fix/b9-focused-closure`
 - Disclosure prompt:
   `삼성전자 최근 공시 핵심 - unchanged`
 - Disclosure provenance:
@@ -1657,7 +1666,7 @@ Git actions remain separately gated:
   `PASS`
 - Remote deployment, remote smoke, and remote rollback:
   `NOT_RUN - separate deploy approval required`
-- Focused closure commit/push/PR/merge:
+- Focused closure PR, CI, merge:
   `NOT_RUN - separate approval required`
 - Focused closure status:
-  `LOCAL PASS / ready for focused closure review`
+  `BRANCH PUSH COMPLETE / ready for focused closure review`
