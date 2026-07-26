@@ -110,8 +110,8 @@ jobs:
           ROLLBACK
           }
 
-          if ! (
-            ssh -i "$HOME/.ssh/questock_key" \
+          deployment_failed=0
+          if ! ssh -i "$HOME/.ssh/questock_key" \
               "$GCE_USER@$GCE_HOST" \
               "bash -s -- '$RELEASE_SHA' '$previous_sha' \
                 '$previous_image_id'" <<'REMOTE'
@@ -137,17 +137,27 @@ jobs:
             http://127.0.0.1:8000/health
           curl --fail --show-error --max-time 10 \
             http://127.0.0.1:8501/_stcore/health
-          python scripts/release_smoke.py \
-            --api-url http://127.0.0.1:8000/api/chat
+          docker compose exec -T api python - \
+            --api-url http://127.0.0.1:8000/api/chat \
+            < scripts/release_smoke.py
           printf 'release_sha=%s\n' "$release_sha"
           printf 'image_id=%s\n' "$image_id"
           printf 'previous_release_sha=%s\n' "$previous_sha"
           printf 'previous_image_id=%s\n' "$previous_image_id"
           REMOTE
+          then
+            deployment_failed=1
+          fi
 
-            curl --fail --show-error --max-time 10 \
+          if [ "$deployment_failed" -eq 0 ]; then
+            if ! curl --fail --show-error --max-time 10 \
               "http://$GCE_HOST:8501/_stcore/health"
-          ); then
+            then
+              deployment_failed=1
+            fi
+          fi
+
+          if [ "$deployment_failed" -ne 0 ]; then
             if ! rollback_release; then
               printf 'rollback_result=failed\n' >&2
             fi
