@@ -113,7 +113,11 @@ uv run --no-sync python scripts/release_smoke.py --api-url http://127.0.0.1:8000
 
 - News and research-note text is a short Questock-authored synthetic summary
   with a public reference URL.
-- The DART item contains human-approved receipt and listing metadata only.
+- The DART item contains a Human Owner-approved receipt and six verified body
+  facts. It preserves each approved value and unit, physical PDF page, DART
+  printed page, and fact-specific section locator.
+- The DART item is not the full disclosure body and does not establish actual
+  disclosure coverage.
 - The fixed basis timestamp comes from the manifest, not the system clock.
 - The demo corpus is scenario evidence, not proof of actual source coverage.
 - Live Gemini and live provider integration remain not activated.
