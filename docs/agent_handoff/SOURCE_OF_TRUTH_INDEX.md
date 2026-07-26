@@ -5,7 +5,7 @@
 > Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
 > Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
 > B9 planning base: `b9ddf7461306d16cf1da14634ce458050d78f7bc`
-> 상태: `B8 complete / B9 remote recorded release PASS / B9 independent review PASS WITH REQUIRED FOLLOW-UP / M4 Gate HOLD`
+> 상태: `B9 PASS / complete / M4 Gate PASS / next A15-M activation check`
 
 ## 1. 목적
 
@@ -61,7 +61,7 @@ PASS / complete
 Task Card 사실 동기화 완료, B6-0에서 상태 확인
 
 현재 완료 bundle:
-B8
+B9
 
 B6 구현:
 PASS / complete
@@ -69,8 +69,8 @@ PASS / complete
 B6 완료 SHA:
 60e6203b265a967a8b6ba45da2ba3128e1e1bcfe
 
-다음 공식 bundle:
-B9
+다음 공식 checkpoint:
+A15-M activation check
 
 B9 계획:
 docs/TASK_CARDS/B9-release-deployment-traceability.md
@@ -139,9 +139,21 @@ recorded API/UI health and external UI health PASS
 insufficient_disclosure_coverage
 rollback target captured; rollback execution NOT_RUN because deployment passed
 B9 independent review:
-PASS WITH REQUIRED FOLLOW-UP
+PASS WITH REQUIRED FOLLOW-UP - required follow-up CLOSED
+B9 M4 Gate closure implementation SHA:
+76d8ad2fc3a2565e022774333f1958ebbbae709f
+B9 M4 Gate closure PR/main merge:
+PR #7 / c97f1af461753c7d05fb8ed9a9f7365182d91f2b
+B9 M4 Gate merged-main quality-gate:
+PASS - run 30210025937
+Human Owner confirmation:
+PASS - 2026-07-27
+B9 final status:
+PASS / complete
 M4 Gate:
-HOLD - CI/document closure and Human Owner confirmation pending
+PASS
+next:
+A15-M activation check
 
 B8 구현:
 PASS WITH REQUIRED FOLLOW-UP / complete
@@ -156,9 +168,8 @@ B9 계획 ALLOWED
 B9-0 PASS / complete
 B9-A1+A2 foundation 구현과 local verification ALLOWED
 B9 current implementation commit/main push는 승인 완료
-B9-B remote deploy PASS; B9 independent review is PASS WITH REQUIRED
-FOLLOW-UP; M4 Gate remains HOLD pending CI/document closure and Human Owner
-confirmation
+B9-B remote deploy PASS; independent review follow-up CLOSED; PR #7 merged-main
+quality-gate PASS; Human Owner confirmation PASS; B9 complete; M4 Gate PASS
 
 M1-09:
 mandatory supplement implemented - final independent review pending
@@ -171,9 +182,10 @@ completed:
 docs/TASK_CARDS/B6-REMAINDER-integrated-implementation-plan.md
 docs/TASK_CARDS/B7-integrated-implementation-plan.md
 docs/TASK_CARDS/B8-quality-observability.md
-
-current planning:
 docs/TASK_CARDS/B9-release-deployment-traceability.md
+
+next activation check:
+A15-M
 ```
 
 ## 6. 금지
