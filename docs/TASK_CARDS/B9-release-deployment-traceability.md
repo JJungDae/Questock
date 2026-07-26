@@ -73,6 +73,12 @@
   `complete - 0e703b6fd0bcc13b33c39ff539a27c523176fe0d`
 - B9-A PR merge/main SHA:
   `complete - 1a14efbb85669a03340442e1a73b6416adbf2bed`
+- B9-B implementation SHA:
+  `6ed6c13a143f5798157aed2344d09ae126ced00b`
+- B9-B implementation commit:
+  `complete - Implement B9 recorded release runtime`
+- B9-B release branch push:
+  `complete - origin/release/b9-recorded-deployment`
 - Main protection Ruleset:
   `active - PR, quality-gate, deletion, and force-push protections`
 - B9-B release PR, merge, and deploy:
@@ -1536,8 +1542,12 @@ Git actions remain separately gated:
 - Implementation branch:
   `release/b9-recorded-deployment`
 - Implementation SHA:
-  `NOT_CREATED - local working tree only`
-- Implementation commit/push/PR/merge:
+  `6ed6c13a143f5798157aed2344d09ae126ced00b`
+- Implementation commit:
+  `complete - Implement B9 recorded release runtime`
+- Release branch push:
+  `complete - origin/release/b9-recorded-deployment`
+- PR/merge:
   `NOT_RUN - separate approval required`
 - Local targeted pytest:
   `PASS - exit 0; 42 passed, 2 warnings`
@@ -1584,7 +1594,7 @@ Git actions remain separately gated:
 - P0 traceability:
   `LOCAL DRAFT COMPLETE - remote and independent closure rows remain open`
 - GitHub CI for B9-B:
-  `NOT_RUN - no release-candidate commit or PR`
+  `NOT_RUN - branch push does not trigger the main/pull_request quality-gate`
 - B9 review:
   `NOT_RUN`
 - M4 Gate:

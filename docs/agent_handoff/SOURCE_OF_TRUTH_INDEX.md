@@ -111,7 +111,9 @@ B9-B local verification:
 targeted/full regression, M3 Gate 34/34, Critical 17/17, public exposure 0,
 Ruff, secret/compile, clean Docker build, API/UI health, and 7-scenario smoke PASS
 B9-B release-candidate commit/PR/CI:
-NOT_RUN
+implementation commit 6ed6c13a143f5798157aed2344d09ae126ced00b
+release branch push complete
+PR / merge / B9-B GitHub CI NOT_RUN
 B9-B 원격 배포:
 GCE target selected / deployment approval pending
 M4 Gate:
