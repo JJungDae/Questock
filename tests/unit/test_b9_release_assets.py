@@ -228,10 +228,15 @@ def test_previous_image_id_is_captured_before_build_and_used_for_rollback() -> N
     guarded = workflow.split("if ! (", maxsplit=1)[1]
 
     assert "previous_image_id=\"$(" in pre_guard
-    assert (
-        "\"docker image inspect 'questock:$previous_sha' \\"
-        in pre_guard
-    )
+    image_capture = pre_guard.split("<<'IMAGE_ID'", maxsplit=1)[1].split(
+        "IMAGE_ID",
+        maxsplit=1,
+    )[0]
+    assert 'if image_id="$(' in image_capture
+    assert 'docker image inspect "questock:$previous_sha"' in image_capture
+    assert 'printf \'%s\\n\' "$image_id"' in image_capture
+    assert "printf 'NONE\\n'" in image_capture
+    assert "|| printf 'NONE\\n'" not in image_capture
     assert "sha256:[0-9a-f]{64}" in pre_guard
     assert "'$previous_image_id'" in guarded
     assert (
