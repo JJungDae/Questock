@@ -50,7 +50,7 @@ def _glossary_response():
     )
 
 
-def _app(transport: FakeTransport) -> None:
+def _app(transport: "FakeTransport") -> None:
     from app.ui.app import run
 
     run(transport)
