@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Any
 
 import pytest
@@ -66,7 +67,7 @@ def test_recorded_api_health_and_two_turn_anonymous_session() -> None:
     assert "session_id" not in follow_up
 
 
-def test_recorded_glossary_and_verified_disclosure_metadata() -> None:
+def test_recorded_glossary_and_verified_disclosure_body_facts() -> None:
     with TestClient(app) as client:
         glossary = _post(
             client,
@@ -94,7 +95,69 @@ def test_recorded_glossary_and_verified_disclosure_metadata() -> None:
             "https://dart.fss.or.kr/dsaf001/main.do"
             "?rcpNo=20260515002181"
         ),
+        "content_level": "verified_body_facts",
+        "section": "verified body facts",
+        "facts": [
+            {
+                "fact": "연결 매출",
+                "value": "133,873,444",
+                "unit": "백만원",
+                "physical_pdf_page": 53,
+                "dart_printed_page": 50,
+                "section": "연결 매출",
+            },
+            {
+                "fact": "연결 영업이익",
+                "value": "57,232,797",
+                "unit": "백만원",
+                "physical_pdf_page": 53,
+                "dart_printed_page": 50,
+                "section": "연결 영업이익",
+            },
+            {
+                "fact": "DS 부문 매출",
+                "value": "817,156",
+                "unit": "억원",
+                "physical_pdf_page": 52,
+                "dart_printed_page": 49,
+                "section": "DS 부문 매출",
+            },
+            {
+                "fact": "DS 부문 영업이익",
+                "value": "536,633",
+                "unit": "억원",
+                "physical_pdf_page": 52,
+                "dart_printed_page": 49,
+                "section": "DS 부문 영업이익",
+            },
+            {
+                "fact": "시설투자 합계",
+                "value": "112,332",
+                "unit": "억원",
+                "physical_pdf_page": 16,
+                "dart_printed_page": 13,
+                "section": "시설투자 합계",
+            },
+            {
+                "fact": "HBM4 관련 사실",
+                "value": "1c D램·4나노 베이스 다이 적용 HBM4 양산 출하",
+                "unit": None,
+                "physical_pdf_page": 31,
+                "dart_printed_page": 28,
+                "section": "HBM4 관련 사실",
+            },
+        ],
     }
+    answer_text = json.dumps(
+        disclosure["answer_sections"],
+        ensure_ascii=False,
+    )
+    assert "연결 매출 133,873,444백만원" in answer_text
+    assert "연결 영업이익 57,232,797백만원" in answer_text
+    assert "DS 부문 매출 817,156억원" in answer_text
+    assert "DS 부문 영업이익 536,633억원" in answer_text
+    assert "시설투자 합계 112,332억원" in answer_text
+    assert "1c D램·4나노 베이스 다이 적용 HBM4 양산 출하" in answer_text
     assert "insufficient_disclosure_coverage" in disclosure["warnings"]
 
 

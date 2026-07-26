@@ -4,7 +4,7 @@
 
 - Project: `Questock`
 - Repository: `JJungDae/Questock`
-- Branch: `release/b9-recorded-deployment`
+- Branch: `fix/b9-focused-closure`
 - Bundle: `B9`
 - Included checkpoints:
   - `B9-0` preflight and B8 closure verification
@@ -56,7 +56,7 @@
 - B9 implementation base:
   `74214b75575fd9f1594ac545b42bbf3908066e77`
 - B9 implementation:
-  `B9-A1+A2 PASS / main merge complete; B9-B local implementation PASS / remote closure pending`
+  `B9-A1+A2 PASS / B9-B main merge complete / focused closure local PASS / remote closure pending`
 - B9-A local Docker verification:
   `PASS - locked image build, API/UI health, smoke, and runtime inspection complete`
 - B9-B remote deployment:
@@ -79,10 +79,16 @@
   `complete - Implement B9 recorded release runtime`
 - B9-B release branch push:
   `complete - origin/release/b9-recorded-deployment`
+- B9-B release PR and main merge:
+  `complete - PR #2; merged main SHA c807be1d4b62acd0d45dea42b884bd16dd366652`
+- B9 focused closure base:
+  `c807be1d4b62acd0d45dea42b884bd16dd366652`
+- B9 focused closure:
+  `LOCAL PASS - commit, push, PR, CI, merge, and remote deployment NOT_RUN`
 - Main protection Ruleset:
   `active - PR, quality-gate, deletion, and force-push protections`
-- B9-B release PR, merge, and deploy:
-  `NOT_APPROVED`
+- B9-B remote deploy:
+  `NOT_RUN - separate approval required`
 
 This is the canonical B9 plan. The implementation instruction authorized B9-A1
 and B9-A2 foundation work through merge and observed CI. B9-B local
@@ -122,9 +128,12 @@ Confirmed product and provenance boundary:
 - approved synthetic news and Questock research-note records must cite
   inspectable public references and use `synthetic_project_owned`.
 - the approved Samsung Electronics DART receipt
-  `20260515002181` may use `verified_public_recorded` for its approved receipt
-  and listing metadata. Report-body values, units, pages, printed pages, and
-  sections remain excluded until separately verified.
+  `20260515002181` uses `verified_public_recorded` for its approved receipt and
+  six separately supplied verified body facts. The fixture preserves the
+  approved values and units, physical PDF pages, DART printed pages, and
+  fact-specific section labels without converting them.
+- this one-item fixture is not actual disclosure coverage. The scenario remains
+  `partial` with `insufficient_disclosure_coverage`.
 - the full DART PDF and copyrighted report bodies must not be committed.
 
 Confirmed deployment boundary:
@@ -572,12 +581,14 @@ with its real receipt number and official viewer URL. The item may be:
 The Human Owner must approve the exact receipt number, official URL, report
 title, company attribution, and recorded content before corpus inclusion.
 OpenDART API calls, credentials, bulk collection, and unapproved external
-network access remain outside B9. Until one item passes this gate:
+network access remain outside B9. The Human Owner supplied one approved item
+and six body facts for the focused closure:
 
 ```text
 Recorded disclosure fallback test: ALLOWED
-M4-06 normal disclosure demo: BLOCKED
-B9 completion: BLOCKED
+M4-06 normal disclosure demo: PASS WITH DECLARED COVERAGE LIMITATION
+B9 focused closure local verification: PASS
+B9 remote deployment and rollback: NOT_RUN
 M4 Gate: BLOCKED
 ```
 
@@ -1600,4 +1611,53 @@ Git actions remain separately gated:
 - M4 Gate:
   `NOT_RUN`
 - B9-B current status:
-  `LOCAL PASS / remote deployment and independent closure pending`
+  `main merge complete / focused closure local PASS / remote deployment pending`
+
+### B9 Focused Closure
+
+- Focused closure base:
+  `c807be1d4b62acd0d45dea42b884bd16dd366652`
+- Focused closure branch:
+  `fix/b9-focused-closure`
+- Disclosure prompt:
+  `삼성전자 최근 공시 핵심 - unchanged`
+- Disclosure provenance:
+  `receipt 20260515002181; official viewer URL; verified_body_facts`
+- Verified body-fact boundary:
+  `six approved facts with exact values/units, physical PDF pages, DART printed pages, and fact-specific section labels; full filing body excluded`
+- EvidenceDecision:
+  `partial - unchanged M2-05/M2-06 contracts`
+- Coverage warning:
+  `insufficient_disclosure_coverage`
+- M4-06 local disclosure scenario:
+  `PASS WITH DECLARED COVERAGE LIMITATION`
+- Wrong-company/no-evidence:
+  `PASS - Samsung receipt and locator remain absent from the SK Hynix response`
+- Rollback supplement:
+  `IMPLEMENTED - compose startup, API health, UI health, recorded smoke, and external UI health share one rollback guard`
+- Rollback safety:
+  `preflight failures occur before the rollback guard; the pre-deploy immutable image ID is retagged to restore the previous SHA and API/UI health, otherwise only the failed Compose release is stopped and removed`
+- Focused targeted initial run:
+  `ENVIRONMENT_INVALID - 37 passed, 1 Streamlit Temp PermissionError`
+- Focused targeted rerun:
+  `PASS - exit 0; 41 passed, 2 warnings; sandbox escalation used only for Streamlit temporary-file access`
+- Deployment workflow targeted:
+  `PASS - exit 0; 16 passed, 1 cache warning`
+- Full pytest:
+  `PASS - exit 0; 1851 passed, 2 warnings`
+- Ruff:
+  `PASS - exact E4,E7,E9,F scope`
+- M3 Gate:
+  `PASS - 34/34, Critical 17/17, public exposure 0, M3-12 NOT_ACTIVATED`
+- Secret scan:
+  `PASS - exit 0; []`
+- Compile:
+  `PASS - exit 0; no output`
+- Workflow YAML parse:
+  `PASS`
+- Remote deployment, remote smoke, and remote rollback:
+  `NOT_RUN - separate deploy approval required`
+- Focused closure commit/push/PR/merge:
+  `NOT_RUN - separate approval required`
+- Focused closure status:
+  `LOCAL PASS / ready for focused closure review`

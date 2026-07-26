@@ -9,6 +9,68 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 _TIMEOUT_SECONDS = 20
+_DISCLOSURE_DOCUMENT_ID = "disclosure:20260515002181"
+_DISCLOSURE_VIEWER_URL = (
+    "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002181"
+)
+_DISCLOSURE_FACTS = [
+    {
+        "fact": "연결 매출",
+        "value": "133,873,444",
+        "unit": "백만원",
+        "physical_pdf_page": 53,
+        "dart_printed_page": 50,
+        "section": "연결 매출",
+    },
+    {
+        "fact": "연결 영업이익",
+        "value": "57,232,797",
+        "unit": "백만원",
+        "physical_pdf_page": 53,
+        "dart_printed_page": 50,
+        "section": "연결 영업이익",
+    },
+    {
+        "fact": "DS 부문 매출",
+        "value": "817,156",
+        "unit": "억원",
+        "physical_pdf_page": 52,
+        "dart_printed_page": 49,
+        "section": "DS 부문 매출",
+    },
+    {
+        "fact": "DS 부문 영업이익",
+        "value": "536,633",
+        "unit": "억원",
+        "physical_pdf_page": 52,
+        "dart_printed_page": 49,
+        "section": "DS 부문 영업이익",
+    },
+    {
+        "fact": "시설투자 합계",
+        "value": "112,332",
+        "unit": "억원",
+        "physical_pdf_page": 16,
+        "dart_printed_page": 13,
+        "section": "시설투자 합계",
+    },
+    {
+        "fact": "HBM4 관련 사실",
+        "value": "1c D램·4나노 베이스 다이 적용 HBM4 양산 출하",
+        "unit": None,
+        "physical_pdf_page": 31,
+        "dart_printed_page": 28,
+        "section": "HBM4 관련 사실",
+    },
+]
+_DISCLOSURE_ANSWER_FACTS = (
+    "연결 매출 133,873,444백만원",
+    "연결 영업이익 57,232,797백만원",
+    "DS 부문 매출 817,156억원",
+    "DS 부문 영업이익 536,633억원",
+    "시설투자 합계 112,332억원",
+    "1c D램·4나노 베이스 다이 적용 HBM4 양산 출하",
+)
 
 
 class ReleaseSmokeError(RuntimeError):
@@ -66,6 +128,8 @@ def run_release_smoke(api_url: str) -> dict[str, object]:
             expected_status=expected_status,
             expected_source=expected_source,
         )
+        if scenario_id == "disclosure":
+            _assert_disclosure_response(payload)
         results.append(
             {
                 "scenario": scenario_id,
@@ -168,6 +232,40 @@ def _assert_response(
         or evidence[0].get("source_type") != expected_source
     ):
         raise ReleaseSmokeError("release smoke response is invalid")
+
+
+def _assert_disclosure_response(payload: Mapping[str, Any]) -> None:
+    evidence = payload.get("evidence")
+    warnings = payload.get("warnings")
+    answer_sections = payload.get("answer_sections")
+    if (
+        payload.get("status") != "partial"
+        or not isinstance(evidence, list)
+        or len(evidence) != 1
+        or not isinstance(evidence[0], Mapping)
+        or evidence[0].get("document_id") != _DISCLOSURE_DOCUMENT_ID
+        or not isinstance(warnings, list)
+        or "insufficient_disclosure_coverage" not in warnings
+    ):
+        raise ReleaseSmokeError("release disclosure response is invalid")
+    locator = evidence[0].get("locator")
+    if (
+        not isinstance(locator, Mapping)
+        or locator.get("receipt_no") != "20260515002181"
+        or locator.get("viewer_url") != _DISCLOSURE_VIEWER_URL
+        or locator.get("content_level") != "verified_body_facts"
+        or locator.get("section") != "verified body facts"
+        or locator.get("facts") != _DISCLOSURE_FACTS
+    ):
+        raise ReleaseSmokeError("release disclosure response is invalid")
+    try:
+        answer_text = json.dumps(answer_sections, ensure_ascii=False)
+    except (TypeError, ValueError):
+        raise ReleaseSmokeError(
+            "release disclosure response is invalid"
+        ) from None
+    if any(fact not in answer_text for fact in _DISCLOSURE_ANSWER_FACTS):
+        raise ReleaseSmokeError("release disclosure response is invalid")
 
 
 def main(argv: list[str] | None = None) -> int:
