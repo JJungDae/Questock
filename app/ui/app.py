@@ -45,6 +45,7 @@ def run(transport: ChatTransport | None = None) -> None:
         initial_sidebar_state="expanded",
     )
     _initialize_state()
+    _clear_chat_input_if_requested()
 
     st.sidebar.title("Questock")
     _render_snapshot_status()
@@ -53,6 +54,7 @@ def run(transport: ChatTransport | None = None) -> None:
         st.session_state.session_id = _new_session_id()
         st.session_state.response = None
         st.session_state.question = ""
+        st.session_state.question_input = None
         st.session_state.transcript = ()
 
     st.title("Questock")
@@ -61,19 +63,16 @@ def run(transport: ChatTransport | None = None) -> None:
         "계좌번호, 인증정보, 거래내역 등 개인 금융정보를 입력하지 마세요."
     )
 
-    with st.form("chat_form", clear_on_submit=False):
-        st.text_area(
-            "질문",
-            key="question",
-            height=100,
-            max_chars=2000,
-        )
-        submitted = st.form_submit_button("질문 보내기", type="primary")
+    submitted_question = st.chat_input(
+        "종목에 대해 궁금한 점을 물어보세요",
+        max_chars=2000,
+        key="question_input",
+    )
 
-    if submitted:
+    if submitted_question is not None:
         try:
             request = ChatRequest(
-                message=st.session_state.question,
+                message=submitted_question,
                 session_id=st.session_state.session_id,
             )
         except ValidationError:
@@ -89,11 +88,14 @@ def run(transport: ChatTransport | None = None) -> None:
                         _transport_timeout(transport),
                     )
                 st.session_state.response = response
+                st.session_state.question = ""
                 st.session_state.transcript = _append_transcript(
                     st.session_state.transcript,
                     question=request.message,
                     response=response,
                 )
+                st.session_state.clear_question_input = True
+                st.rerun()
             except ChatTransportError as exc:
                 st.session_state.response = None
                 st.error(str(exc))
@@ -123,6 +125,11 @@ def _initialize_state() -> None:
         st.session_state.question = ""
     if "transcript" not in st.session_state:
         st.session_state.transcript = ()
+
+
+def _clear_chat_input_if_requested() -> None:
+    if st.session_state.pop("clear_question_input", False):
+        st.session_state.question_input = None
 
 
 def _append_transcript(
@@ -202,7 +209,9 @@ def _render_snapshot_status() -> None:
     st.sidebar.caption(
         "공시: 종목별 단일 분기보고서 · 범위 부족 시 경고"
     )
-    st.sidebar.caption("요청 한도 도달 시: 근거 기반 고정 응답")
+    st.sidebar.caption(
+        "요청 한도 도달 시: 한도 안내와 함께 근거 기반 고정 응답"
+    )
 
 
 def _render_sidebar_status(response: ChatResponse) -> None:
@@ -231,12 +240,6 @@ def _render_sidebar_status(response: ChatResponse) -> None:
 
 def _render_response(response: ChatResponse) -> None:
     answer = project_baseline_answer(response)
-    st.subheader("답변")
-    st.caption(f"상태: {answer.status_label}")
-    if answer.security_name is not None:
-        st.caption(f"종목: {answer.security_name}")
-    st.caption(f"기준일: {answer.basis_date}")
-
     for card in answer.cards:
         with st.container(border=True):
             st.markdown(f"**{card.title}**")
@@ -245,6 +248,11 @@ def _render_response(response: ChatResponse) -> None:
                     st.error(item)
                 else:
                     st.text(item)
+    status_parts = [f"상태: {answer.status_label}"]
+    if answer.security_name is not None:
+        status_parts.append(f"종목: {answer.security_name}")
+    status_parts.append(f"기준일: {answer.basis_date}")
+    st.caption(" · ".join(status_parts))
     for warning in answer.warnings:
         st.warning(warning)
     if answer.missing_sources:
@@ -252,29 +260,54 @@ def _render_response(response: ChatResponse) -> None:
 
     sources = project_baseline_sources(response)
     if sources:
-        st.subheader("근거")
-        for source in sources:
-            with st.container(border=True):
-                st.text(source.title)
-                detail = source.source_label
-                if source.published_date is not None:
-                    detail = f"{detail} · {source.published_date}"
-                st.caption(detail)
-                st.text(source.snippet)
-                for field in source.details:
-                    st.text(f"{field.label}: {field.value}")
-                if source.link_url is not None:
-                    st.link_button(
-                        "원문 보기",
-                        source.link_url,
-                        icon=":material/open_in_new:",
-                    )
+        st.caption("근거")
+        for source in _compact_sources(sources):
+            title = _compact_source_title(source)
+            label = f"{source.source_label} · {title}"
+            if source.link_url is None:
+                st.text(label)
+            else:
+                safe_label = _escape_markdown_label(label)
+                st.markdown(f"[{safe_label}]({source.link_url})")
 
     with st.expander("분석 과정 보기", expanded=False):
         for stage in project_process_stages(response.diagnostics_public):
             st.markdown(f"**{stage.title}**")
             for field in stage.fields:
                 st.text(f"{field.label}: {field.value}")
+
+
+def _compact_sources(sources: tuple[object, ...]) -> tuple[object, ...]:
+    output = []
+    seen: set[tuple[object, object]] = set()
+    for source in sources:
+        key = (
+            getattr(source, "source_type", None),
+            getattr(source, "link_url", None)
+            or getattr(source, "title", None),
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        output.append(source)
+    return tuple(output)
+
+
+def _compact_source_title(source: object) -> str:
+    title = getattr(source, "title", "")
+    source_type = getattr(source, "source_type", "")
+    if not isinstance(title, str):
+        return "원문"
+    if source_type == "research_report" and " - " in title:
+        return title.split(" - ", 1)[0]
+    return title
+
+
+def _escape_markdown_label(value: str) -> str:
+    escaped = value.replace("\\", "\\\\")
+    for character in ("`", "*", "_", "{", "}", "[", "]", "<", ">", "#"):
+        escaped = escaped.replace(character, f"\\{character}")
+    return escaped
 
 
 __all__ = ["run"]

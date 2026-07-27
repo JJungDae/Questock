@@ -99,10 +99,10 @@ def evidence(
 
 def limits(
     *,
-    count: int = 6,
-    per_source: int = 3,
-    tokens: int = 3000,
-    chars: int = 4500,
+    count: int = 10,
+    per_source: int = 4,
+    tokens: int = 6000,
+    chars: int = 12000,
 ) -> ContextBudgetLimits:
     return ContextBudgetLimits(
         max_evidence_count=count,
@@ -232,10 +232,10 @@ def policy_decision(items: list[Evidence]):
 
 
 def test_public_api_and_literal_limits_are_fixed():
-    assert budget_module.MAX_EVIDENCE_COUNT == 6
-    assert budget_module.MAX_EVIDENCE_PER_SOURCE == 3
-    assert budget_module.MAX_CONTEXT_TOKENS == 3000
-    assert budget_module.MAX_CONTEXT_CHARS == 4500
+    assert budget_module.MAX_EVIDENCE_COUNT == 10
+    assert budget_module.MAX_EVIDENCE_PER_SOURCE == 4
+    assert budget_module.MAX_CONTEXT_TOKENS == 6000
+    assert budget_module.MAX_CONTEXT_CHARS == 12000
     assert budget_module.MAX_LLM_CALLS == 2
     assert budget_module.TOKEN_ESTIMATOR_VERSION == "utf8-bytes-div-3-v1"
     assert budget_module.__all__ == [
@@ -394,16 +394,16 @@ def test_context_budget_limits_subclass_is_rejected():
     [
         ("max_evidence_count", True),
         ("max_evidence_count", 0),
-        ("max_evidence_count", 7),
+        ("max_evidence_count", 11),
         ("max_evidence_per_source", False),
         ("max_evidence_per_source", 0),
-        ("max_evidence_per_source", 4),
+        ("max_evidence_per_source", 5),
         ("max_context_tokens", True),
         ("max_context_tokens", 0),
-        ("max_context_tokens", 3001),
+        ("max_context_tokens", 6001),
         ("max_context_chars", False),
         ("max_context_chars", 0),
-        ("max_context_chars", 4501),
+        ("max_context_chars", 12001),
     ],
 )
 def test_every_context_limit_boundary_is_revalidated(field_name, bad_value):
@@ -413,7 +413,7 @@ def test_every_context_limit_boundary_is_revalidated(field_name, bad_value):
     assert_sanitized(exc_info)
 
 
-@pytest.mark.parametrize("bad_reserved", [True, -1, 3001, "1"])
+@pytest.mark.parametrize("bad_reserved", [True, -1, 6001, "1"])
 def test_reserved_token_type_and_range_are_validated(bad_reserved):
     with pytest.raises(ContextBudgetValidationError) as exc_info:
         select_evidence_context([], reserved_tokens=bad_reserved)
@@ -558,11 +558,11 @@ def test_duplicate_result_is_deterministic_across_repeated_calls():
     )
 
 
-def test_fourth_item_from_one_source_is_dropped():
-    items = [evidence(index) for index in range(1, 5)]
+def test_fifth_item_from_one_source_is_dropped():
+    items = [evidence(index) for index in range(1, 6)]
     result = select_evidence_context(items)
     assert [item.evidence_id for item in result.evidence] == [
-        item.evidence_id for item in items[:3]
+        item.evidence_id for item in items[:4]
     ]
     assert result.diagnostics.source_cap_drop_count == 1
     assert result.diagnostics.count_cap_drop_count == 0
@@ -572,12 +572,12 @@ def test_all_sources_are_capped_independently_before_total_count():
     items = [
         evidence(index, source_type=source)
         for source in SOURCES
-        for index in range(1, 5)
+        for index in range(1, 6)
     ]
     result = select_evidence_context(items)
-    assert len(result.evidence) == 6
-    assert result.diagnostics.input_count == 16
-    assert result.diagnostics.unique_count == 16
+    assert len(result.evidence) == 10
+    assert result.diagnostics.input_count == 20
+    assert result.diagnostics.unique_count == 20
     assert result.diagnostics.source_cap_drop_count == 4
     assert result.diagnostics.count_cap_drop_count == 6
     assert result.diagnostics.context_drop_count == 0
@@ -594,11 +594,7 @@ def test_mixed_sources_keep_input_order():
     ]
     result = select_evidence_context(items)
     assert [item.evidence_id for item in result.evidence] == [
-        items[0].evidence_id,
-        items[1].evidence_id,
-        items[2].evidence_id,
-        items[3].evidence_id,
-        items[4].evidence_id,
+        item.evidence_id for item in items
     ]
 
 
@@ -743,51 +739,51 @@ def test_projection_field_order_and_timestamp_are_literal():
 def item_at_exact_token_boundary() -> Evidence:
     base = evidence(snippet="x")
     base_bytes = len(projection_json([base]).encode("utf-8")) - 1
-    remaining = 9000 - base_bytes
+    remaining = 18000 - base_bytes
     korean_count, ascii_count = divmod(remaining, 3)
     item = evidence(snippet="가" * korean_count + "x" * ascii_count)
-    assert len(projection_json([item]).encode("utf-8")) == 9000
+    assert len(projection_json([item]).encode("utf-8")) == 18000
     return item
 
 
 def item_at_exact_char_boundary() -> Evidence:
     base = evidence(snippet="x")
     overhead = len(projection_json([base])) - 1
-    item = evidence(snippet="x" * (4500 - overhead))
-    assert len(projection_json([item])) == 4500
+    item = evidence(snippet="x" * (12000 - overhead))
+    assert len(projection_json([item])) == 12000
     return item
 
 
-def test_exact_3000_token_boundary_is_included():
+def test_exact_6000_token_boundary_is_included():
     item = item_at_exact_token_boundary()
     result = select_evidence_context([item])
     assert result.evidence == (item,)
-    assert result.diagnostics.estimated_context_tokens == 3000
-    assert result.diagnostics.estimated_evidence_chars < 4500
+    assert result.diagnostics.estimated_context_tokens == 6000
+    assert result.diagnostics.estimated_evidence_chars < 12000
 
 
-def test_one_token_over_3000_removes_the_item():
+def test_one_token_over_6000_removes_the_item():
     item = item_at_exact_token_boundary()
     oversized = item.model_copy(update={"snippet": item.snippet + "x"})
     result = select_evidence_context([oversized])
-    assert projection_estimate([oversized])[0] == 3001
+    assert projection_estimate([oversized])[0] == 6001
     assert result.evidence == ()
     assert result.diagnostics.budget_exhausted is True
 
 
-def test_exact_4500_character_boundary_is_included():
+def test_exact_12000_character_boundary_is_included():
     item = item_at_exact_char_boundary()
     result = select_evidence_context([item])
     assert result.evidence == (item,)
-    assert result.diagnostics.estimated_evidence_chars == 4500
-    assert result.diagnostics.estimated_context_tokens <= 3000
+    assert result.diagnostics.estimated_evidence_chars == 12000
+    assert result.diagnostics.estimated_context_tokens <= 6000
 
 
-def test_one_character_over_4500_removes_the_item():
+def test_one_character_over_12000_removes_the_item():
     item = item_at_exact_char_boundary()
     oversized = item.model_copy(update={"snippet": item.snippet + "x"})
     result = select_evidence_context([oversized])
-    assert projection_estimate([oversized])[1] == 4501
+    assert projection_estimate([oversized])[1] == 12001
     assert result.evidence == ()
     assert result.diagnostics.budget_exhausted is True
 
@@ -902,8 +898,8 @@ def test_all_diagnostic_equations_and_effective_limits_are_exact():
     assert diagnostics.input_count == 1 + 2 + 1 + 0 + 3
     assert diagnostics.max_evidence_count == 3
     assert diagnostics.max_evidence_per_source == 2
-    assert diagnostics.max_context_tokens == 3000
-    assert diagnostics.max_context_chars == 4500
+    assert diagnostics.max_context_tokens == 6000
+    assert diagnostics.max_context_chars == 12000
     assert diagnostics.estimator_version == "utf8-bytes-div-3-v1"
 
 
@@ -1101,16 +1097,16 @@ def test_removed_exact_duplicate_is_unknown_at_citation_boundary():
 def test_removed_source_cap_item_is_unknown_at_citation_boundary():
     items = [
         evidence(index, snippet=f"Samsung evidence passage {index}.")
-        for index in range(1, 5)
+        for index in range(1, 6)
     ]
     decision = policy_decision(items)
     before = decision
     budget_result = select_evidence_context(decision.evidence)
-    removed = items[3]
+    removed = items[4]
     claims = [
         CitationClaim(
             "claim-removed",
-            "Samsung evidence passage 4",
+            "Samsung evidence passage 5",
             (removed.evidence_id,),
         )
     ]
@@ -1120,7 +1116,7 @@ def test_removed_source_cap_item_is_unknown_at_citation_boundary():
     )
     assert decision == before
     assert [item.evidence_id for item in budget_result.evidence] == [
-        item.evidence_id for item in items[:3]
+        item.evidence_id for item in items[:4]
     ]
 
 

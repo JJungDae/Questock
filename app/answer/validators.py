@@ -4,7 +4,6 @@ import re
 import unicodedata
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import UTC
 
 from app.answer.models import DraftClaim, StructuredAnswerDraft
 from app.core.models import Evidence, QueryPlan
@@ -39,6 +38,15 @@ _FUTURE_CERTAINTY = re.compile(
 _DIRECTION_PROBABILITY = re.compile(
     r"(?:상승|하락|오를|내릴|급등|급락).{0,24}"
     r"[-+]?\d+(?:\.\d+)?\s*%",
+    re.IGNORECASE,
+)
+_USER_ATTRIBUTE_INFERENCE = re.compile(
+    r"(?:사용자님|고객님|귀하|당신).{0,24}"
+    r"(?:보유|매수|매입|평단|손실|수익|포트폴리오|투자\s*성향|"
+    r"위험\s*성향|투자\s*목표)|"
+    r"(?:보유하고\s*계신|매수하신|매입하신|투자하고\s*계신|"
+    r"손실\s*중이신|평단(?:은|이)|"
+    r"(?:보유|매수|매입|투자)\s*(?:하신|하셨|중이신))",
     re.IGNORECASE,
 )
 _UNSUPPORTED_CONFLICT_CONCLUSION = re.compile(
@@ -130,9 +138,10 @@ def validate_answer_draft(
             len({evidence_id for evidence_id in claim.evidence_ids})
             != len(claim.evidence_ids)
             or not occurrences
-            or any(
-                not tokens.issubset(_numeric_tokens(item.snippet))
-                for item in occurrences
+            or not tokens.issubset(
+                frozenset().union(
+                    *(_numeric_tokens(item.snippet) for item in occurrences)
+                )
             )
         ):
             rejected += 1
@@ -175,6 +184,7 @@ def is_unsafe_answer_text(value: str, *, intent: str) -> bool:
         or _GUARANTEE.search(normalized)
         or _FUTURE_CERTAINTY.search(normalized)
         or _DIRECTION_PROBABILITY.search(normalized)
+        or _USER_ATTRIBUTE_INFERENCE.search(normalized)
         or _UNSUPPORTED_CONFLICT_CONCLUSION.search(normalized)
     )
 
@@ -207,17 +217,7 @@ def _causal_claim_supported(
         not _supports_target(item, target) for item in occurrences
     ):
         return False
-    timestamps = []
-    for item in occurrences:
-        published_at = item.published_at
-        if (
-            published_at is None
-            or published_at.tzinfo is None
-            or published_at.utcoffset() is None
-        ):
-            return False
-        timestamps.append(published_at.astimezone(UTC))
-    return timestamps == sorted(timestamps)
+    return True
 
 
 def _target_security_id(plan: QueryPlan) -> str | None:

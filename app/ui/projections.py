@@ -113,8 +113,31 @@ _WARNING_LABELS = {
     "llm_generation_degraded": "AI 정리 대신 근거 기반 고정 응답 사용",
     "request_deadline_exceeded": "전체 요청 시간 제한에 도달함",
 }
+_GENERATION_FALLBACK_LABELS = {
+    "rate_limited": (
+        "AI 정리 요청 한도에 도달해 검증된 근거를 직접 구성한 "
+        "답변입니다."
+    ),
+    "timeout": (
+        "AI 정리 시간이 초과되어 검증된 근거를 직접 구성한 답변입니다."
+    ),
+    "provider_unavailable": (
+        "AI 정리를 일시적으로 사용할 수 없어 검증된 근거를 직접 "
+        "구성한 답변입니다."
+    ),
+    "authentication_error": (
+        "AI 정리 연결을 사용할 수 없어 검증된 근거를 직접 구성한 "
+        "답변입니다."
+    ),
+    "invalid_response": (
+        "AI 초안이 검증을 통과하지 못해 확인된 근거만으로 답변했습니다."
+    ),
+    "content_blocked": (
+        "AI 초안을 제공할 수 없어 확인된 근거만으로 답변했습니다."
+    ),
+}
 _ANSWER_CARDS = (
-    ("summary", "한 줄 결론"),
+    ("summary", "한 줄 요약"),
     ("facts", "확인된 사실"),
     ("interpretation", "왜 중요한가"),
     ("positive_factors", "긍정 요인"),
@@ -214,12 +237,29 @@ def project_baseline_answer(response: ChatResponse) -> BaselineAnswerView:
             _safe_text(item) for item in response.answer_sections.summary
         ),
         cards=tuple(cards),
-        warnings=tuple(_warning_label(item) for item in response.warnings),
+        warnings=_project_warnings(response),
         missing_sources=tuple(
             _SOURCE_LABELS.get(item, "기타 자료")
             for item in response.missing_sources
         ),
     )
+
+
+def _project_warnings(response: ChatResponse) -> tuple[str, ...]:
+    output = [
+        _warning_label(item)
+        for item in response.warnings
+        if item != "llm_generation_degraded"
+    ]
+    generation = response.diagnostics_public.generation
+    if "llm_generation_degraded" in response.warnings:
+        output.append(
+            _GENERATION_FALLBACK_LABELS.get(
+                generation.llm_status,
+                _WARNING_LABELS["llm_generation_degraded"],
+            )
+        )
+    return tuple(output)
 
 
 def project_baseline_sources(

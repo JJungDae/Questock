@@ -67,14 +67,6 @@ class LiteLLMClient:
                 ],
                 timeout=min(float(timeout_seconds), self._config.timeout_seconds),
                 max_tokens=self._config.max_output_tokens,
-                response_format={
-                    "type": "json_schema",
-                    "json_schema": {
-                        "name": "questock_answer_draft",
-                        "schema": request.response_schema,
-                        "strict": True,
-                    },
-                },
                 reasoning_effort=self._config.thinking_level,
                 num_retries=0,
                 api_key=self._api_key,

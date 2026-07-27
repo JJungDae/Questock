@@ -1407,8 +1407,9 @@ def test_recent_conversation_is_bounded_context_and_never_evidence() -> None:
     second_messages = llm.requests[1].messages
     rendered = "\n".join(item.content for item in second_messages)
     assert QUESTION in rendered
-    assert "Prior conversation context (not evidence)" in rendered
-    assert "never evidence" in rendered
+    assert "<conversation_context_not_evidence>" in rendered
+    assert "</conversation_context_not_evidence>" in rendered
+    assert "never Evidence" in rendered
     assert all(len(item.content) <= 16_000 for item in second_messages)
 
 

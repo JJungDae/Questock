@@ -159,7 +159,7 @@ Current normative contract:
 - dependency: `litellm==1.84.1`, the smallest compared stable pin with the
   exact 3.5 model registration and minimal thinking-level mapping
 - environment: `LLM_THINKING_LEVEL=minimal`,
-  `LLM_MAX_OUTPUT_TOKENS=1024`, `LLM_TIMEOUT_SECONDS=10`
+  `LLM_MAX_OUTPUT_TOKENS=4096`, `LLM_TIMEOUT_SECONDS=15`
 - adapter: `reasoning_effort=minimal`, retry `0`
 - prohibited: `LLM_THINKING_BUDGET`, simultaneous level/budget,
   `drop_params`, undocumented `extra_body`, omitted thinking, or 2.5 fallback

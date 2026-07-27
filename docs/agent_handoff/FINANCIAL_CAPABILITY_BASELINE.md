@@ -443,8 +443,8 @@ LLM_MAX_OUTPUT_TOKENS
 LLM_TIMEOUT_SECONDS
 ```
 
-- `LLM_THINKING_LEVEL=minimal`, `LLM_MAX_OUTPUT_TOKENS=1024`,
-  `LLM_TIMEOUT_SECONDS=10`, retry `0`을 사용한다.
+- `LLM_THINKING_LEVEL=minimal`, `LLM_MAX_OUTPUT_TOKENS=4096`,
+  `LLM_TIMEOUT_SECONDS=15`, retry `0`을 사용한다.
 - 구 `LLM_THINKING_BUDGET` 설정은 거부하며 level과 budget을 함께
   전송하지 않는다.
 - sanitized live smoke 전에는 Gemini live 연동 완료로 표시하지 않는다.

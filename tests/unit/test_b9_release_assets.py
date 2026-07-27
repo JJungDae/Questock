@@ -290,8 +290,8 @@ def test_runtime_env_is_atomic_api_only_and_one_generation_rollback() -> None:
     assert "QUESTOCK_RESPONSE_CACHE_ENABLED=true" in install
     assert "LLM_MODEL=gemini/gemini-3.5-flash" in install
     assert "LLM_THINKING_LEVEL=minimal" in install
-    assert "LLM_TIMEOUT_SECONDS=10" in install
-    assert "LLM_MAX_OUTPUT_TOKENS=1024" in install
+    assert "LLM_TIMEOUT_SECONDS=15" in install
+    assert "LLM_MAX_OUTPUT_TOKENS=4096" in install
 
 
 def test_deploy_preflight_fails_before_the_rollback_guard() -> None:

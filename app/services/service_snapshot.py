@@ -644,13 +644,20 @@ def _build_news_documents(
         if (
             not isinstance(raw, Mapping)
             or set(raw)
-            != {"document_id", "source_locator", "summary", "time_band"}
+            != {
+                "document_id",
+                "source_locator",
+                "source_title",
+                "summary",
+                "time_band",
+            }
         ):
             raise ServiceSnapshotValidationError(
                 "news snapshot source is invalid"
             )
         document_id = raw.get("document_id")
         locator = raw.get("source_locator")
+        source_title = raw.get("source_title")
         summary = raw.get("summary")
         time_band = raw.get("time_band")
         if (
@@ -660,6 +667,9 @@ def _build_news_documents(
             or not isinstance(locator, Mapping)
             or set(locator) != {"provider", "published_at", "source_url"}
             or locator.get("provider") != _NEWS_PROVIDER
+            or not isinstance(source_title, str)
+            or not source_title.strip()
+            or len(source_title) > 300
             or not isinstance(summary, str)
             or not summary.strip()
             or len(summary) > 300
@@ -701,7 +711,7 @@ def _build_news_documents(
             provider=_NEWS_PROVIDER,
             primary_security_ids=[security_id],
             mentioned_security_ids=[],
-            title=_news_title(security_name, index),
+            title=source_title.strip(),
             published_at=published_at,
             source_url=source_url,
             text=f"{security_name}: {summary.strip()}",
@@ -720,8 +730,8 @@ def _build_news_documents(
                 "summary_kind": _NEWS_SUMMARY_KIND,
                 "snapshot_sequence": index,
                 "usage_note": (
-                    "Questock-authored short summary; article title, body, "
-                    "description, and raw response are excluded."
+                    "Source title and Questock-authored short summary only; "
+                    "article body, description, and raw response are excluded."
                 ),
             },
             ingestion_version=SERVICE_SNAPSHOT_INGESTION_VERSION,
@@ -878,7 +888,8 @@ def _validate_final_news_document(document: FinancialDocument) -> None:
         or not isinstance(sequence, int)
         or isinstance(sequence, bool)
         or sequence not in range(1, 6)
-        or document.title != _news_title(_SECURITY_NAMES[security_id], sequence)
+        or not document.title.strip()
+        or len(document.title) > 300
         or not document.text.startswith(f"{_SECURITY_NAMES[security_id]}: ")
         or document.metadata.get("document_type") != "article"
         or document.metadata.get("content_origin") != _NEWS_SUMMARY_KIND
@@ -1158,7 +1169,9 @@ def _permission_register() -> dict[str, Any]:
         "snapshot_id": SERVICE_SNAPSHOT_ID,
         "sources": {
             "news": {
-                "allowed_content": "questock_project_owned_short_summary",
+                "allowed_content": (
+                    "source_title_and_questock_project_owned_short_summary"
+                ),
                 "article_body_runtime": "excluded",
                 "human_owner_review_status": "approved",
                 "raw_response_runtime": "excluded",

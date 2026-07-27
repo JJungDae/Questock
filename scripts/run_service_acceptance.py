@@ -212,8 +212,8 @@ def load_local_llm_environment(path: Path) -> None:
     if config.safe_summary() != {
         "model": APPROVED_LLM_MODEL,
         "thinking_level": "minimal",
-        "max_output_tokens": 1024,
-        "timeout_seconds": 10.0,
+        "max_output_tokens": 4096,
+        "timeout_seconds": 15.0,
         "gemini_api_key_configured": True,
     }:
         raise ServiceAcceptanceRunError("LLM environment is invalid")
@@ -464,22 +464,15 @@ def _build_report(
 
 
 def _validate_provider_options(kwargs: Mapping[str, Any]) -> None:
-    response_format = kwargs.get("response_format")
-    schema = (
-        response_format.get("json_schema")
-        if isinstance(response_format, Mapping)
-        else None
-    )
     if (
         kwargs.get("model") != APPROVED_LLM_MODEL
         or kwargs.get("reasoning_effort") != "minimal"
-        or kwargs.get("max_tokens") != 1024
+        or kwargs.get("max_tokens") != 4096
         or kwargs.get("num_retries") != 0
         or type(kwargs.get("timeout")) not in {int, float}
-        or not 0 < float(kwargs["timeout"]) <= 10
-        or not isinstance(schema, Mapping)
-        or schema.get("strict") is not True
+        or not 0 < float(kwargs["timeout"]) <= 15
         or not kwargs.get("api_key")
+        or "response_format" in kwargs
         or any(
             key in kwargs
             for key in (

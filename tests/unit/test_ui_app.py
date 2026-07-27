@@ -63,9 +63,11 @@ def test_invalid_transcript_state_is_replaced_not_extended() -> None:
     assert entries[0].question == "new-question"
 
 
-def test_transport_call_remains_inside_explicit_form_submission() -> None:
+def test_transport_call_remains_inside_chat_input_submission() -> None:
     source = inspect.getsource(run)
 
-    assert source.index("if submitted:") < source.index(
+    assert source.index("if submitted_question is not None:") < source.index(
         "active_transport.send"
     )
+    assert "st.chat_input(" in source
+    assert "st.form(" not in source

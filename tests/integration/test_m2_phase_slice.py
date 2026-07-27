@@ -354,7 +354,7 @@ def test_budget_caps_news_before_citation_and_removed_id_is_unknown():
             raw_index=index,
             query=query,
         )
-        for index in range(4)
+        for index in range(5)
     ]
 
     result = _run_phase_slice(
@@ -364,17 +364,17 @@ def test_budget_caps_news_before_citation_and_removed_id_is_unknown():
     )
 
     assert result.retrieval.status == RetrievalStatus.OK
-    assert len(result.decision.evidence) == 4
+    assert len(result.decision.evidence) == 5
     assert result.decision.status == EvidenceDecisionStatus.COMPLETE
-    assert len(result.budget.evidence) == 3
+    assert len(result.budget.evidence) == 4
     assert result.budget.diagnostics.source_cap_drop_count == 1
     assert [item.evidence_id for item in result.budget.evidence] == [
-        item.evidence_id for item in result.decision.evidence[:3]
+        item.evidence_id for item in result.decision.evidence[:4]
     ]
 
     retained_ids = {item.evidence_id for item in result.budget.evidence}
     cited_ids = {item.evidence_id for item in result.citations.citations}
-    removed = result.decision.evidence[3]
+    removed = result.decision.evidence[4]
     assert cited_ids
     assert cited_ids <= retained_ids
     assert removed.evidence_id not in cited_ids

@@ -46,6 +46,22 @@ SECURITY_REQUIRED_INTENTS = frozenset(
     }
 )
 
+AnswerFocus = Literal[
+    "general",
+    "recent_events",
+    "positive",
+    "risk",
+    "performance",
+    "business",
+    "technology",
+    "outlook",
+    "shareholder_return",
+    "disclosure",
+    "research_view",
+    "balanced",
+    "term",
+]
+
 SOURCE_EVIDENCE_MATRIX: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
     FINANCIAL_TERM: ((GLOSSARY_SOURCE,), ("definition",)),
     DISCLOSURE_SUMMARY: ((DISCLOSURE_SOURCE,), ("disclosure",)),
@@ -96,9 +112,11 @@ PROHIBITED_PATTERNS = (
     "\uc190\uc808\ud574\uc57c",
     "\uc190\uc808\ud560\uae4c",
     "\uc190\uc808 \uc2dc\uc810",
+    "\uc190\uc808 \uac00\uaca9",
     "\uc775\uc808\ud574\uc57c",
     "\uc775\uc808\ud560\uae4c",
     "\uc775\uc808 \uc2dc\uc810",
+    "\uc775\uc808 \uac00\uaca9",
     "\ub0b4\uc77c \uc624\ub97c\uae4c",
     "\ub0b4\uc77c \ub5a8\uc5b4\uc9c8\uae4c",
     "\uc624\ub97c \ud655\ub960",
@@ -122,6 +140,14 @@ PRICE_MOVE_PATTERNS = (
     "\uc8fc\uac00 \ubc30\uacbd",
     "\uc0c1\uc2b9 \ubc30\uacbd",
     "\ud558\ub77d \ubc30\uacbd",
+    "\ud604\uc7ac \uc8fc\uac00",
+    "\uc9c0\uae08 \uc8fc\uac00",
+    "\uc8fc\uac00 \uc54c\ub824",
+    "\uc8fc\uac00 \uc5bc\ub9c8",
+    "\uc8fc\uac00 \ucd94\uc774",
+    "\uac00\uaca9 \ucd94\uc774",
+    "\uc218\uc775\ub960",
+    "\ucc28\ud2b8",
 )
 FINANCIAL_TERM_CUES = (
     "\ubb50\uc57c",
@@ -155,6 +181,8 @@ RISK_PATTERNS = (
     "\ub9ac\uc2a4\ud06c",
     "\uc6b0\ub824",
     "\uc545\uc7ac",
+    "\ubd88\ud655\uc2e4\uc131",
+    "\uc870\uc2ec\ud560 \uc810",
 )
 MULTI_SOURCE_PATTERNS = (
     "\uc885\ud569",
@@ -182,10 +210,75 @@ RESEARCH_REPORT_PATTERNS = (
 RECENT_ISSUE_PATTERNS = (
     "\ucd5c\uadfc \uc774\uc288",
     "\ucd5c\uadfc \ub274\uc2a4",
+    "\ucd5c\uc2e0 \uc18c\uc2dd",
+    "\ucd5c\uadfc \uc18c\uc2dd",
     "\ub274\uc2a4 \uc774\uc288",
     "\uc8fc\uc694 \uc774\uc288",
     "\uc774\uc288",
     "\ub274\uc2a4",
+    "\ubb34\uc2a8 \uc77c",
+)
+POSITIVE_PATTERNS = (
+    "\ud638\uc7ac",
+    "\uae0d\uc815 \uc694\uc778",
+    "\uae0d\uc815\uc801",
+    "\uc88b\uc740 \uc810",
+    "\uc131\uc7a5 \ub3d9\ub825",
+    "\uae30\ub300 \uc694\uc778",
+    "\uae30\ub300\ud560 \ub9cc\ud55c",
+    "\ucd09\ub9e4",
+    "\ubaa8\uba58\ud140",
+)
+PERFORMANCE_PATTERNS = (
+    "\uc2e4\uc801",
+    "\ub9e4\ucd9c",
+    "\uc601\uc5c5\uc774\uc775",
+    "\uc21c\uc774\uc775",
+    "\ud604\uae08\ud750\ub984",
+    "\uc7ac\ubb34",
+    "\ub3c8\uc740 \uc798 \ubc8c",
+    "\ub3c8\uc744 \uc798 \ubc8c",
+)
+BUSINESS_PATTERNS = (
+    "\ubb50 \ud558\ub294 \ud68c\uc0ac",
+    "\ubb34\uc5c7\uc744 \ud558\ub294 \ud68c\uc0ac",
+    "\uc5b4\ub5a4 \ud68c\uc0ac",
+    "\uc8fc\ub825 \uc0ac\uc5c5",
+    "\uc8fc\uc694 \uc0ac\uc5c5",
+    "\uc0ac\uc5c5 \uad6c\uc870",
+    "\uc8fc\uc694 \uc81c\ud488",
+    "\uc5b4\ub5a4 \uc81c\ud488",
+    "\ubb58 \ub9cc\ub4e4",
+)
+TECHNOLOGY_PATTERNS = (
+    "\uae30\uc220",
+    "\uc5f0\uad6c\uac1c\ubc1c",
+    "\ud575\uc2ec \uc81c\ud488",
+    "hbm",
+    "\ubc18\ub3c4\uccb4",
+    "\ub85c\ubd07",
+    "\uc804\uae30\ucc28",
+)
+OUTLOOK_PATTERNS = (
+    "\uc804\ub9dd",
+    "\uc55e\uc73c\ub85c",
+    "\uc608\uc0c1",
+    "\ud5a5\ud6c4",
+)
+SHAREHOLDER_RETURN_PATTERNS = (
+    "\ubc30\ub2f9",
+    "\uc8fc\uc8fc\ud658\uc6d0",
+    "\uc790\uc0ac\uc8fc",
+)
+EXPLICIT_BALANCED_PATTERNS = (
+    "\uc7a5\ub2e8\uc810",
+    "\uc88b\uc740 \uc810\uacfc \ub098\uc05c \uc810",
+    "\uae0d\uc815\uacfc \uc704\ud5d8",
+    "\ud638\uc7ac\uc640 \uc545\uc7ac",
+)
+GENERAL_SITUATION_PATTERNS = (
+    "\uc0c1\ud669",
+    "\uc5b4\ub54c",
 )
 COMPARISON_PATTERNS = (
     "\ube44\uad50",
@@ -197,6 +290,8 @@ COMPARISON_PATTERNS = (
     " versus ",
 )
 FOLLOW_UP_PATTERNS = (
+    "그럼",
+    "그러면",
     "이어서",
     "계속 알려",
     "같은 기간",
@@ -280,17 +375,12 @@ class QueryPlanner:
         security_query = _normalize_security_text(query)
         if not intent_query:
             return _clarification_plan(OUT_OF_SCOPE)
-        if _contains_any(intent_query, PROHIBITED_PATTERNS):
+        if _contains_bounded_phrase(intent_query, PROHIBITED_PATTERNS):
             return _clarification_plan(PROHIBITED_ADVICE)
         if _contains_any(intent_query, PRICE_MOVE_PATTERNS):
             return _clarification_plan(OUT_OF_SCOPE)
 
         intent = _classify_intent(intent_query)
-        if intent == OUT_OF_SCOPE:
-            intent = _session_follow_up_intent(intent_query, session)
-        if intent == OUT_OF_SCOPE:
-            return _clarification_plan(OUT_OF_SCOPE)
-
         period = _parse_period(intent_query, self._basis_date)
         extraction = self._extract_security(security_query, intent_query)
         if extraction.multi_security:
@@ -299,6 +389,17 @@ class QueryPlanner:
             return _clarification_plan(intent, date_range=period.date_range)
 
         security = extraction.security
+        if intent == OUT_OF_SCOPE:
+            intent = _session_follow_up_intent(intent_query, session)
+        if (
+            intent == OUT_OF_SCOPE
+            and security is not None
+            and _has_korean_question_content(intent_query, security)
+        ):
+            intent = MULTI_SOURCE_SUMMARY
+        if intent == OUT_OF_SCOPE:
+            return _clarification_plan(OUT_OF_SCOPE)
+
         if security is None and intent in SECURITY_REQUIRED_INTENTS and session is not None and session.current_security_id:
             security = self._resolve_session_security(session.current_security_id)
             if security is None:
@@ -321,6 +422,7 @@ class QueryPlanner:
         return QueryPlan(
             security=security,
             intent=intent,
+            answer_focus=_classify_answer_focus(intent_query, intent),
             date_range=date_range,
             required_sources=list(sources),
             required_evidence=list(evidence),
@@ -373,9 +475,51 @@ def _classify_intent(normalized_query: str) -> Intent:
         return DISCLOSURE_SUMMARY
     if _contains_any(normalized_query, RESEARCH_REPORT_PATTERNS):
         return RESEARCH_REPORT_SUMMARY
+    if (
+        "\uc774\uc288" in normalized_query
+        and _contains_any(normalized_query, TECHNOLOGY_PATTERNS)
+        and not _contains_any(
+            normalized_query,
+            ("\ucd5c\uadfc", "\ucd5c\uc2e0", "\ub274\uc2a4", "\uc18c\uc2dd", "\uc694\uc998"),
+        )
+    ):
+        return MULTI_SOURCE_SUMMARY
     if _contains_any(normalized_query, RECENT_ISSUE_PATTERNS):
         return RECENT_ISSUE
     return OUT_OF_SCOPE
+
+
+def _classify_answer_focus(
+    normalized_query: str,
+    intent: Intent,
+) -> AnswerFocus:
+    if intent == FINANCIAL_TERM:
+        return "term"
+    if _contains_any(normalized_query, EXPLICIT_BALANCED_PATTERNS):
+        return "balanced"
+    if _contains_any(normalized_query, OUTLOOK_PATTERNS):
+        return "outlook"
+    if intent == RISK_FACTORS:
+        return "risk"
+    if intent == DISCLOSURE_SUMMARY:
+        return "disclosure"
+    if intent == RESEARCH_REPORT_SUMMARY:
+        return "research_view"
+    if intent == RECENT_ISSUE:
+        return "recent_events"
+    if _contains_any(normalized_query, POSITIVE_PATTERNS):
+        return "positive"
+    if _contains_any(normalized_query, PERFORMANCE_PATTERNS):
+        return "performance"
+    if _contains_any(normalized_query, SHAREHOLDER_RETURN_PATTERNS):
+        return "shareholder_return"
+    if _contains_any(normalized_query, BUSINESS_PATTERNS):
+        return "business"
+    if _contains_any(normalized_query, TECHNOLOGY_PATTERNS):
+        return "technology"
+    if _contains_any(normalized_query, GENERAL_SITUATION_PATTERNS):
+        return "balanced"
+    return "general"
 
 
 def _session_follow_up_intent(
@@ -555,6 +699,40 @@ def _normalize_intent_text(value: str) -> str:
 
 def _contains_any(normalized_query: str, patterns: tuple[str, ...]) -> bool:
     return any(_normalize_intent_text(pattern) in normalized_query for pattern in patterns)
+
+
+def _contains_bounded_phrase(
+    normalized_query: str,
+    patterns: tuple[str, ...],
+) -> bool:
+    for pattern in patterns:
+        normalized_pattern = _normalize_intent_text(pattern)
+        if normalized_pattern != "\uc0ac\uc57c":
+            if normalized_pattern in normalized_query:
+                return True
+            continue
+        if re.search(
+            rf"(?<![0-9a-z\uac00-\ud7a3]){re.escape(normalized_pattern)}"
+            rf"(?![0-9a-z\uac00-\ud7a3])",
+            normalized_query,
+        ):
+            return True
+    return False
+
+
+def _has_korean_question_content(
+    normalized_query: str,
+    security: SecurityIdentifier,
+) -> bool:
+    remainder = normalized_query
+    for value in {
+        security.security_name,
+        security.corp_name,
+        security.ticker,
+        f"{security.market}:{security.ticker}",
+    }:
+        remainder = remainder.replace(_normalize_intent_text(value), " ")
+    return HANGUL_RE.search(remainder) is not None
 
 
 def _allows_session_date(intent: str) -> bool:

@@ -580,15 +580,15 @@ def test_below_threshold_candidate_is_omitted_when_late_candidate_is_relevant() 
 
 
 def test_top_k_cap_and_stable_tie_order() -> None:
-    candidates = [evidence(f"ev:rank-{index}", title=f"term{index}", snippet="") for index in range(1, 8)]
-    query = " ".join(f"term{index}" for index in range(1, 8))
+    candidates = [evidence(f"ev:rank-{index}", title=f"term{index}", snippet="") for index in range(1, 12)]
+    query = " ".join(f"term{index}" for index in range(1, 12))
 
     capped = retrieve_evidence(candidates, request(query, top_k=10))
     limited = retrieve_evidence(candidates, request(query, top_k=3))
 
-    assert result_ids(capped) == [f"ev:rank-{index}" for index in range(1, 7)]
+    assert result_ids(capped) == [f"ev:rank-{index}" for index in range(1, 11)]
     assert result_ids(limited) == [f"ev:rank-{index}" for index in range(1, 4)]
-    assert capped.diagnostics["effective_top_k"] == 6
+    assert capped.diagnostics["effective_top_k"] == 10
     assert limited.diagnostics["effective_top_k"] == 3
 
 

@@ -217,13 +217,13 @@ def test_glossary_context_reuses_existing_per_source_cap() -> None:
 
     selected = select_glossary_context(result.evidence)
 
-    assert selected.evidence == result.evidence[:3]
+    assert selected.evidence == result.evidence
     assert selected.diagnostics.input_count == 4
     assert selected.diagnostics.unique_count == 4
-    assert selected.diagnostics.selected_count == 3
-    assert selected.diagnostics.source_cap_drop_count == 1
+    assert selected.diagnostics.selected_count == 4
+    assert selected.diagnostics.source_cap_drop_count == 0
     assert selected.diagnostics.context_drop_count == 0
-    assert selected.diagnostics.max_evidence_per_source == 3
+    assert selected.diagnostics.max_evidence_per_source == 4
 
 
 @pytest.mark.parametrize(
@@ -327,9 +327,9 @@ def test_chat_service_glossary_path_has_actual_counts_and_citations() -> None:
     assert response.status == "complete"
     assert response.security is None
     assert response.missing_sources == []
-    assert len(response.evidence) == 3
+    assert len(response.evidence) == 4
     assert len(response.answer_sections.summary) == 1
-    assert response.answer_sections.facts == []
+    assert len(response.answer_sections.facts) == 1
     assert len(response.answer_sections.interpretation) == 1
     assert len(response.answer_sections.uncertainty) == 1
     assert llm.calls == 1
@@ -358,15 +358,15 @@ def test_chat_service_glossary_path_has_actual_counts_and_citations() -> None:
         response.diagnostics_public.decision.evidence_decision_status
         == "complete"
     )
-    assert response.diagnostics_public.context_budget.selected_count == 3
+    assert response.diagnostics_public.context_budget.selected_count == 4
     assert (
         response.diagnostics_public.context_budget.source_cap_drop_count
-        == 1
+        == 0
     )
-    assert response.diagnostics_public.citation.citation_count == 3
+    assert response.diagnostics_public.citation.citation_count == 4
     assert all(
         item.locator["section"]
-        in {"definition", "why_it_matters", "caution"}
+        in {"definition", "formula", "why_it_matters", "caution"}
         for item in response.evidence
     )
     assert "KRX:005930" not in response.model_dump_json()

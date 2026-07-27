@@ -31,8 +31,8 @@ def test_fake_config_loads_without_credential(monkeypatch: pytest.MonkeyPatch) -
     assert config.safe_summary() == {
         "model": "gemini/gemini-3.5-flash",
         "thinking_level": "minimal",
-        "max_output_tokens": 1024,
-        "timeout_seconds": 10,
+        "max_output_tokens": 4096,
+        "timeout_seconds": 15,
         "gemini_api_key_configured": False,
     }
     with pytest.raises(ConfigValidationError, match="not configured"):
@@ -93,9 +93,11 @@ def test_nonapproved_model_is_rejected_without_echo(
         ("LLM_THINKING_LEVEL", "low"),
         ("LLM_MAX_OUTPUT_TOKENS", "0"),
         ("LLM_MAX_OUTPUT_TOKENS", "256"),
+        ("LLM_MAX_OUTPUT_TOKENS", "1024"),
         ("LLM_MAX_OUTPUT_TOKENS", "9000"),
         ("LLM_TIMEOUT_SECONDS", "0"),
         ("LLM_TIMEOUT_SECONDS", "8"),
+        ("LLM_TIMEOUT_SECONDS", "10"),
         ("LLM_TIMEOUT_SECONDS", "nan"),
         ("LLM_TIMEOUT_SECONDS", "inf"),
         ("LLM_TIMEOUT_SECONDS", "21"),

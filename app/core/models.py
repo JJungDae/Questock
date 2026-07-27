@@ -70,6 +70,7 @@ class SecurityIdentifier(QuestockModel):
 class QueryPlan(QuestockModel):
     security: SecurityIdentifier | None = None
     intent: str
+    answer_focus: str = "general"
     date_range: DateRange | None = None
     required_sources: list[str] = Field(default_factory=list)
     required_evidence: list[str] = Field(default_factory=list)

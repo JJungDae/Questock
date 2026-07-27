@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+import unicodedata
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -25,6 +27,7 @@ _SECTION_NAMES = frozenset(
         "uncertainty",
     }
 )
+_DEGENERATE_QUOTE_PREFIX = re.compile(r"^(?:[’'\"“”]{3,})\s*")
 
 
 class DraftClaim(BaseModel):
@@ -45,15 +48,15 @@ class DraftClaim(BaseModel):
         min_length=1,
         max_length=1200,
         description=(
-            "One complete eligible evidence snippet copied character-for-"
-            "character, without paraphrasing, combining, or added text."
+            "A beginner-readable answer unit grounded only in the referenced "
+            "eligible evidence. Paraphrasing and bounded synthesis are allowed."
         ),
     )
     evidence_ids: tuple[str, ...] = Field(
         min_length=1,
         max_length=6,
         description=(
-            "Exactly the Evidence ID belonging to the copied snippet."
+            "One or more Evidence IDs that directly support this answer unit."
         ),
     )
 
@@ -62,7 +65,11 @@ class DraftClaim(BaseModel):
     def validate_nonblank(cls, value: str) -> str:
         if not value.strip():
             raise ValueError("draft text must not be blank")
-        return value.strip()
+        canonical = unicodedata.normalize("NFC", value.strip())
+        canonical = _DEGENERATE_QUOTE_PREFIX.sub("", canonical)
+        if not canonical:
+            raise ValueError("draft text must not be blank")
+        return canonical
 
     @field_validator("evidence_ids")
     @classmethod
@@ -80,10 +87,10 @@ class StructuredAnswerDraft(BaseModel):
 
     claims: tuple[DraftClaim, ...] = Field(
         min_length=1,
-        max_length=14,
+        max_length=10,
         description=(
-            "One to three citation-bound extractive claims; omit rather "
-            "than inventing an unsupported claim."
+            "A question-adaptive set of citation-bound answer units. Use only "
+            "the units needed to answer the question and omit unsupported text."
         ),
     )
 
