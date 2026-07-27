@@ -8,7 +8,7 @@
 - Planning base SHA:
   `da03a6fb3be5c985cef7d5d1f0523827340fe088`
 - Working branch:
-  `fsc/fsc-0-preflight`
+  `docs/fsc-service-completion-closure`
 - Priority: `P0 service completion`
 - Current official bundle:
   `First Service Completion`
@@ -21,17 +21,15 @@
 - FSC-2:
   `PASS / complete - Human Owner confirmed 2026-07-27`
 - FSC-3:
-  `SC-06 PASS / complete; SC-07 local gate PASS; remote release closure
-  pending`
+  `PASS / complete - SC-06 and SC-07 local/remote closure complete`
 - Service Completion Gate:
-  `LOCAL PASS / overall NOT_RUN - remote release closure pending`
+  `PASS / complete`
 - A15-M:
-  `BLOCKED until Service Completion Gate PASS`
+  `activation check READY / implementation NOT_STARTED`
 - M1-09:
   `mandatory supplement implemented - final independent review pending`
 - Commit/push/PR/merge/deploy:
-  `FSC-2 commit/push complete; PR #10 merged; SC-06 onward working tree only /
-  NOT_RUN / NOT_APPROVED`
+  `release PR #11 and #12 merged; exact-SHA GCE deploy complete`
 
 ## 2. Normative Sources
 
@@ -80,7 +78,7 @@ policy, citation, validation, safety, and public response contracts.
 | `FSC-0` | `SC-00` | official flow, credential/API/source preflight | `PASS / complete` |
 | `FSC-1` | `SC-01~04` | 3-company source work and immutable snapshot runtime | `PASS / complete` |
 | `FSC-2` | `SC-05` | Gemini, model allowlist, request protection, session/cache | `PASS / complete` |
-| `FSC-3` | `SC-06~07` | UI, 3-company E2E, CI/GCE release | `SC-06 PASS / complete; SC-07 local release preparation implemented; Docker/remote follow-up remains` |
+| `FSC-3` | `SC-06~07` | UI, 3-company E2E, CI/GCE release | `PASS / complete - local and remote closure complete` |
 
 Bundle order is strict. A later bundle does not start from this Task Card
 without the previous result confirmation and its own preflight.
@@ -768,16 +766,23 @@ FSC-1 status:
   `UPDATED - WORK_LOG_2026-07-27.md`
 - commit:
   `c18dad90f293b50f3e258c37907bd6b79cac8e6b - FSC-1 backup`;
-  `25cac10030800f08d4167b9f7739d06b3d1492ca - FSC-2 implementation`
+  `25cac10030800f08d4167b9f7739d06b3d1492ca - FSC-2 implementation`;
+  release implementation head
+  `8d1b9521fdbef003cb84708b6aa7b47d01d8dc8a`;
+  release hotfix commits `499bf03`, `bed5684`
 - push:
-  `complete - fsc/fsc-0-preflight`
+  `complete for release implementation and hotfix branches`
 - PR:
   `#10 - https://github.com/JJungDae/Questock/pull/10 - MERGED`;
-  head SHA `25cac10030800f08d4167b9f7739d06b3d1492ca`
+  head SHA `25cac10030800f08d4167b9f7739d06b3d1492ca`;
+  `#11 - https://github.com/JJungDae/Questock/pull/11 - MERGED`;
+  `#12 - https://github.com/JJungDae/Questock/pull/12 - MERGED`
 - merge:
-  `complete - 92561e34b4839d32a9bdac979c6c471da8e56923`
+  `#10 92561e34b4839d32a9bdac979c6c471da8e56923`;
+  `#11 6affd27f4f95aae438268acd2bc4fa7733346b5d`;
+  `#12 2adcc787a803996d4a181a6cd3faa3158602660a`
 - deploy:
-  `NOT_RUN`
+  `PASS - exact-SHA GCE deploy run 30274651799`
 - FSC-1 automatic start:
   `APPROVED - Human Owner instructed FSC-1 start on 2026-07-27`
 - SC-01 result confirmation:
@@ -876,7 +881,7 @@ The first affected-integration attempt was invalidated by a Windows temporary
 directory access error during pytest cleanup. The same test selection was
 rerun outside that sandbox interference and passed 73 tests.
 
-### 13.4 Current boundary
+### 13.4 FSC-2 closure boundary (historical snapshot)
 
 - FSC-2 code status:
   `PASS / complete`
@@ -993,7 +998,7 @@ policy sources satisfied, and the January 2025 disclosure case as
 `no_evidence`. The inventory remains 12 LLM-eligible cases without violating
 the report permission boundary.
 
-### 14.4 Current boundary
+### 14.4 SC-06 closure boundary (historical snapshot)
 
 - SC-06:
   `PASS / complete - live acceptance passed 2026-07-27`
@@ -1085,13 +1090,91 @@ the no-evidence, citation, company-attribution, or disclosure-body checks.
 ### 15.3 Current boundary
 
 - SC-07 local release preparation:
-  `IMPLEMENTED`
+  `PASS / complete`
 - SC-07 local gate:
   `PASS`
+- SC-07 remote gate:
+  `PASS`
 - FSC-3:
-  `LOCAL CHECKPOINT PASS / remote release closure pending`
+  `PASS / complete`
 - Service Completion Gate:
-  `LOCAL PASS / overall NOT_RUN - GitHub CI, GCE remote smoke, exact-SHA
-  deployment, and external UI remain`
+  `PASS / complete`
+- remote release closure:
+  `complete`
+- A15-M:
+  `activation check READY / implementation NOT_STARTED`
 - commit/push/PR/merge/deploy:
-  `NOT_RUN / NOT_RUN / NOT_RUN / NOT_RUN / NOT_RUN`
+  `complete / complete / complete / complete / complete for the release`
+
+## 16. FSC Remote Release Closure
+
+### 16.1 CI and merge history
+
+- implementation PR:
+  `#11`; head `8d1b9521fdbef003cb84708b6aa7b47d01d8dc8a`
+- first PR #11 CI:
+  `30273039760 - FAILED`; Python 3.11 could not resolve the extracted
+  Streamlit helper's non-standalone type annotation
+- focused fix:
+  `8d1b952`
+- successful PR #11 CI:
+  `30273607080 - PASS`
+- PR #11 merge:
+  `6affd27f4f95aae438268acd2bc4fa7733346b5d`
+- hotfix PR:
+  `#12`; commits `499bf03`, `bed5684`
+- first PR #12 CI:
+  `30274239625 - FAILED`; the legacy B9 static test still expected the old
+  Gemini-key allowlist
+- focused contract after synchronization:
+  `139 passed`
+- successful PR #12 CI:
+  `30274469379 - PASS`
+- PR #12 merge and deployed main:
+  `2adcc787a803996d4a181a6cd3faa3158602660a`
+
+### 16.2 Deployment and rollback evidence
+
+- first deploy:
+  `30273898079 - FAILED before runtime write or deploy`; the anchored key
+  allowlist excluded one dot in the already-live-verified 53-character Gemini
+  key
+- first-deploy impact:
+  existing service and image unchanged; rollback execution `NOT_RUN`
+- successful exact-SHA deploy:
+  `30274651799 - PASS (3m32s)`
+- release SHA:
+  `2adcc787a803996d4a181a6cd3faa3158602660a`
+- release image:
+  `sha256:53628bacc40f2329bc3f7dfcb6771aeee2e5fd83a1a44592ee08bbc950daf138`
+- previous rollback target SHA:
+  `67fa43dd5a7ec74e7785713eb1adcfa402baab85`
+- previous rollback target image:
+  `sha256:56df8f16ed3ed58de659e9ec46c9e24b7d3ddc896dc8a022102f68f351d7b928`
+- rollback execution:
+  `NOT_RUN - successful deployment did not require rollback`
+
+### 16.3 Remote runtime result
+
+- health:
+  `PASS - status ok; snapshot svc-20260724-1402; 54 documents`
+- source inventory:
+  `news 15 / disclosure 3 / research_report 36`
+- live connectivity:
+  `live_connectivity_checked=false`
+- recorded smoke:
+  `PASS - 7/7`; recent issue `complete`, disclosure `partial`, research report
+  `complete`, glossary `complete`, wrong-company `no_evidence`, blocked
+  `blocked`, multi-turn `partial`
+- workflow external UI health:
+  `PASS`
+- independent interactive visual check:
+  `LIMITED / non-gate`; a separate reviewer browser attempt to the registered
+  host on port 8501 timed out, so interactive visual rendering is not claimed
+- Gemini provider attempts:
+  cumulative `26/30`; deployment smoke used the fixed/disabled recorded path
+  and added `0` calls
+
+FSC-3 and the Service Completion Gate are `PASS / complete`. A15-M activation
+and entry are now `READY / ALLOWED`, but A15-M has not been implemented or
+started. Stretch M2-09, M5-01, and later P1 ordering remains unchanged.
