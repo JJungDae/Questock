@@ -25,18 +25,21 @@ def _payload(status: str, source_type: str | None) -> dict[str, Any]:
         payload["answer_sections"] = {
             "summary": " ".join(release_smoke._DISCLOSURE_ANSWER_FACTS)
         }
-        payload["evidence"][0].update(
+        payload["evidence"] = [
             {
+                "source_type": "disclosure",
                 "document_id": release_smoke._DISCLOSURE_DOCUMENT_ID,
                 "locator": {
                     "receipt_no": "20260515002181",
                     "viewer_url": release_smoke._DISCLOSURE_VIEWER_URL,
                     "content_level": "verified_body_facts",
-                    "section": "verified body facts",
-                    "facts": release_smoke._DISCLOSURE_FACTS,
+                    "verification_status": "verified_against_source",
+                    "section": "III. 재무에 관한 사항 > 1. 요약재무정보",
+                    **fact,
                 },
             }
-        )
+            for fact in release_smoke._REQUIRED_DISCLOSURE_FACTS
+        ]
     return payload
 
 
@@ -107,6 +110,17 @@ def test_release_smoke_rejects_live_or_malformed_public_result() -> None:
         )
 
 
+def test_release_smoke_accepts_expected_source_after_other_evidence() -> None:
+    payload = _payload("partial", "research_report")
+    payload["evidence"].insert(0, {"source_type": "news"})
+
+    release_smoke._assert_response(
+        payload,
+        expected_status="partial",
+        expected_source="research_report",
+    )
+
+
 def test_release_smoke_rejects_metadata_only_disclosure() -> None:
     bad = _payload("partial", "disclosure")
     bad["answer_sections"] = {"summary": "접수번호 20260515002181"}
@@ -117,14 +131,23 @@ def test_release_smoke_rejects_metadata_only_disclosure() -> None:
 
 def test_release_smoke_allows_expanded_fsc_disclosure_fact_inventory() -> None:
     payload = _payload("partial", "disclosure")
-    payload["evidence"][0]["locator"]["facts"].append(
+    payload["evidence"].append(
         {
-            "category": "risk_or_uncertainty",
-            "value": None,
-            "unit": None,
-            "physical_pdf_page": 23,
-            "dart_printed_page": 20,
-            "section_path": ["II. 사업의 내용", "위험관리"],
+            "source_type": "disclosure",
+            "document_id": release_smoke._DISCLOSURE_DOCUMENT_ID,
+            "locator": {
+                "receipt_no": "20260515002181",
+                "viewer_url": release_smoke._DISCLOSURE_VIEWER_URL,
+                "content_level": "verified_body_facts",
+                "verification_status": "verified_against_source",
+                "section": "II. 사업의 내용 > 위험관리",
+                "fact_id": "samsung-electronics-disc-014",
+                "category": "risk_or_uncertainty",
+                "value": None,
+                "unit": None,
+                "physical_pdf_page": 23,
+                "dart_printed_page": 20,
+            },
         }
     )
 
@@ -133,9 +156,7 @@ def test_release_smoke_allows_expanded_fsc_disclosure_fact_inventory() -> None:
 
 def test_release_smoke_rejects_missing_required_fsc_disclosure_fact() -> None:
     bad = _payload("partial", "disclosure")
-    bad["evidence"][0]["locator"]["facts"] = (
-        bad["evidence"][0]["locator"]["facts"][1:]
-    )
+    bad["evidence"] = bad["evidence"][1:]
 
     with pytest.raises(ReleaseSmokeError):
         release_smoke._assert_disclosure_response(bad)
