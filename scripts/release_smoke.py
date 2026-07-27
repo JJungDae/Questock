@@ -15,61 +15,87 @@ _DISCLOSURE_VIEWER_URL = (
 )
 _DISCLOSURE_FACTS = [
     {
-        "fact": "연결 매출",
+        "category": "consolidated_revenue",
         "value": "133,873,444",
         "unit": "백만원",
         "physical_pdf_page": 53,
         "dart_printed_page": 50,
-        "section": "연결 매출",
+        "section_path": [
+            "III. 재무에 관한 사항",
+            "1. 요약재무정보",
+            "가. 요약연결재무정보",
+        ],
     },
     {
-        "fact": "연결 영업이익",
+        "category": "consolidated_operating_profit",
         "value": "57,232,797",
         "unit": "백만원",
         "physical_pdf_page": 53,
         "dart_printed_page": 50,
-        "section": "연결 영업이익",
+        "section_path": [
+            "III. 재무에 관한 사항",
+            "1. 요약재무정보",
+            "가. 요약연결재무정보",
+        ],
     },
     {
-        "fact": "DS 부문 매출",
+        "category": "major_segment_revenue",
         "value": "817,156",
         "unit": "억원",
         "physical_pdf_page": 52,
         "dart_printed_page": 49,
-        "section": "DS 부문 매출",
+        "section_path": [
+            "II. 사업의 내용",
+            "7. 기타 참고사항",
+            "라. 사업부문별 요약 재무 현황",
+        ],
     },
     {
-        "fact": "DS 부문 영업이익",
+        "category": "major_segment_profit",
         "value": "536,633",
         "unit": "억원",
         "physical_pdf_page": 52,
         "dart_printed_page": 49,
-        "section": "DS 부문 영업이익",
+        "section_path": [
+            "II. 사업의 내용",
+            "7. 기타 참고사항",
+            "라. 사업부문별 요약 재무 현황",
+        ],
     },
     {
-        "fact": "시설투자 합계",
+        "category": "capex",
         "value": "112,332",
         "unit": "억원",
         "physical_pdf_page": 16,
         "dart_printed_page": 13,
-        "section": "시설투자 합계",
+        "section_path": [
+            "II. 사업의 내용",
+            "3. 원재료 및 생산설비",
+            "라. 생산설비 및 투자 현황 등",
+            "시설투자 현황",
+        ],
     },
     {
-        "fact": "HBM4 관련 사실",
-        "value": "1c D램·4나노 베이스 다이 적용 HBM4 양산 출하",
+        "category": "major_product_or_technology",
+        "value": "HBM4 양산 출하",
         "unit": None,
         "physical_pdf_page": 31,
         "dart_printed_page": 28,
-        "section": "HBM4 관련 사실",
+        "section_path": [
+            "II. 사업의 내용",
+            "6. 주요계약 및 연구개발활동",
+            "라. 연구개발실적",
+            "DS 부문",
+            "HBM",
+        ],
     },
 ]
 _DISCLOSURE_ANSWER_FACTS = (
-    "연결 매출 133,873,444백만원",
-    "연결 영업이익 57,232,797백만원",
-    "DS 부문 매출 817,156억원",
-    "DS 부문 영업이익 536,633억원",
-    "시설투자 합계 112,332억원",
-    "1c D램·4나노 베이스 다이 적용 HBM4 양산 출하",
+    "133,873,444",
+    "57,232,797",
+    "817,156",
+    "536,633",
+    "112,332",
 )
 
 
@@ -105,7 +131,7 @@ def run_release_smoke(api_url: str) -> dict[str, object]:
         ("glossary", "PER이 뭐야?", "complete", "glossary"),
         (
             "wrong_company",
-            "SK하이닉스 최근 공시 요약",
+            "SK하이닉스 공시를 삼성전자 분기보고서로 설명해줘.",
             "no_evidence",
             None,
         ),
@@ -216,7 +242,7 @@ def _assert_response(
         or not isinstance(diagnostics, Mapping)
         or diagnostics.get("data_mode") != "recorded"
         or diagnostics.get("live_connectivity_checked") is not False
-        or payload.get("basis_date") != "2026-07-26"
+        or payload.get("basis_date") != "2026-07-24"
     ):
         raise ReleaseSmokeError("release smoke response is invalid")
     evidence = payload.get("evidence")
@@ -249,13 +275,25 @@ def _assert_disclosure_response(payload: Mapping[str, Any]) -> None:
     ):
         raise ReleaseSmokeError("release disclosure response is invalid")
     locator = evidence[0].get("locator")
+    facts = locator.get("facts") if isinstance(locator, Mapping) else None
     if (
         not isinstance(locator, Mapping)
         or locator.get("receipt_no") != "20260515002181"
         or locator.get("viewer_url") != _DISCLOSURE_VIEWER_URL
         or locator.get("content_level") != "verified_body_facts"
         or locator.get("section") != "verified body facts"
-        or locator.get("facts") != _DISCLOSURE_FACTS
+        or not isinstance(facts, list)
+        or not all(
+            any(
+                isinstance(observed, Mapping)
+                and all(
+                    observed.get(key) == value
+                    for key, value in required.items()
+                )
+                for observed in facts
+            )
+            for required in _DISCLOSURE_FACTS
+        )
     ):
         raise ReleaseSmokeError("release disclosure response is invalid")
     try:

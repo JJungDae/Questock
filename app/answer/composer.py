@@ -38,6 +38,7 @@ from app.evidence.budget import (
     LLMCallBudget,
     LLMCallBudgetExceededError,
 )
+from app.evidence.selection import source_diverse_indexes
 from app.llm.base import (
     LLMClient,
     LLMMessage,
@@ -122,22 +123,24 @@ class AnswerComposer:
             [
                 (
                     "system",
-                    "Return only the requested JSON. Every claim must be an exact "
-                    "extract from every referenced evidence snippet. The first "
-                    "claim must be the only summary claim. Keep claims in this "
-                    "section order: summary, facts, interpretation, inference, "
-                    "positive_factors, risk_factors, uncertainty. Omit unsupported "
-                    "sections. Never provide direct investment action or guaranteed "
-                    "future performance. For research_report_summary, place stated "
-                    "plans and scheduled events in facts, growth conditions in "
-                    "positive_factors or interpretation, risk conditions in "
-                    "risk_factors, and missing confirmation in uncertainty. For "
-                    "financial_term, map definition to summary, formula and "
-                    "example to facts, why_it_matters to interpretation, and "
-                    "caution to uncertainty. Prior conversation is context for "
-                    "intent and wording only, never evidence. Every fact, number, "
-                    "and company attribution must come from the currently eligible "
-                    "evidence.\n"
+                    "Return only the requested JSON. This is an extractive task, "
+                    "not a paraphrasing task. Return one to three claims. Copy each "
+                    "claim text character-for-character from one complete Snippet "
+                    "line below. Set evidence_ids to the one Evidence ID directly "
+                    "above that copied Snippet. Never combine snippets, shorten "
+                    "them, add a prefix or suffix, translate them, or rewrite them "
+                    "in your own words. Use each copied snippet at most once and "
+                    "omit a claim when uncertain. The first claim must use section "
+                    "summary, and it must be the only summary claim. Keep any later "
+                    "claims in this section order: facts, interpretation, "
+                    "inference, positive_factors, risk_factors, uncertainty. "
+                    "Never provide direct investment action or guaranteed future "
+                    "performance. For a risk_factors request, later copied claims "
+                    "may use risk_factors. For other financial requests, later "
+                    "copied claims may use facts. Prior conversation is context "
+                    "for intent only, never evidence. Every output character in a "
+                    "claim text must therefore already occur in its one referenced "
+                    "Snippet.\n"
                     "{format_instructions}",
                 ),
                 (
@@ -220,15 +223,33 @@ class AnswerComposer:
                     _invalid_response_from(parsed.result),
                     rejection_count=max(1, validation.rejection_count),
                 )
+            canonical_draft = _canonicalize_citation_bound_text(
+                validation.draft,
+                projected,
+            )
+            canonical_validation = validate_answer_draft(
+                canonical_draft,
+                canonical_plan,
+                projected,
+            )
+            if canonical_validation.draft is None:
+                raise _GenerationFailure(
+                    _invalid_response_from(parsed.result),
+                    rejection_count=max(
+                        1,
+                        validation.rejection_count
+                        + canonical_validation.rejection_count,
+                    ),
+                )
             try:
                 _validate_draft_structure(
-                    validation.draft,
+                    canonical_validation.draft,
                     canonical_plan,
                     projected,
                     parsed.result,
                 )
                 claims = _citation_claims(
-                    validation.draft,
+                    canonical_validation.draft,
                     projected,
                     parsed.result,
                 )
@@ -242,12 +263,14 @@ class AnswerComposer:
                 raise _GenerationFailure(
                     exc.result,
                     rejection_count=(
-                        validation.rejection_count + exc.rejection_count
+                        validation.rejection_count
+                        + canonical_validation.rejection_count
+                        + exc.rejection_count
                     ),
                 ) from None
             return CompositionResult(
                 answer_sections=AnswerSections.from_claims(
-                    validation.draft.claims
+                    canonical_validation.draft.claims
                 ),
                 claims=claims,
                 citations=citations,
@@ -260,7 +283,10 @@ class AnswerComposer:
                     projected,
                     citations,
                 ),
-                citation_rejection_count=validation.rejection_count,
+                citation_rejection_count=(
+                    validation.rejection_count
+                    + canonical_validation.rejection_count
+                ),
             )
         except _GenerationFailure as exc:
             return _fixed_result(
@@ -480,37 +506,16 @@ def _project_m3_evidence(
     plan: QueryPlan,
     evidence: tuple[Evidence, ...],
 ) -> tuple[Evidence, ...]:
-    if plan.intent not in {"risk_factors", "multi_source_summary"}:
+    if len(plan.required_sources) <= 1:
         return tuple(item.model_copy(deep=True) for item in evidence)
-
-    selected_indexes: list[int] = []
-    for source_type in plan.required_sources:
-        index = next(
-            (
-                position
-                for position, item in enumerate(evidence)
-                if (
-                    position not in selected_indexes
-                    and item.source_type == source_type
-                )
-            ),
-            None,
-        )
-        if index is not None:
-            selected_indexes.append(index)
-        if len(selected_indexes) == 3:
-            break
-
-    if len(selected_indexes) < 3:
-        for index in range(len(evidence)):
-            if index not in selected_indexes:
-                selected_indexes.append(index)
-            if len(selected_indexes) == 3:
-                break
-
+    required_sources = plan.required_sources
+    selected_indexes = source_diverse_indexes(
+        [item.source_type for item in evidence],
+        required_sources,
+    )
     return tuple(
         evidence[index].model_copy(deep=True)
-        for index in selected_indexes
+        for index in selected_indexes[:3]
     )
 
 
@@ -526,6 +531,54 @@ def _prompt_evidence(evidence: tuple[Evidence, ...]) -> str:
         lines.append(f"Snippet: {item.snippet}")
         rendered.append("\n".join(lines))
     return "\n\n".join(rendered)
+
+
+def _canonicalize_citation_bound_text(
+    draft: StructuredAnswerDraft,
+    evidence: tuple[Evidence, ...],
+) -> StructuredAnswerDraft:
+    occurrences_by_id: dict[str, list[Evidence]] = {}
+    for item in evidence:
+        occurrences_by_id.setdefault(item.evidence_id, []).append(item)
+
+    claims: list[DraftClaim] = []
+    for claim in draft.claims:
+        if len(claim.evidence_ids) != 1:
+            claims.append(claim.model_copy(deep=True))
+            continue
+        occurrences = occurrences_by_id.get(claim.evidence_ids[0], ())
+        if not occurrences or _claim_is_extract(claim.text, occurrences):
+            claims.append(claim.model_copy(deep=True))
+            continue
+        snippets = {
+            _normalized_claim_text(item.snippet): item.snippet
+            for item in occurrences
+        }
+        if len(snippets) != 1:
+            claims.append(claim.model_copy(deep=True))
+            continue
+        claims.append(
+            claim.model_copy(
+                update={"text": next(iter(snippets.values()))},
+                deep=True,
+            )
+        )
+    return StructuredAnswerDraft(claims=tuple(claims))
+
+
+def _claim_is_extract(
+    claim_text: str,
+    occurrences: Sequence[Evidence],
+) -> bool:
+    normalized_claim = _normalized_claim_text(claim_text)
+    return all(
+        normalized_claim in _normalized_claim_text(item.snippet)
+        for item in occurrences
+    )
+
+
+def _normalized_claim_text(value: str) -> str:
+    return " ".join(unicodedata.normalize("NFKC", value).split()).casefold()
 
 
 def _citation_claims(
@@ -635,7 +688,8 @@ def _fixed_result(
     accepted_citations: list[Citation] = []
     accepted_evidence: list[Evidence] = []
     fixed_rejection_count = 0
-    for index, item in enumerate(evidence[:3]):
+    projected_evidence = _project_m3_evidence(plan, evidence)[:3]
+    for index, item in enumerate(projected_evidence):
         if is_unsafe_answer_text(item.snippet, intent=plan.intent):
             fixed_rejection_count += 1
             continue

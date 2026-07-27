@@ -30,10 +30,32 @@ _SECTION_NAMES = frozenset(
 class DraftClaim(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    claim_id: str = Field(min_length=1, max_length=80)
-    section: AnswerSectionName
-    text: str = Field(min_length=1, max_length=1200)
-    evidence_ids: tuple[str, ...] = Field(min_length=1, max_length=6)
+    claim_id: str = Field(
+        min_length=1,
+        max_length=80,
+        description="Unique claim ID such as claim-1.",
+    )
+    section: AnswerSectionName = Field(
+        description=(
+            "The first and only summary claim uses summary; later claims "
+            "follow the required section order."
+        )
+    )
+    text: str = Field(
+        min_length=1,
+        max_length=1200,
+        description=(
+            "One complete eligible evidence snippet copied character-for-"
+            "character, without paraphrasing, combining, or added text."
+        ),
+    )
+    evidence_ids: tuple[str, ...] = Field(
+        min_length=1,
+        max_length=6,
+        description=(
+            "Exactly the Evidence ID belonging to the copied snippet."
+        ),
+    )
 
     @field_validator("claim_id", "text")
     @classmethod
@@ -56,7 +78,14 @@ class DraftClaim(BaseModel):
 class StructuredAnswerDraft(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    claims: tuple[DraftClaim, ...] = Field(min_length=1, max_length=14)
+    claims: tuple[DraftClaim, ...] = Field(
+        min_length=1,
+        max_length=14,
+        description=(
+            "One to three citation-bound extractive claims; omit rather "
+            "than inventing an unsupported claim."
+        ),
+    )
 
     @model_validator(mode="after")
     def validate_claim_ids(self) -> "StructuredAnswerDraft":

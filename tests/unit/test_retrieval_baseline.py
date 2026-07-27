@@ -405,8 +405,19 @@ def test_linked_document_text_and_title_are_not_scored() -> None:
     assert result.evidence == []
 
 
-@pytest.mark.parametrize("query", ["", "   ", "!!!", "최근 자료 요약 알려줘"])
-def test_unusable_query_tokens_return_low_relevance_when_candidates_exist(query: str) -> None:
+@pytest.mark.parametrize(
+    ("query", "expected_scored_count"),
+    [
+        ("", 0),
+        ("   ", 0),
+        ("!!!", 0),
+        ("최근 자료 요약 알려줘", 1),
+    ],
+)
+def test_unusable_query_tokens_return_low_relevance_when_candidates_exist(
+    query: str,
+    expected_scored_count: int,
+) -> None:
     candidate = evidence("ev:token", title="matchtoken", snippet="")
 
     result = retrieve_evidence([candidate], request(query))
@@ -415,7 +426,145 @@ def test_unusable_query_tokens_return_low_relevance_when_candidates_exist(query:
     assert result.low_relevance is True
     assert result.evidence == []
     assert result.diagnostics["filtered_count"] == 1
-    assert result.diagnostics["scored_count"] == 0
+    assert result.diagnostics["scored_count"] == expected_scored_count
+
+
+@pytest.mark.parametrize(
+    ("query", "title"),
+    [
+        ("이슈를", "이슈가"),
+        ("요약해줘", "요약"),
+        ("요약해주세요", "요약을"),
+        ("공시를", "공시가"),
+        ("위험을", "위험이"),
+    ],
+)
+def test_korean_particles_and_request_endings_share_document_query_roots(
+    query: str,
+    title: str,
+) -> None:
+    relevant = evidence("ev:korean-root", title=title, snippet="")
+    unrelated = evidence("ev:unrelated-root", title="무관한 표현", snippet="")
+
+    result = retrieve_evidence(
+        [relevant, unrelated],
+        request(query),
+    )
+
+    assert result.status == RetrievalStatus.OK
+    assert result_ids(result) == [relevant.evidence_id]
+    assert result.evidence[0].retrieval_score >= 0.5
+
+
+def test_natural_korean_variants_keep_same_selection_and_score() -> None:
+    relevant = evidence(
+        "ev:issue-summary",
+        title="삼성전자가 최근 이슈를 요약",
+        snippet="",
+    )
+    unrelated = evidence(
+        "ev:other-summary",
+        title="삼성전자 배당 일정",
+        snippet="",
+    )
+    queries = (
+        "삼성전자 최근 이슈 요약",
+        "삼성전자는 최근 이슈를 요약해줘",
+        "삼성전자가 최근 이슈가 무엇인지 요약해주세요",
+    )
+
+    results = [
+        retrieve_evidence([relevant, unrelated], request(query))
+        for query in queries
+    ]
+
+    assert all(
+        result_ids(result) == [relevant.evidence_id]
+        for result in results
+    )
+    assert len(
+        {
+            result.evidence[0].retrieval_score
+            for result in results
+        }
+    ) == 1
+
+
+def test_multi_source_selection_keeps_one_threshold_result_per_source_first() -> None:
+    news_first = evidence(
+        "ev:news:first",
+        title="삼성전자 요약 위험 공시",
+        snippet="",
+    )
+    news_second = evidence(
+        "ev:news:second",
+        title="삼성전자 요약 위험",
+        snippet="",
+    )
+    disclosure = evidence(
+        "ev:disclosure:first",
+        source_type="disclosure",
+        title="삼성전자 공시 요약",
+        snippet="",
+    )
+    report = evidence(
+        "ev:report:first",
+        source_type="research_report",
+        title="삼성전자 위험 요약",
+        snippet="",
+    )
+
+    result = retrieve_evidence(
+        [news_first, news_second, disclosure, report],
+        request(
+            "삼성전자 위험 공시 요약",
+            source_types=["news", "disclosure", "research_report"],
+            top_k=3,
+        ),
+    )
+
+    assert [item.source_type for item in result.evidence] == [
+        "news",
+        "disclosure",
+        "research_report",
+    ]
+    assert all(
+        item.retrieval_score is not None
+        and item.retrieval_score >= 0.5
+        for item in result.evidence
+    )
+
+
+def test_multi_source_selection_does_not_create_missing_source_evidence() -> None:
+    news = evidence(
+        "ev:news:only",
+        title="삼성전자 위험 요약",
+        snippet="",
+    )
+    disclosure = evidence(
+        "ev:disclosure:only",
+        source_type="disclosure",
+        title="삼성전자 공시 요약",
+        snippet="",
+    )
+
+    result = retrieve_evidence(
+        [news, disclosure],
+        request(
+            "삼성전자 위험 공시 요약",
+            source_types=["news", "disclosure", "research_report"],
+            top_k=3,
+        ),
+    )
+
+    assert {item.source_type for item in result.evidence} == {
+        "news",
+        "disclosure",
+    }
+    assert all(
+        item.source_type != "research_report"
+        for item in result.evidence
+    )
 
 
 def test_below_threshold_candidate_is_omitted_when_late_candidate_is_relevant() -> None:

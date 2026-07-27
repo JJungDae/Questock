@@ -11,7 +11,7 @@ from scripts.release_smoke import ReleaseSmokeError, run_release_smoke
 def _payload(status: str, source_type: str | None) -> dict[str, Any]:
     payload = {
         "status": status,
-        "basis_date": "2026-07-26",
+        "basis_date": "2026-07-24",
         "evidence": (
             [] if source_type is None else [{"source_type": source_type}]
         ),
@@ -58,7 +58,10 @@ def test_release_smoke_runs_deterministic_recorded_scenarios(
             return _payload("complete", "research_report")
         if message == "PER이 뭐야?":
             return _payload("complete", "glossary")
-        if message == "SK하이닉스 최근 공시 요약":
+        if (
+            message
+            == "SK하이닉스 공시를 삼성전자 분기보고서로 설명해줘."
+        ):
             return _payload("no_evidence", None)
         if message == "삼성전자 지금 매수해야 해?":
             return _payload("blocked", None)
@@ -107,6 +110,32 @@ def test_release_smoke_rejects_live_or_malformed_public_result() -> None:
 def test_release_smoke_rejects_metadata_only_disclosure() -> None:
     bad = _payload("partial", "disclosure")
     bad["answer_sections"] = {"summary": "접수번호 20260515002181"}
+
+    with pytest.raises(ReleaseSmokeError):
+        release_smoke._assert_disclosure_response(bad)
+
+
+def test_release_smoke_allows_expanded_fsc_disclosure_fact_inventory() -> None:
+    payload = _payload("partial", "disclosure")
+    payload["evidence"][0]["locator"]["facts"].append(
+        {
+            "category": "risk_or_uncertainty",
+            "value": None,
+            "unit": None,
+            "physical_pdf_page": 23,
+            "dart_printed_page": 20,
+            "section_path": ["II. 사업의 내용", "위험관리"],
+        }
+    )
+
+    release_smoke._assert_disclosure_response(payload)
+
+
+def test_release_smoke_rejects_missing_required_fsc_disclosure_fact() -> None:
+    bad = _payload("partial", "disclosure")
+    bad["evidence"][0]["locator"]["facts"] = (
+        bad["evidence"][0]["locator"]["facts"][1:]
+    )
 
     with pytest.raises(ReleaseSmokeError):
         release_smoke._assert_disclosure_response(bad)

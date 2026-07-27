@@ -11,6 +11,7 @@ from pydantic import ValidationError
 from pydantic_core import PydanticSerializationError
 
 from app.core.models import Evidence
+from app.evidence.selection import source_diverse_indexes
 from app.retrieval.retriever import LOW_RELEVANCE_THRESHOLD
 
 MAX_EVIDENCE_COUNT = 6
@@ -124,18 +125,29 @@ def select_evidence_context(
     *,
     limits: ContextBudgetLimits = ContextBudgetLimits(),
     reserved_tokens: int = 0,
+    required_sources: list[str] | tuple[str, ...] = (),
 ) -> ContextBudgetResult:
     canonical_limits = _validate_limits(limits)
     canonical_reserved_tokens = _validate_reserved_tokens(
         reserved_tokens,
         canonical_limits,
     )
+    canonical_required_sources = _validate_required_sources(
+        required_sources
+    )
     canonical_items = _canonical_evidence_sequence(evidence)
     _validate_repeated_ids(canonical_items)
 
     unique_items = _deduplicate(canonical_items)
+    source_order = source_diverse_indexes(
+        [item.evidence.source_type for item in unique_items],
+        canonical_required_sources,
+    )
+    prioritized_items = tuple(
+        unique_items[index] for index in source_order
+    )
     source_capped = _apply_source_cap(
-        unique_items,
+        prioritized_items,
         canonical_limits.max_evidence_per_source,
     )
     count_capped = source_capped[: canonical_limits.max_evidence_count]
@@ -158,7 +170,7 @@ def select_evidence_context(
     )
     _audit_result(
         result,
-        canonical_items,
+        prioritized_items,
         state,
         canonical_limits,
         canonical_reserved_tokens,
@@ -166,12 +178,31 @@ def select_evidence_context(
     output = _copy_result(result)
     _audit_result(
         output,
-        canonical_items,
+        prioritized_items,
         state,
         canonical_limits,
         canonical_reserved_tokens,
     )
     return output
+
+
+def _validate_required_sources(
+    value: object,
+) -> tuple[str, ...]:
+    if type(value) not in {list, tuple}:
+        raise ContextBudgetValidationError(_INVALID_INPUT)
+    canonical = tuple(value)
+    if (
+        any(
+            not isinstance(item, str)
+            or not item.strip()
+            or item not in _SUPPORTED_SOURCES
+            for item in canonical
+        )
+        or len(canonical) != len(set(canonical))
+    ):
+        raise ContextBudgetValidationError(_INVALID_INPUT)
+    return canonical
 
 
 def _validate_limits(value: object) -> ContextBudgetLimits:

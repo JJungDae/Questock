@@ -61,8 +61,21 @@ def test_app_initial_render_has_expected_shell() -> None:
 
     assert not app.exception
     assert app.title[0].value == "Questock"
-    assert app.selectbox[0].label == "지원 종목"
+    assert not app.selectbox
     assert app.text_area[0].label == "질문"
+    captions = "\n".join(item.value for item in app.caption)
+    assert "Snapshot ID: svc-20260724-1402" in captions
+    assert "기준 시점: 2026-07-24 14:02 KST" in captions
+    assert "뉴스 수집 범위: 2026-07-24 00:00~14:00 KST" in captions
+    assert "자료 모드: recorded" in captions
+    assert "Gemini 3.5 Flash 또는 근거 기반 고정 응답" in captions
+    assert "외부 LLM 전송 안 함" in captions
+    assert "범위 부족 시 경고" in captions
+    assert "요청 한도 도달 시: 근거 기반 고정 응답" in captions
+    assert any(
+        "개인 금융정보를 입력하지 마세요" in item.value
+        for item in app.warning
+    )
     reset = next(item for item in app.button if item.key == "reset_session")
     submit = next(
         item
@@ -294,6 +307,16 @@ def test_app_keeps_session_across_turns_and_reset_creates_isolated_id() -> None:
 
     assert transport.requests[-1].session_id != first_session_id
     assert transport.requests[-1].session_id.startswith("anonymous-")
+
+
+def test_app_rerun_without_submit_never_calls_transport() -> None:
+    transport = FakeTransport(_response())
+    app = AppTest.from_function(_app, args=(transport,)).run()
+
+    app.run()
+
+    assert not app.exception
+    assert transport.requests == []
 
 
 def test_app_renders_conflict_cards_and_three_safe_sources() -> None:
