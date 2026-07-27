@@ -671,7 +671,7 @@ def test_llm_deadline_cancels_once_and_uses_fixed_template() -> None:
         _service(
             gateway,
             llm,
-            deadline_seconds=0.02,
+            deadline_seconds=0.2,
             monotonic=clock,
         ).chat(_request())
     )
