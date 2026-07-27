@@ -394,5 +394,5 @@ FSC-4 does not pass if any of the following remains:
   - unsupported number, wrong company, uncited core number, direct advice:
     `0`
   - remaining two eligible cases: validated fixed fallback
-- Human Owner deployment authorization: `APPROVED` on 2026-07-28
+- Human Owner approved deployment on 2026-07-28
 - commit, push, PR, merge, CI, and deployment: `IN_PROGRESS`
