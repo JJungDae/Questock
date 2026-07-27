@@ -1,7 +1,7 @@
 # QUESTOCK SOURCE OF TRUTH INDEX
 
 > 기준일: 2026-07-28
-> 기준 branch: canonical `main` plus local `fix/fsc4-beginner-grounded-chat`
+> 기준 branch: canonical `main`; deployed runtime release `136271ea80802a39f1981e539f183d544d95e23a`
 > Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
 > Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
 > B9 planning base: `b9ddf7461306d16cf1da14634ce458050d78f7bc`
