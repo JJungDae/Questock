@@ -270,7 +270,7 @@ def test_runtime_env_is_atomic_api_only_and_one_generation_rollback() -> None:
 
     assert "test -n \"$GEMINI_API_KEY\"" in install
     assert (
-        '[[ "$GEMINI_API_KEY" =~ ^[A-Za-z0-9_-]{20,256}$ ]]'
+        '[[ "$GEMINI_API_KEY" =~ ^[A-Za-z0-9._-]{20,256}$ ]]'
         in install
     )
     assert "umask 077" in install
