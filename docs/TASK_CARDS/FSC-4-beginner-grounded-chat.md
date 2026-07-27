@@ -1,6 +1,6 @@
 # FSC-4 — Beginner Grounded Chat Stabilization
 
-> Status: `DEPLOYMENT AUTHORIZED / IN PROGRESS`
+> Status: `PASS / DEPLOYED / COMPLETE`
 >
 > Baseline: `main` at `8c861a7664de001442b892a4f8d811d5d2655a14`
 >
@@ -395,4 +395,30 @@ FSC-4 does not pass if any of the following remains:
     `0`
   - remaining two eligible cases: validated fixed fallback
 - Human Owner approved deployment on 2026-07-28
-- commit, push, PR, merge, CI, and deployment: `IN_PROGRESS`
+- implementation PR:
+  - PR `#14`: `MERGED`
+  - head SHA: `7e66cb58dca6434886f797d914109d73adb6926e`
+  - merge SHA: `b5fde16c69d03fadcb57cff5c0f26e72dbc9d69f`
+  - quality-gate run `30299315471`: `PASS`
+- initial deployment run `30299536951`:
+  - result: `FAILED` at the release smoke
+  - cause: the smoke still required the pre-FSC-4 single-disclosure-evidence
+    shape while the public response correctly used fact-level and
+    multi-source Evidence
+  - automatic rollback: `PASS`
+  - restored release SHA:
+    `2adcc787a803996d4a181a6cd3faa3158602660a`
+- deployment smoke hotfix:
+  - PR `#15`: `MERGED`
+  - merge SHA: `136271ea80802a39f1981e539f183d544d95e23a`
+  - quality-gate run `30300234890`: `PASS`
+- final deployment run `30300383109`: `PASS`
+  - deployed release SHA:
+    `136271ea80802a39f1981e539f183d544d95e23a`
+  - deployed image ID:
+    `sha256:bda18d4456742b59f2ac0e44877fe5544ccac7d54d4438b83d64e2c6768ce3b9`
+  - API and Streamlit health: `PASS`
+  - recorded snapshot: 54 documents; news 15, disclosure 3,
+    research-report sections 36
+  - release smoke: `PASS`, 7 scenarios and 8 requests
+  - rollback on the successful deployment: `NOT_RUN`
