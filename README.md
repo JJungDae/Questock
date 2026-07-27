@@ -109,10 +109,12 @@ The recorded fixed-generation mode requires no provider or LLM credential.
 Gemini mode requires an API credential in the API process only.
 
 The approved live-generation contract is `gemini/gemini-3.5-flash` with
-`LLM_THINKING_LEVEL=minimal`, `LLM_MAX_OUTPUT_TOKENS=1024`,
-`LLM_TIMEOUT_SECONDS=10`, and retry `0`. The legacy
+`LLM_THINKING_LEVEL=minimal`, `LLM_MAX_OUTPUT_TOKENS=4096`,
+`LLM_TIMEOUT_SECONDS=15`, and retry `0`. Gemini receives a concise JSON
+contract and all output is parsed and validated inside Questock; unstable
+provider-side JSON-schema-constrained decoding is not used. The legacy
 `LLM_THINKING_BUDGET` setting is rejected. One separately approved sanitized
-Gemini smoke passed; FSC-2 implementation remains pending Human Owner review.
+Gemini smoke and the FSC-4 live service acceptance passed.
 
 ## Verification
 

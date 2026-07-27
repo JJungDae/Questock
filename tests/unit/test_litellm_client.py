@@ -16,8 +16,8 @@ def _config(monkeypatch: pytest.MonkeyPatch) -> LLMConfig:
     monkeypatch.delenv("LLM_THINKING_BUDGET", raising=False)
     monkeypatch.setenv("GEMINI_API_KEY", "-".join(("m3", "fixture", "key")))
     monkeypatch.setenv("LLM_THINKING_LEVEL", "minimal")
-    monkeypatch.setenv("LLM_MAX_OUTPUT_TOKENS", "1024")
-    monkeypatch.setenv("LLM_TIMEOUT_SECONDS", "10")
+    monkeypatch.setenv("LLM_MAX_OUTPUT_TOKENS", "4096")
+    monkeypatch.setenv("LLM_TIMEOUT_SECONDS", "15")
     return LLMConfig.from_env(require_credential=True)
 
 
@@ -79,15 +79,14 @@ def test_adapter_maps_exact_options_and_normalizes_success(
     call = calls[0]
     assert call["model"] == "gemini/gemini-3.5-flash"
     assert call["timeout"] == 4
-    assert call["max_tokens"] == 1024
+    assert call["max_tokens"] == 4096
     assert call["reasoning_effort"] == "minimal"
     assert "thinking" not in call
     assert "thinking_budget" not in call
     assert "drop_params" not in call
     assert "extra_body" not in call
     assert call["num_retries"] == 0
-    assert call["response_format"]["type"] == "json_schema"
-    assert call["response_format"]["json_schema"]["strict"] is True
+    assert "response_format" not in call
     assert os.environ["LITELLM_LOCAL_MODEL_COST_MAP"] == "True"
     assert os.environ["LANGSMITH_TRACING"] == "false"
     assert os.environ["LANGCHAIN_TRACING_V2"] == "false"

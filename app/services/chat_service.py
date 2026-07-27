@@ -79,11 +79,26 @@ from app.services.source_gateway import (
 )
 from app.services.session_store import InMemorySessionStore, SessionStoreError
 
-_DEFAULT_DEADLINE_SECONDS = 20.0
+_DEFAULT_DEADLINE_SECONDS = 30.0
 _DEGRADATION_WARNING = "llm_generation_degraded"
 _DEADLINE_WARNING = "request_deadline_exceeded"
 _FALLBACK_SECURITY_ID = "KRX:005930"
 _SAFE_RUNTIME_TOKEN = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
+_FOCUS_QUERY_TERMS: dict[str, tuple[str, ...]] = {
+    "general": ("최근", "이슈", "실적", "매출", "영업이익", "전망", "위험", "기술", "배당"),
+    "recent_events": ("최근", "이슈", "뉴스", "보도", "실적", "전망"),
+    "positive": ("기대", "성장", "수요", "공급", "계약", "기술", "배당", "주주환원", "모멘텀"),
+    "risk": ("위험", "리스크", "우려", "변동성", "둔화", "하락", "불확실성"),
+    "performance": ("실적", "매출", "영업이익", "순이익", "현금흐름", "가이던스"),
+    "business": ("사업", "부문", "제품", "매출", "생산", "수주"),
+    "technology": ("기술", "제품", "연구개발", "특허", "HBM", "로봇", "전기차"),
+    "outlook": ("전망", "예상", "가이던스", "촉매", "위험", "불확실성"),
+    "shareholder_return": ("배당", "주주환원", "자사주", "현금흐름"),
+    "disclosure": ("공시", "분기보고서", "사업보고서", "실적", "위험"),
+    "research_view": ("리포트", "전망", "예상", "목표", "촉매", "위험"),
+    "balanced": ("실적", "호재", "위험", "전망", "기술", "배당"),
+    "term": (),
+}
 
 
 class ChatServiceError(RuntimeError):
@@ -725,10 +740,11 @@ def _run_evidence_pipeline(
     }
     normalized = tuple(normalize_financial_documents(documents))
     request = RetrievalRequest(
-        query=query,
+        query=_retrieval_query(query, plan),
         security_id=_request_security_id(plan, documents),
         source_types=list(plan.required_sources),
         date_range=plan.date_range.model_copy(deep=True) if plan.date_range else None,
+        top_k=10,
     )
     hard_filtered = tuple(
         filter_evidence(
@@ -860,6 +876,13 @@ def _request_security_id(
         if ids:
             return ids[0]
     return _FALLBACK_SECURITY_ID
+
+
+def _retrieval_query(query: str, plan: QueryPlan) -> str:
+    terms = _FOCUS_QUERY_TERMS.get(plan.answer_focus, ())
+    if not terms:
+        return query
+    return " ".join((query, *terms))
 
 
 def _build_response(

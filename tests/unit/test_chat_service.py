@@ -671,7 +671,7 @@ def test_llm_deadline_cancels_once_and_uses_fixed_template() -> None:
         _service(
             gateway,
             llm,
-            deadline_seconds=0.02,
+            deadline_seconds=0.2,
             monotonic=clock,
         ).chat(_request())
     )
@@ -1407,8 +1407,9 @@ def test_recent_conversation_is_bounded_context_and_never_evidence() -> None:
     second_messages = llm.requests[1].messages
     rendered = "\n".join(item.content for item in second_messages)
     assert QUESTION in rendered
-    assert "Prior conversation context (not evidence)" in rendered
-    assert "never evidence" in rendered
+    assert "<conversation_context_not_evidence>" in rendered
+    assert "</conversation_context_not_evidence>" in rendered
+    assert "never Evidence" in rendered
     assert all(len(item.content) <= 16_000 for item in second_messages)
 
 

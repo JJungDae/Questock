@@ -10,8 +10,8 @@ from app.core.models import QuestockModel
 
 APPROVED_LLM_MODEL = "gemini/gemini-3.5-flash"
 _APPROVED_THINKING_LEVEL = "minimal"
-_APPROVED_MAX_OUTPUT_TOKENS = 1024
-_APPROVED_LLM_TIMEOUT_SECONDS = 10
+_APPROVED_MAX_OUTPUT_TOKENS = 4096
+_APPROVED_LLM_TIMEOUT_SECONDS = 15
 
 
 class ConfigValidationError(ValueError):

@@ -230,23 +230,20 @@ def test_streamlit_renders_recorded_answer_and_process_visibility() -> None:
         args=(transport,),
     ).run()
 
-    rendered.text_area[0].input("삼성전자 최근 이슈 요약")
-    submit = next(
-        item
-        for item in rendered.button
-        if item.key.startswith("FormSubmitter:chat_form-")
-    )
-    submit.click()
-    rendered.run()
+    rendered.chat_input[0].set_value("삼성전자 최근 이슈 요약").run()
 
     assert not rendered.exception
     assert len(transport.requests) == 1
     captions = "\n".join(item.value for item in rendered.caption)
     visible_text = "\n".join(item.value for item in rendered.text)
+    visible_sources = "\n".join(
+        item.value for item in rendered.markdown
+    )
     assert "자료 모드: 기록 자료" in captions
     assert "고정 데모 자료 · 실시간 연결 아님" in captions
     assert "기준일: 2026-07-26" in captions
     assert "확인 안 함" in captions
-    assert "자료 성격: Questock 작성 요약" in visible_text
+    assert "뉴스 ·" in visible_sources
+    assert "자료 성격:" not in visible_text
     assert "선택 근거:" in visible_text
     assert "AI 상태:" in visible_text

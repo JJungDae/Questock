@@ -1,11 +1,11 @@
 # QUESTOCK SOURCE OF TRUTH INDEX
 
-> 기준일: 2026-07-27
-> 기준 branch: `main`
+> 기준일: 2026-07-28
+> 기준 branch: canonical `main` plus local `fix/fsc4-beginner-grounded-chat`
 > Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
 > Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
 > B9 planning base: `b9ddf7461306d16cf1da14634ce458050d78f7bc`
-> 상태: `B9 PASS / M4 Gate PASS / FSC-0~FSC-3 PASS / complete; Service Completion Gate PASS / complete; A15-M activation check READY`
+> 상태: `B9 PASS / M4 Gate PASS / FSC-0~FSC-3 PASS / complete; FSC-4 DEPLOYMENT AUTHORIZED / IN PROGRESS; A15-M entry held for FSC-4 deployment closure`
 
 ## 1. 목적
 
@@ -66,10 +66,11 @@ Task Card 사실 동기화 완료, B6-0에서 상태 확인
 B9, First Service Completion
 
 현재 공식 bundle:
-A15-M activation check - READY / NOT_STARTED
+FSC-4 beginner grounded chat stabilization - local implementation and
+validation complete / deployment authorized and in progress
 
 현재 checkpoint:
-A15-M activation check
+FSC-4 integration and deployment
 
 FSC 실행 결정:
 docs/agent_handoff/FIRST_SERVICE_COMPLETION_EXECUTION_DECISION_2026-07-27.md
@@ -89,10 +90,11 @@ FSC-1 backup:
 
 Current LLM contract:
 `gemini/gemini-3.5-flash`; `LLM_THINKING_LEVEL=minimal`;
-`LLM_MAX_OUTPUT_TOKENS=1024`; `LLM_TIMEOUT_SECONDS=10`; retry `0`;
+`LLM_MAX_OUTPUT_TOKENS=4096`; `LLM_TIMEOUT_SECONDS=15`; retry `0`;
 `litellm==1.84.1`; legacy `LLM_THINKING_BUDGET` rejected;
-local mock/compatibility verification PASS and one approved sanitized live
-Gemini smoke PASS
+concise JSON instructions with project-side Pydantic/citation/safety
+validation; provider-side JSON-schema-constrained decoding disabled after
+FSC-4 live repeated-output reproduction; final FSC-4 live acceptance PASS
 
 SC-01 automatic result:
 initial broad canonical queries exhausted the 1,000-result ceiling before the
@@ -144,6 +146,20 @@ secret/local-path scan, and diff check PASS; GitHub CI/deploy NOT_RUN
 
 FSC-3:
 PASS / complete - SC-06 and SC-07 local/remote closure complete
+
+FSC-4:
+`DEPLOYMENT AUTHORIZED / IN PROGRESS`;
+Task Card `docs/TASK_CARDS/FSC-4-beginner-grounded-chat.md`;
+working branch `fix/fsc4-beginner-grounded-chat`;
+120-case beginner-QA deterministic acceptance PASS;
+Ruff PASS; full regression 2086 passed, 2 warnings;
+M3 Gate 34/34; Critical 17/17; public exposure 0;
+snapshot validation PASS with 54 documents; secret scan and diff check PASS;
+final live acceptance PASS with Gemini success 10/12, all 15 public
+validations PASS, Critical provider attempts 0, and unsupported number,
+wrong-company, uncited core-number, and direct-advice failures 0;
+Human Owner deployment authorization APPROVED;
+commit/push/PR/merge/CI/deploy IN_PROGRESS
 
 SC-06 verification:
 live acceptance PASS; cumulative LLM success 10/12; Critical 3/3 with zero
@@ -211,7 +227,8 @@ B6 완료 SHA:
 60e6203b265a967a8b6ba45da2ba3128e1e1bcfe
 
 다음 공식 checkpoint:
-A15-M activation check - READY / NOT_STARTED
+FSC-4 integration and deployment; after deployment closure, A15-M activation
+check remains READY / NOT_STARTED
 
 B9 계획:
 docs/TASK_CARDS/B9-release-deployment-traceability.md
@@ -326,12 +343,12 @@ docs/TASK_CARDS/B8-quality-observability.md
 docs/TASK_CARDS/B9-release-deployment-traceability.md
 
 current:
-docs/TASK_CARDS/FSC-first-service-completion.md
+docs/TASK_CARDS/FSC-4-beginner-grounded-chat.md
 
 current execution decision:
 docs/agent_handoff/FIRST_SERVICE_COMPLETION_EXECUTION_DECISION_2026-07-27.md
 
-ready after Service Completion Gate PASS:
+ready after FSC-4 Human Owner review and integration:
 A15-M activation check - implementation NOT_STARTED
 ```
 

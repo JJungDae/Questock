@@ -144,9 +144,12 @@ Gemini 3.5 계약 전체 교체와 필요한 최소 호환 dependency 갱신을 
 - `gemini/gemini-3.5-flash`
 - `litellm==1.84.1`
 - `LLM_THINKING_LEVEL=minimal`
-- `LLM_MAX_OUTPUT_TOKENS=1024`
-- `LLM_TIMEOUT_SECONDS=10`
+- `LLM_MAX_OUTPUT_TOKENS=4096`
+- `LLM_TIMEOUT_SECONDS=15`
 - retry `0`
+- FSC-4 answer path uses concise JSON instructions plus project-side strict
+  parsing and safety validation; provider-side JSON-schema-constrained
+  decoding is disabled after live repeated-output reproduction
 - adapter 전달값 `reasoning_effort=minimal`
 - `LLM_THINKING_BUDGET`, level/budget 동시 전송, `drop_params`,
   undocumented `extra_body`, thinking 생략, 2.5 fallback 금지

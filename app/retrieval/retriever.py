@@ -12,7 +12,7 @@ from app.evidence.selection import source_diverse_indexes
 from app.retrieval.filters import filter_evidence
 
 STRATEGY = "lexical-bm25-m2-03-v1"
-MAX_TOP_K = 6
+MAX_TOP_K = 10
 LOW_RELEVANCE_THRESHOLD = 0.5
 BM25_K1 = 1.2
 BM25_B = 0.75

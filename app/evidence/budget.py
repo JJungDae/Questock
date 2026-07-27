@@ -14,10 +14,10 @@ from app.core.models import Evidence
 from app.evidence.selection import source_diverse_indexes
 from app.retrieval.retriever import LOW_RELEVANCE_THRESHOLD
 
-MAX_EVIDENCE_COUNT = 6
-MAX_EVIDENCE_PER_SOURCE = 3
-MAX_CONTEXT_TOKENS = 3000
-MAX_CONTEXT_CHARS = 4500
+MAX_EVIDENCE_COUNT = 10
+MAX_EVIDENCE_PER_SOURCE = 4
+MAX_CONTEXT_TOKENS = 6000
+MAX_CONTEXT_CHARS = 12000
 MAX_LLM_CALLS = 2
 TOKEN_ESTIMATOR_VERSION = "utf8-bytes-div-3-v1"
 

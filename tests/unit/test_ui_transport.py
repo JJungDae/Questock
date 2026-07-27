@@ -335,7 +335,7 @@ def test_ui_config_defaults_and_sanitized_invalid_values() -> None:
     config = load_ui_config(empty)
 
     assert config.endpoint == DEFAULT_CHAT_ENDPOINT
-    assert config.timeout_seconds == 21
+    assert config.timeout_seconds == 35
 
     values = {
         "QUESTOCK_API_URL": "https://user:sentinel@example.com/api/chat",

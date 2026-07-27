@@ -71,12 +71,15 @@ def assert_success(
     sources: list[str],
     evidence: list[str],
     date_range: DateRange | None = None,
+    answer_focus: str | None = None,
 ) -> None:
     assert (security_id_for(plan.security) if plan.security else None) == security_id
     assert plan.intent == intent
     assert plan.date_range == date_range
     assert plan.required_sources == sources
     assert plan.required_evidence == evidence
+    if answer_focus is not None:
+        assert plan.answer_focus == answer_focus
     assert plan.requires_clarification is False
 
 
@@ -122,7 +125,6 @@ def test_type_errors_are_sanitized_and_do_not_call_resolver():
         ("   ", OUT_OF_SCOPE),
         (f"{SAMSUNG} \ub0b4\uc77c \uc624\ub97c\uae4c", PROHIBITED_ADVICE),
         (f"{SAMSUNG} {TODAY} \uc65c \uc62c\ub790\uc5b4", OUT_OF_SCOPE),
-        (f"{SAMSUNG} \uc54c\ub824\uc918", OUT_OF_SCOPE),
     ],
 )
 def test_early_return_paths_do_not_call_resolver(query, intent):
@@ -281,10 +283,38 @@ def test_net_income_financial_term_routes_to_exact_query_plan():
     assert result == QueryPlan(
         security=None,
         intent=FINANCIAL_TERM,
+        answer_focus="term",
         date_range=None,
         required_sources=["glossary"],
         required_evidence=["definition"],
         requires_clarification=False,
+    )
+
+
+@pytest.mark.parametrize(
+    ("query", "answer_focus"),
+    [
+        (f"{SAMSUNG} 호재 있어?", "positive"),
+        (f"{SAMSUNG} 상황 어때?", "balanced"),
+        (f"{SAMSUNG} 실적 어때?", "performance"),
+        (f"{SAMSUNG} 전망은 어때?", "outlook"),
+        (f"{SAMSUNG} 배당은 어때?", "shareholder_return"),
+        (f"{SAMSUNG}는 뭐 하는 회사야?", "business"),
+    ],
+)
+def test_everyday_supported_company_questions_use_grounded_general_route(
+    query: str,
+    answer_focus: str,
+) -> None:
+    result = planner().plan(query)
+
+    assert_success(
+        result,
+        security_id=SAMSUNG_ID,
+        intent=MULTI_SOURCE_SUMMARY,
+        sources=["news", "disclosure", "research_report"],
+        evidence=["recent_news", "disclosure", "research_report"],
+        answer_focus=answer_focus,
     )
 
 
@@ -503,6 +533,36 @@ def test_narrow_follow_up_inherits_previous_intent_security_and_sources():
         intent=RECENT_ISSUE,
         sources=["news"],
         evidence=["recent_news"],
+    )
+
+
+@pytest.mark.parametrize(
+    ("query", "answer_focus"),
+    [
+        ("그럼 호재는?", "positive"),
+        ("그러면 실적은?", "performance"),
+        ("그럼 전망은?", "outlook"),
+    ],
+)
+def test_everyday_follow_up_inherits_company_and_changes_answer_focus(
+    query: str,
+    answer_focus: str,
+) -> None:
+    session = SessionContext(
+        current_security_id=SAMSUNG_ID,
+        previous_intent=MULTI_SOURCE_SUMMARY,
+        previous_source_types=["news", "disclosure", "research_report"],
+    )
+
+    result = planner().plan(query, session=session)
+
+    assert_success(
+        result,
+        security_id=SAMSUNG_ID,
+        intent=MULTI_SOURCE_SUMMARY,
+        sources=["news", "disclosure", "research_report"],
+        evidence=["recent_news", "disclosure", "research_report"],
+        answer_focus=answer_focus,
     )
 
 

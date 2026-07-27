@@ -106,12 +106,12 @@ LLM_TIMEOUT_SECONDS
 
 - Gemini의 동적 thinking 기본값을 그대로 사용하지 않는다.
 - `LLM_THINKING_BUDGET`는 구 계약이며 설정에 존재하면 fail-closed한다.
-- `LLM_MAX_OUTPUT_TOKENS=1024`, `LLM_TIMEOUT_SECONDS=10`, retry `0`을
+- `LLM_MAX_OUTPUT_TOKENS=4096`, `LLM_TIMEOUT_SECONDS=15`, retry `0`을
   사용한다.
 - Gemini 3.5 요청에는 `reasoning_effort=minimal`만 전달하며 thinking
   level과 budget을 함께 보내지 않는다.
 - 승인된 credential로 sanitized live smoke를 최소 1회 수행한다.
-- live smoke에서 실제 model ID, structured output 또는 JSON parse, timeout, usage 반환을 확인한다.
+- live smoke에서 실제 model ID, project-side JSON parse, timeout, usage 반환을 확인한다.
 - fixture 성공과 live API 성공을 별도로 기록한다.
 - live smoke를 수행하지 않았으면 “Gemini live 연동 완료”라고 기록하지 않는다.
 - 무료 quota 실패 시 billing을 자동 연결하거나 유료 모델로 전환하지 않는다.
@@ -123,6 +123,9 @@ LLM_TIMEOUT_SECONDS
 - 종목·수치 귀속·citation·투자 조언은 코드 validator가 검사한다.
 - parse 또는 의미 validation 실패 응답을 그대로 사용자에게 반환하지 않는다.
 - 모델 ID 변경 후 Critical regression을 다시 실행한다.
+- Gemini 3.5 Flash에는 concise JSON instructions만 전달하고
+  provider-side JSON-schema-constrained decoding은 사용하지 않는다.
+  Pydantic, citation, number, company, URL, advice validator가 공개 경계다.
 
 
 ## LiteLLM dependency 승인 기록

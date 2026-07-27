@@ -180,12 +180,13 @@ def test_curated_output_is_exact_diverse_deterministic_and_body_free() -> None:
         ) == 5
         assert len({item["summary"] for item in selected}) == 5
         assert all(
-            set(item) == {
-                "document_id",
-                "time_band",
-                "source_locator",
-                "summary",
-            }
+                set(item) == {
+                    "document_id",
+                    "time_band",
+                    "source_locator",
+                    "source_title",
+                    "summary",
+                }
             for item in selected
         )
         assert all(

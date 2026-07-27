@@ -34,6 +34,20 @@ _CREDENTIAL_QUERY_KEYS = frozenset(
         "xapikey",
     }
 )
+_DISCLOSURE_CATEGORY_LABELS = {
+    "capex": "시설투자",
+    "consolidated_operating_profit": "영업이익 실적",
+    "consolidated_revenue": "매출 실적",
+    "contract_or_business_plan": "계약 사업계획",
+    "financial_position_or_cashflow_or_debt": "재무현황 현금흐름 부채",
+    "major_product_or_technology": "주요제품 기술",
+    "major_segment_profit": "사업부문 수익성",
+    "major_segment_revenue": "사업부문 매출",
+    "net_income_or_equivalent": "순이익 실적",
+    "production_or_sales": "생산 판매",
+    "research_and_development": "연구개발",
+    "risk_or_uncertainty": "위험 불확실성",
+}
 
 
 class EvidenceNormalizationError(ValueError):
@@ -57,10 +71,123 @@ def normalize_financial_documents(documents: Sequence[FinancialDocument]) -> lis
         if not isinstance(document, FinancialDocument):
             raise EvidenceNormalizationError("documents items are invalid")
         try:
-            normalized.append(normalize_financial_document(document))
+            disclosure_facts = _normalize_disclosure_facts(document)
+            if disclosure_facts is None:
+                normalized.append(normalize_financial_document(document))
+            else:
+                normalized.extend(disclosure_facts)
         except EvidenceNormalizationError:
             raise EvidenceNormalizationError("documents items are invalid") from None
     return normalized
+
+
+def _normalize_disclosure_facts(
+    document: FinancialDocument,
+) -> list[Evidence] | None:
+    validated_document = _canonical_revalidate(document)
+    if (
+        validated_document.source_type != "disclosure"
+        or validated_document.locator.get("content_level")
+        != "verified_body_facts"
+    ):
+        return None
+    raw_facts = validated_document.locator.get("facts")
+    if not isinstance(raw_facts, list) or not raw_facts:
+        raise EvidenceNormalizationError("disclosure facts are invalid")
+    fact_schema_flags = [
+        isinstance(item, Mapping)
+        and ("fact_id" in item or "claim" in item)
+        for item in raw_facts
+    ]
+    if not any(fact_schema_flags):
+        return None
+    if not all(fact_schema_flags):
+        raise EvidenceNormalizationError("disclosure facts are invalid")
+
+    scope, subject_security_ids = _map_attribution(validated_document)
+    title = validated_document.metadata.get("reference_title")
+    if not isinstance(title, str) or not title.strip():
+        title = validated_document.title
+    output: list[Evidence] = []
+    seen_ids: set[str] = set()
+    for raw_fact in raw_facts:
+        if not isinstance(raw_fact, Mapping):
+            raise EvidenceNormalizationError("disclosure facts are invalid")
+        fact_id = raw_fact.get("fact_id")
+        claim = raw_fact.get("claim")
+        if (
+            not isinstance(fact_id, str)
+            or not fact_id.strip()
+            or fact_id in seen_ids
+            or not isinstance(claim, str)
+            or not claim.strip()
+        ):
+            raise EvidenceNormalizationError("disclosure facts are invalid")
+        snippet = _normalize_snippet(claim)
+        category = raw_fact.get("category")
+        fact_title = title.strip()
+        if isinstance(category, str):
+            label = _DISCLOSURE_CATEGORY_LABELS.get(category)
+            if label is not None:
+                fact_title = f"{fact_title} · {label}"
+        evidence_id = (
+            f"evidence:{validated_document.document_id}:{fact_id.strip()}"
+        )
+        locator = _copy_and_validate_locator(validated_document.locator)
+        locator.pop("facts", None)
+        locator["fact_id"] = fact_id.strip()
+        for field in (
+            "basis",
+            "category",
+            "period",
+            "unit",
+            "value",
+            "physical_pdf_page",
+            "dart_printed_page",
+            "verification_status",
+        ):
+            if field in raw_fact:
+                locator[field] = copy.deepcopy(raw_fact[field])
+        section_path = raw_fact.get("section_path")
+        if isinstance(section_path, list) and all(
+            isinstance(item, str) and item.strip()
+            for item in section_path
+        ):
+            locator["section"] = " > ".join(
+                item.strip() for item in section_path
+            )
+        _validate_emitted_values(
+            validated_document,
+            evidence_id,
+            snippet,
+            locator,
+        )
+        try:
+            evidence = Evidence(
+                evidence_id=evidence_id,
+                document_id=validated_document.document_id,
+                source_type=validated_document.source_type,
+                title=fact_title,
+                source_url=validated_document.source_url,
+                published_at=validated_document.published_at,
+                subject_security_ids=subject_security_ids,
+                mentioned_security_ids=list(
+                    validated_document.mentioned_security_ids
+                ),
+                scope=scope,
+                snippet=snippet,
+                locator=locator,
+                retrieval_score=None,
+            )
+        except ValidationError:
+            raise EvidenceNormalizationError(
+                "disclosure fact construction failed"
+            ) from None
+        ensure_evidence_matches_document(evidence, validated_document)
+        _validate_final_output(evidence)
+        output.append(evidence)
+        seen_ids.add(fact_id)
+    return output
 
 
 def _build_evidence(document: FinancialDocument) -> Evidence:

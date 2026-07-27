@@ -56,13 +56,21 @@ def _app(transport: "FakeTransport") -> None:
     run(transport)
 
 
+def _submit(app: AppTest, question: str) -> None:
+    app.chat_input[0].set_value(question).run()
+
+
 def test_app_initial_render_has_expected_shell() -> None:
     app = AppTest.from_file("streamlit_app.py").run()
 
     assert not app.exception
     assert app.title[0].value == "Questock"
     assert not app.selectbox
-    assert app.text_area[0].label == "질문"
+    assert len(app.chat_input) == 1
+    assert (
+        app.chat_input[0].proto.placeholder
+        == "종목에 대해 궁금한 점을 물어보세요"
+    )
     captions = "\n".join(item.value for item in app.caption)
     assert "Snapshot ID: svc-20260724-1402" in captions
     assert "기준 시점: 2026-07-24 14:02 KST" in captions
@@ -71,39 +79,34 @@ def test_app_initial_render_has_expected_shell() -> None:
     assert "Gemini 3.5 Flash 또는 근거 기반 고정 응답" in captions
     assert "외부 LLM 전송 안 함" in captions
     assert "범위 부족 시 경고" in captions
-    assert "요청 한도 도달 시: 근거 기반 고정 응답" in captions
+    assert (
+        "요청 한도 도달 시: 한도 안내와 함께 근거 기반 고정 응답"
+        in captions
+    )
     assert any(
         "개인 금융정보를 입력하지 마세요" in item.value
         for item in app.warning
     )
     reset = next(item for item in app.button if item.key == "reset_session")
-    submit = next(
-        item
-        for item in app.button
-        if item.key.startswith("FormSubmitter:chat_form-")
-    )
     assert reset.label == "새 세션"
-    assert submit.label == "질문 보내기"
+    assert all(
+        not item.key.startswith("FormSubmitter:")
+        for item in app.button
+    )
 
 
 def test_app_submit_uses_injected_transport_and_renders_process() -> None:
     transport = FakeTransport(_response())
     app = AppTest.from_function(_app, args=(transport,)).run()
 
-    app.text_area[0].input("삼성전자 최근 뉴스")
-    submit = next(
-        item
-        for item in app.button
-        if item.key.startswith("FormSubmitter:chat_form-")
-    )
-    submit.click()
-    app.run()
+    _submit(app, "삼성전자 최근 뉴스")
 
     assert not app.exception
     assert len(transport.requests) == 1
     assert transport.requests[0].message == "삼성전자 최근 뉴스"
     assert transport.requests[0].session_id.startswith("anonymous-")
-    assert transport.timeouts == [21.0]
+    assert transport.timeouts == [35.0]
+    assert app.chat_input[0].value in {None, ""}
     assert any(item.label == "분석 과정 보기" for item in app.expander)
     visible_text = "\n".join(item.value for item in app.text)
     for stage in (
@@ -128,38 +131,33 @@ def test_app_renders_glossary_cards_source_detail_and_fixed_fallback() -> None:
     transport = FakeTransport(response)
     app = AppTest.from_function(_app, args=(transport,)).run()
 
-    app.text_area[0].input("PER이 뭐야?")
-    submit = next(
-        item
-        for item in app.button
-        if item.key.startswith("FormSubmitter:chat_form-")
-    )
-    submit.click()
-    app.run()
+    _submit(app, "PER이 뭐야?")
 
     assert not app.exception
     labels = "\n".join(item.value for item in app.markdown)
     for label in (
-        "한 줄 결론",
+        "한 줄 요약",
         "왜 중요한가",
         "더 확인할 것",
     ):
         assert label in labels
     for hidden in (
-        "확인된 사실",
         "긍정 요인",
         "확인된 위험",
         "AI 정리·추론",
     ):
         assert hidden not in labels
-    captions = "\n".join(item.value for item in app.caption)
-    assert "금융 용어" in captions
     visible_text = "\n".join(item.value for item in app.text)
-    assert "항목 ID: glossary:per" in visible_text
-    assert "버전: 1" in visible_text
-    assert "구간: definition" in visible_text
+    assert "금융 용어 ·" in visible_text
+    assert "항목 ID:" not in visible_text
+    assert "버전:" not in visible_text
+    assert "구간:" not in visible_text
     warnings = "\n".join(item.value for item in app.warning)
-    assert "AI 정리 대신 근거 기반 고정 응답 사용" in warnings
+    assert (
+        "AI 정리를 일시적으로 사용할 수 없어 검증된 근거를 직접 구성한 "
+        "답변입니다."
+        in warnings
+    )
     assert response.status == "complete"
     assert response.diagnostics_public.generation.mode == "fixed_template"
     assert response.diagnostics_public.sources[0].document_count == 4
@@ -170,14 +168,7 @@ def test_app_provider_failure_uses_stable_red_fallback_and_mode() -> None:
     transport = FakeTransport(response)
     app = AppTest.from_function(_app, args=(transport,)).run()
 
-    app.text_area[0].input("삼성전자 최근 뉴스")
-    submit = next(
-        item
-        for item in app.button
-        if item.key.startswith("FormSubmitter:chat_form-")
-    )
-    submit.click()
-    app.run()
+    _submit(app, "삼성전자 최근 뉴스")
 
     assert not app.exception
     assert response.status == "provider_failed"
@@ -206,18 +197,11 @@ def test_app_renders_malicious_html_as_text_not_markdown() -> None:
     transport = FakeTransport(response)
     app = AppTest.from_function(_app, args=(transport,)).run()
 
-    app.text_area[0].input("PER이 뭐야?")
-    submit = next(
-        item
-        for item in app.button
-        if item.key.startswith("FormSubmitter:chat_form-")
-    )
-    submit.click()
-    app.run()
+    _submit(app, "PER이 뭐야?")
 
     assert not app.exception
-    assert any(
-        "<script>alert('display-only')</script>" == item.value
+    assert all(
+        "<script>" not in item.value
         for item in app.text
     )
     assert all(
@@ -243,24 +227,16 @@ def test_app_dynamic_metadata_is_plain_text_and_only_source_url_is_link() -> Non
     transport = FakeTransport(response)
     app = AppTest.from_function(_app, args=(transport,)).run()
 
-    app.text_area[0].input("PER이 뭐야?")
-    submit = next(
-        item
-        for item in app.button
-        if item.key.startswith("FormSubmitter:chat_form-")
-    )
-    submit.click()
-    app.run()
+    _submit(app, "PER이 뭐야?")
 
     assert not app.exception
     visible_text = "\n".join(item.value for item in app.text)
     assert "/tmp" not in visible_text
-    assert "[공식](https://unapproved.example)" in visible_text
-    assert "![이미지](https://unapproved.example)" in visible_text
-    links = app.get("link_button")
-    assert len(links) == 1
-    assert links[0].proto.label == "원문 보기"
-    assert links[0].proto.url == "https://approved.example/source"
+    assert "[공식](https://unapproved.example)" not in visible_text
+    assert "![이미지](https://unapproved.example)" not in visible_text
+    rendered_markdown = "\n".join(item.value for item in app.markdown)
+    assert "https://approved.example/source" in rendered_markdown
+    assert "안전하게 표시할 수 없는 내용입니다." in rendered_markdown
     assert all(
         "unapproved.example" not in item.value
         for item in app.markdown
@@ -271,24 +247,10 @@ def test_app_keeps_session_across_turns_and_reset_creates_isolated_id() -> None:
     transport = FakeTransport(_response())
     app = AppTest.from_function(_app, args=(transport,)).run()
 
-    app.text_area[0].input("삼성전자 최근 뉴스")
-    submit = next(
-        item
-        for item in app.button
-        if item.key.startswith("FormSubmitter:chat_form-")
-    )
-    submit.click()
-    app.run()
+    _submit(app, "삼성전자 최근 뉴스")
     first_session_id = transport.requests[-1].session_id
 
-    app.text_area[0].input("그럼 위험 요인은?")
-    submit = next(
-        item
-        for item in app.button
-        if item.key.startswith("FormSubmitter:chat_form-")
-    )
-    submit.click()
-    app.run()
+    _submit(app, "그럼 위험 요인은?")
 
     assert transport.requests[-1].session_id == first_session_id
     reset = next(item for item in app.button if item.key == "reset_session")
@@ -296,14 +258,7 @@ def test_app_keeps_session_across_turns_and_reset_creates_isolated_id() -> None:
     app.run()
     assert not app.subheader
 
-    app.text_area[0].input("그럼 위험 요인은?")
-    submit = next(
-        item
-        for item in app.button
-        if item.key.startswith("FormSubmitter:chat_form-")
-    )
-    submit.click()
-    app.run()
+    _submit(app, "그럼 위험 요인은?")
 
     assert transport.requests[-1].session_id != first_session_id
     assert transport.requests[-1].session_id.startswith("anonymous-")
@@ -341,24 +296,18 @@ def test_app_renders_conflict_cards_and_three_safe_sources() -> None:
     transport = FakeTransport(response)
     app = AppTest.from_function(_app, args=(transport,)).run()
 
-    app.text_area[0].input("삼성전자 여러 자료 요약")
-    submit = next(
-        item
-        for item in app.button
-        if item.key.startswith("FormSubmitter:chat_form-")
-    )
-    submit.click()
-    app.run()
+    _submit(app, "삼성전자 여러 자료 요약")
 
     assert not app.exception
     labels = "\n".join(item.value for item in app.markdown)
     for label in ("긍정 요인", "확인된 위험", "더 확인할 것"):
         assert label in labels
-    captions = "\n".join(item.value for item in app.caption)
+    rendered_sources = "\n".join(
+        [*(item.value for item in app.markdown), *(item.value for item in app.text)]
+    )
     for label in ("뉴스", "공시", "리서치 리포트"):
-        assert label in captions
-    links = app.get("link_button")
-    assert len(links) == 2
+        assert label in rendered_sources
+    assert sum("](" in item.value for item in app.markdown) == 2
     assert any(item.label == "분석 과정 보기" for item in app.expander)
 
 

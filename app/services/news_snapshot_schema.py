@@ -118,7 +118,9 @@ _CURATION_RULES: dict[str, tuple[NewsCurationRule, ...]] = {
             time_band="pre_market",
             summary=(
                 "AI 반도체 공급 여건과 삼성전자 실적 발표를 앞둔 "
-                "시장 전망을 다룬 보도입니다."
+                "시장 전망을 다룬 보도입니다. 공급 제약이 이어지는지는 "
+                "반도체 업황의 긍정 요인이 될 수 있지만 실제 실적은 "
+                "발표 수치로 확인해야 합니다."
             ),
         ),
         NewsCurationRule(
@@ -127,7 +129,9 @@ _CURATION_RULES: dict[str, tuple[NewsCurationRule, ...]] = {
             time_band="pre_market",
             summary=(
                 "빅테크 변동성 속 삼성전자 실적 기대와 반도체 업황을 "
-                "점검한 보도입니다."
+                "점검한 보도입니다. 시장 기대는 존재하지만 빅테크 투자 "
+                "변화에 따라 업황 평가가 달라질 수 있다는 점도 함께 "
+                "확인할 필요가 있습니다."
             ),
         ),
         NewsCurationRule(
@@ -136,7 +140,9 @@ _CURATION_RULES: dict[str, tuple[NewsCurationRule, ...]] = {
             time_band="intraday",
             summary=(
                 "외국인 자금이 삼성전자를 포함한 반도체주로 돌아온 "
-                "수급 흐름을 다룬 보도입니다."
+                "수급 흐름을 다룬 보도입니다. 외국인 매수 재개는 투자 "
+                "심리 개선 신호로 볼 수 있으나 기업 실적 자체를 확정하는 "
+                "근거는 아닙니다."
             ),
         ),
         NewsCurationRule(
@@ -145,7 +151,9 @@ _CURATION_RULES: dict[str, tuple[NewsCurationRule, ...]] = {
             time_band="intraday",
             summary=(
                 "구글의 AI 투자 전망 변화가 삼성전자 주가와 반도체 "
-                "투자심리에 미친 영향을 다룬 보도입니다."
+                "투자심리에 미친 영향을 다룬 보도입니다. AI 투자 속도에 "
+                "대한 기대가 흔들리면 반도체 수요 전망과 주가 변동성이 "
+                "함께 커질 수 있음을 보여줍니다."
             ),
         ),
         NewsCurationRule(
@@ -154,7 +162,9 @@ _CURATION_RULES: dict[str, tuple[NewsCurationRule, ...]] = {
             time_band="intraday",
             summary=(
                 "아이폰 성장 전망이 삼성전자 부품 수요에 미칠 "
-                "가능성을 다룬 보도입니다."
+                "가능성을 다룬 보도입니다. 스마트폰 교체 수요가 확대되면 "
+                "부품 사업에 긍정적일 수 있지만 실제 공급 효과는 판매량과 "
+                "부품 채택을 추가 확인해야 합니다."
             ),
         ),
     ),
@@ -165,7 +175,9 @@ _CURATION_RULES: dict[str, tuple[NewsCurationRule, ...]] = {
             time_band="pre_market",
             summary=(
                 "AI 반도체 수급과 예정된 실적 발표를 앞둔 시장 전망을 "
-                "다룬 보도입니다."
+                "다룬 보도입니다. 공급 부족이 지속되는지는 메모리 가격과 "
+                "SK하이닉스 실적 기대에 중요하지만 실제 성과는 발표 "
+                "수치로 확인해야 합니다."
             ),
         ),
         NewsCurationRule(
@@ -174,7 +186,9 @@ _CURATION_RULES: dict[str, tuple[NewsCurationRule, ...]] = {
             time_band="intraday",
             summary=(
                 "반도체 업황 우려 완화와 SK하이닉스에 대한 외국인 "
-                "매수 흐름을 다룬 보도입니다."
+                "매수 흐름을 다룬 보도입니다. 수급 개선은 투자 심리에 "
+                "긍정적일 수 있으나 중장기 실적은 메모리 가격과 AI 수요를 "
+                "함께 봐야 합니다."
             ),
         ),
         NewsCurationRule(
@@ -183,7 +197,9 @@ _CURATION_RULES: dict[str, tuple[NewsCurationRule, ...]] = {
             time_band="intraday",
             summary=(
                 "구글의 AI 투자 전망 변화가 SK하이닉스 주가와 "
-                "반도체 투자심리에 미친 영향을 다룬 보도입니다."
+                "반도체 투자심리에 미친 영향을 다룬 보도입니다. 빅테크 "
+                "투자 계획 변화가 HBM을 포함한 AI 메모리 수요 기대의 "
+                "변동 요인임을 보여줍니다."
             ),
         ),
         NewsCurationRule(
@@ -192,7 +208,9 @@ _CURATION_RULES: dict[str, tuple[NewsCurationRule, ...]] = {
             time_band="intraday",
             summary=(
                 "SK하이닉스를 둘러싼 개인과 외국인의 상반된 수급 "
-                "방향을 다룬 보도입니다."
+                "방향을 다룬 보도입니다. 투자 주체별 판단이 엇갈리는 "
+                "상황이므로 단기 수급만으로 업황 방향을 단정하기는 "
+                "어렵습니다."
             ),
         ),
         NewsCurationRule(
@@ -201,7 +219,9 @@ _CURATION_RULES: dict[str, tuple[NewsCurationRule, ...]] = {
             time_band="intraday",
             summary=(
                 "스마트폰 성장 전망이 SK하이닉스 수요에 미칠 가능성을 "
-                "다룬 보도입니다."
+                "다룬 보도입니다. 스마트폰 판매 회복은 메모리 수요에 "
+                "긍정적일 수 있지만 AI용 메모리와 모바일 메모리의 수요 "
+                "조건은 구분해서 볼 필요가 있습니다."
             ),
         ),
     ),
@@ -212,7 +232,9 @@ _CURATION_RULES: dict[str, tuple[NewsCurationRule, ...]] = {
             time_band="pre_market",
             summary=(
                 "현대차의 2분기 실적 평가와 하반기 개선 조건을 다룬 "
-                "보도입니다."
+                "보도입니다. 부진 요인이 단기적이라는 평가가 있지만 "
+                "하반기 개선 여부는 생산 정상화와 수익성 회복으로 "
+                "확인해야 합니다."
             ),
         ),
         NewsCurationRule(
@@ -221,7 +243,9 @@ _CURATION_RULES: dict[str, tuple[NewsCurationRule, ...]] = {
             time_band="intraday",
             summary=(
                 "노사 교섭 중단과 파업 장기화가 현대차 생산에 미치는 "
-                "영향을 다룬 보도입니다."
+                "영향을 다룬 보도입니다. 생산 차질이 길어질수록 판매와 "
+                "비용 부담으로 이어질 수 있어 운영 측면의 위험 요인으로 "
+                "볼 수 있습니다."
             ),
         ),
         NewsCurationRule(
@@ -230,7 +254,9 @@ _CURATION_RULES: dict[str, tuple[NewsCurationRule, ...]] = {
             time_band="intraday",
             summary=(
                 "현대차의 2분기 실적 부진이 장중 주가에 미친 영향을 "
-                "다룬 보도입니다."
+                "다룬 보도입니다. 시장이 실적 둔화에 즉시 반응한 사례지만 "
+                "장중 주가 반응만으로 향후 실적 방향을 판단할 수는 "
+                "없습니다."
             ),
         ),
         NewsCurationRule(
@@ -239,7 +265,9 @@ _CURATION_RULES: dict[str, tuple[NewsCurationRule, ...]] = {
             time_band="pre_market",
             summary=(
                 "현대차 2분기 실적을 일시 요인으로 평가하고 후속 "
-                "Investor Day를 촉매로 본 증권사 전망을 다룬 보도입니다."
+                "Investor Day를 촉매로 본 증권사 전망을 다룬 보도입니다. "
+                "개선 기대는 증권사 관점이며 실제 실행 계획과 후속 발표를 "
+                "확인해야 합니다."
             ),
         ),
         NewsCurationRule(
@@ -248,7 +276,9 @@ _CURATION_RULES: dict[str, tuple[NewsCurationRule, ...]] = {
             time_band="intraday",
             summary=(
                 "현대차그룹이 참여하는 수소·로봇 산업단지 추진 내용을 "
-                "다룬 보도입니다."
+                "다룬 보도입니다. 신사업 생태계 확대 가능성을 보여주지만 "
+                "현대차의 직접적인 매출 기여 시점과 규모는 현재 기사만으로 "
+                "확정하기 어렵습니다."
             ),
         ),
     ),
@@ -909,6 +939,7 @@ def build_curated_news_payload(
         "documents": [
             {
                 "document_id": item.document.document_id,
+                "source_title": item.document.title,
                 "time_band": item.time_band,
                 "source_locator": {
                     "provider": item.document.provider,

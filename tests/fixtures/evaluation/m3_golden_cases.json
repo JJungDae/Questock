@@ -217,7 +217,7 @@
       "taxonomy": ["multi_turn", "intent_routing"], "capabilities": ["A04", "A08-M", "UI01"],
       "turns": ["삼성전자 최근 이슈 알려줘", "그중 공시 위험만"], "scenario_id": "session_followup",
       "coverage": null,
-      "expected": {"resolution_status": "resolved", "intent": "risk_factors", "required_sources": ["news", "disclosure", "research_report"], "status": "partial", "security_id": "KRX:005930", "evidence_source_types": ["news"], "forbidden_security_ids": [], "forbidden_evidence_source_types": [], "provider_statuses": {"news": "ok", "disclosure": "ok", "research_report": "ok"}, "retrieval_status": "ok", "generation_mode": "llm", "warnings": ["insufficient_disclosure_coverage"], "fallback_required": false},
+      "expected": {"resolution_status": "resolved", "intent": "risk_factors", "required_sources": ["news", "disclosure", "research_report"], "status": "partial", "security_id": "KRX:005930", "evidence_source_types": ["news", "research_report"], "forbidden_security_ids": [], "forbidden_evidence_source_types": [], "provider_statuses": {"news": "ok", "disclosure": "ok", "research_report": "ok"}, "retrieval_status": "ok", "generation_mode": "llm", "warnings": ["insufficient_disclosure_coverage"], "fallback_required": false},
       "critical": false
     },
     {

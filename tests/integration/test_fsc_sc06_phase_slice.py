@@ -130,14 +130,7 @@ def test_three_company_recorded_api_and_ui_flow(
     rendered.run()
     assert transport.requests == []
 
-    rendered.text_area[0].input(question)
-    submit = next(
-        item
-        for item in rendered.button
-        if item.key.startswith("FormSubmitter:chat_form-")
-    )
-    submit.click()
-    rendered.run()
+    rendered.chat_input[0].set_value(question).run()
 
     assert not rendered.exception
     assert len(transport.requests) == 1

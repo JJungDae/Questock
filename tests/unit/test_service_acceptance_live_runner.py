@@ -118,14 +118,10 @@ def test_attempt_state_is_persistent_and_fails_closed(
             wrapped(
                 model="gemini/gemini-3.5-flash",
                 reasoning_effort="minimal",
-                max_tokens=1024,
+                max_tokens=4096,
                 num_retries=0,
                 timeout=10,
                 api_key="configured",
-                response_format={
-                    "type": "json_schema",
-                    "json_schema": {"strict": True},
-                },
             )
         )
 
@@ -152,14 +148,10 @@ def test_attempt_contract_rejects_retry_before_provider_call(
             wrapped(
                 model="gemini/gemini-3.5-flash",
                 reasoning_effort="minimal",
-                max_tokens=1024,
+                max_tokens=4096,
                 num_retries=1,
                 timeout=10,
                 api_key="configured",
-                response_format={
-                    "type": "json_schema",
-                    "json_schema": {"strict": True},
-                },
             )
         )
 

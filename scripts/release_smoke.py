@@ -8,7 +8,7 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-_TIMEOUT_SECONDS = 20
+_TIMEOUT_SECONDS = 35
 _DISCLOSURE_DOCUMENT_ID = "disclosure:20260515002181"
 _DISCLOSURE_VIEWER_URL = (
     "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002181"

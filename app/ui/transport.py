@@ -25,7 +25,7 @@ from app.api.schemas import ChatRequest, ChatResponse
 from app.services.request_protection import CLIENT_KEY_HEADER
 
 DEFAULT_CHAT_ENDPOINT = "http://127.0.0.1:8000/api/chat"
-DEFAULT_UI_TIMEOUT_SECONDS = 21.0
+DEFAULT_UI_TIMEOUT_SECONDS = 35.0
 MAX_CHAT_RESPONSE_BYTES = 1_048_576
 _CLIENT_KEY = re.compile(r"^[0-9a-f]{64}$")
 

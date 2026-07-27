@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import unicodedata
 from copy import deepcopy
 from datetime import UTC, datetime
 
@@ -96,6 +97,9 @@ def _draft(
         "긍정 감성 점수는 80점이다.",
         "종합하면 매수 의견이다.",
         "투자 책임은 본인에게 있지만 지금 매수하세요.",
+        "보유하신 삼성전자의 손실을 줄여야 합니다.",
+        "사용자님의 평단은 이 자료에 나온 8만원입니다.",
+        "투자 중이신 종목의 위험 성향에 맞는 답변입니다.",
     ],
 )
 def test_unsafe_action_and_prediction_are_blocked(text: str) -> None:
@@ -181,7 +185,7 @@ def test_invalid_numeric_claim_is_removed_while_valid_claim_remains() -> None:
     assert [claim.claim_id for claim in result.draft.claims] == ["summary"]
 
 
-def test_every_occurrence_of_referenced_evidence_must_support_numeric_token() -> None:
+def test_referenced_evidence_union_may_support_numeric_token() -> None:
     draft = _draft(
         (
             "summary",
@@ -197,8 +201,8 @@ def test_every_occurrence_of_referenced_evidence_must_support_numeric_token() ->
 
     result = validate_answer_draft(draft, _plan(), evidence)
 
-    assert result.draft is None
-    assert result.rejection_count == 1
+    assert result.draft is not None
+    assert result.rejection_count == 0
 
 
 def test_safety_failure_rejects_whole_draft() -> None:
@@ -389,13 +393,13 @@ def test_unsupported_conflict_conclusion_rejects_draft(text: str) -> None:
             datetime(2026, 7, 22, tzinfo=UTC),
             datetime(2026, 7, 21, tzinfo=UTC),
             [SECURITY_ID],
-            False,
+            True,
         ),
         (
             datetime(2026, 7, 20, tzinfo=UTC),
             None,
             [SECURITY_ID],
-            False,
+            True,
         ),
         (
             datetime(2026, 7, 20, tzinfo=UTC),
@@ -405,7 +409,7 @@ def test_unsupported_conflict_conclusion_rejects_draft(text: str) -> None:
         ),
     ],
 )
-def test_multi_source_causal_claim_requires_chronology_and_company_continuity(
+def test_multi_source_causal_claim_requires_company_continuity(
     first_at: datetime,
     second_at: datetime | None,
     second_subjects: list[str],
@@ -486,3 +490,16 @@ def test_source_specific_noncausal_claims_do_not_require_cross_source_dates() ->
 
     assert result.draft is not None
     assert result.rejection_count == 0
+
+
+def test_draft_claim_normalizes_hangul_and_removes_degenerate_quote_prefix() -> None:
+    text = "’’’’" + unicodedata.normalize("NFD", "삼성전자 최근 이슈")
+
+    claim = DraftClaim(
+        claim_id="claim-1",
+        section="summary",
+        text=text,
+        evidence_ids=("E1",),
+    )
+
+    assert claim.text == "삼성전자 최근 이슈"

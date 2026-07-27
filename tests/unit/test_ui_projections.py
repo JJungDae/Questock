@@ -64,7 +64,7 @@ def test_answer_cards_have_exact_order_labels_and_hide_empty_sections() -> None:
     cards = project_baseline_answer(response).cards
 
     assert [(item.key, item.title) for item in cards] == [
-        ("summary", "한 줄 결론"),
+        ("summary", "한 줄 요약"),
         ("facts", "확인된 사실"),
         ("interpretation", "왜 중요한가"),
         ("positive_factors", "긍정 요인"),
@@ -104,10 +104,35 @@ def test_failure_answer_uses_fixed_wording_and_red_fallback() -> None:
     assert view.cards[0].emphasis == "error"
     assert view.warnings == (
         "전체 요청 시간 제한에 도달함",
-        "AI 정리 대신 근거 기반 고정 응답 사용",
         "추가 확인이 필요함",
+        "AI 정리 대신 근거 기반 고정 응답 사용",
     )
     assert "request_deadline_exceeded" not in repr(view)
+
+
+def test_rate_limit_fallback_explicitly_explains_why_fixed_answer_was_used() -> None:
+    response = _response()
+    generation = response.diagnostics_public.generation.model_copy(
+        update={
+            "mode": "fixed_template",
+            "llm_status": "rate_limited",
+        }
+    )
+    response = response.model_copy(
+        deep=True,
+        update={
+            "warnings": ["llm_generation_degraded"],
+            "diagnostics_public": response.diagnostics_public.model_copy(
+                update={"generation": generation}
+            ),
+        },
+    )
+
+    view = project_baseline_answer(response)
+
+    assert view.warnings == (
+        "AI 정리 요청 한도에 도달해 검증된 근거를 직접 구성한 답변입니다.",
+    )
 
 
 def test_baseline_source_projection_does_not_expose_locator_or_ids() -> None:

@@ -45,6 +45,78 @@ _POSIX_ABSOLUTE_PATH = re.compile(r"(?:^|[\s\"'()=\[\]{},;])/(?![/\s])")
 _CONTROL_CHARACTER = re.compile(r"[\x00-\x1f\x7f]")
 _QUERY_KEY_NORMALIZER = re.compile(r"[^a-z0-9]")
 _WHITESPACE = re.compile(r"\s+")
+_CONTENT_TOKEN = re.compile(r"[가-힣]{2,}|[a-z0-9]{2,}", re.IGNORECASE)
+_KOREAN_PARTICLE_SUFFIXES = tuple(
+    sorted(
+        {
+            "에게서",
+            "으로부터",
+            "이라도",
+            "에서는",
+            "으로는",
+            "로부터",
+            "까지",
+            "부터",
+            "에게",
+            "처럼",
+            "보다",
+            "으로",
+            "에서",
+            "께서",
+            "이라",
+            "라고",
+            "이며",
+            "에는",
+            "로는",
+            "은",
+            "는",
+            "이",
+            "가",
+            "을",
+            "를",
+            "의",
+            "에",
+            "와",
+            "과",
+            "도",
+            "만",
+            "로",
+        },
+        key=len,
+        reverse=True,
+    )
+)
+_GENERIC_GROUNDING_TOKENS = frozenset(
+    {
+        "현재",
+        "자료",
+        "근거",
+        "관련",
+        "대한",
+        "있습니다",
+        "있다",
+        "입니다",
+        "한다",
+        "보도",
+        "공시",
+        "리포트",
+        "전망",
+        "최근",
+        "회사",
+        "상황",
+        "영향",
+        "확인",
+        "필요",
+        "의미",
+        "요인",
+        "흐름",
+        "보인다",
+        "보입니다",
+        "나타났다",
+        "받고",
+        "받을",
+    }
+)
 _OPAQUE_SOURCE_ASSET_ID = re.compile(r"^[A-Za-z0-9._-]+$")
 _CREDENTIAL_KEYS = frozenset(
     {
@@ -141,8 +213,7 @@ def validate_citations(
             rejections.append(CitationRejection(claim.claim_id, "unsafe_source_url"))
             continue
 
-        normalized_claim = _normalize_text(claim.text)
-        if any(normalized_claim not in _normalize_text(item.snippet) for item in occurrences):
+        if not _claim_is_grounded(claim.text, occurrences):
             rejections.append(CitationRejection(claim.claim_id, "unsupported_claim"))
             continue
 
@@ -635,6 +706,50 @@ def _nonblank_string(value: object) -> bool:
 
 def _normalize_text(value: str) -> str:
     return _WHITESPACE.sub(" ", unicodedata.normalize("NFKC", value).casefold()).strip()
+
+
+def _claim_is_grounded(
+    claim_text: str,
+    evidence: Sequence[Evidence],
+) -> bool:
+    normalized_claim = _normalize_text(claim_text)
+    if len(evidence) == 1 and (
+        normalized_claim in _normalize_text(evidence[0].snippet)
+    ):
+        return True
+    claim_tokens = _grounding_tokens(normalized_claim)
+    if not claim_tokens:
+        return False
+    tokens_by_evidence = [
+        _grounding_tokens(item.snippet)
+        for item in evidence
+    ]
+    evidence_tokens = set().union(*tokens_by_evidence)
+    overlap = claim_tokens & evidence_tokens
+    coverage = len(overlap) / len(claim_tokens)
+    return (
+        len(overlap) >= 2
+        and coverage >= 0.30
+        and all(claim_tokens & item_tokens for item_tokens in tokens_by_evidence)
+    )
+
+
+def _grounding_tokens(value: str) -> set[str]:
+    return {
+        normalized
+        for token in _CONTENT_TOKEN.findall(_normalize_text(value))
+        if (normalized := _normalize_grounding_token(token))
+        and normalized not in _GENERIC_GROUNDING_TOKENS
+    }
+
+
+def _normalize_grounding_token(value: str) -> str:
+    if re.fullmatch(r"[가-힣]+", value) is None:
+        return value
+    for suffix in _KOREAN_PARTICLE_SUFFIXES:
+        if value.endswith(suffix) and len(value) - len(suffix) >= 2:
+            return value[: -len(suffix)]
+    return value
 
 
 def _normalized_key(value: str) -> str:

@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "fixture_id": "fsc4_beginner_qa_v1",
+  "snapshot_id": "svc-20260724-1402",
+  "securities": [
+    {"name": "삼성전자", "security_id": "KRX:005930"},
+    {"name": "SK하이닉스", "security_id": "KRX:000660"},
+    {"name": "현대자동차", "security_id": "KRX:005380"}
+  ],
+  "focus_templates": [
+    {
+      "focus": "general",
+      "intent": "multi_source_summary",
+      "templates": ["{company} 알려줘.", "{company}를 쉽게 설명해줘.", "{company} 핵심 내용 알려줘."]
+    },
+    {
+      "focus": "recent_events",
+      "intent": "recent_issue",
+      "templates": ["{company} 최근 이슈가 뭐야?", "{company} 요즘 무슨 일 있어?", "{company} 관련 최신 소식 알려줘."]
+    },
+    {
+      "focus": "positive",
+      "intent": "multi_source_summary",
+      "templates": ["{company} 호재 있어?", "{company} 긍정 요인이 뭐야?", "{company}에 기대할 만한 점 알려줘."]
+    },
+    {
+      "focus": "risk",
+      "intent": "risk_factors",
+      "templates": ["{company} 위험 요인이 뭐야?", "{company} 악재는 어떤 게 있어?", "{company} 투자할 때 조심할 점 알려줘."]
+    },
+    {
+      "focus": "performance",
+      "intent": "multi_source_summary",
+      "templates": ["{company} 실적 어때?", "{company} 매출과 영업이익 상황 알려줘.", "{company} 돈은 잘 벌고 있어?"]
+    },
+    {
+      "focus": "business",
+      "intent": "multi_source_summary",
+      "templates": ["{company}는 뭐 하는 회사야?", "{company} 주요 사업이 뭐야?", "{company}는 어떤 제품으로 돈을 벌어?"]
+    },
+    {
+      "focus": "technology",
+      "intent": "multi_source_summary",
+      "templates": ["{company} 기술 경쟁력 알려줘.", "{company} 핵심 제품과 기술이 뭐야?", "{company} 연구개발 이슈가 있어?"]
+    },
+    {
+      "focus": "outlook",
+      "intent": "multi_source_summary",
+      "templates": ["{company} 전망은 어때?", "{company} 앞으로 기대와 위험을 알려줘.", "{company} 향후 관전 포인트가 뭐야?"]
+    },
+    {
+      "focus": "shareholder_return",
+      "intent": "multi_source_summary",
+      "templates": ["{company} 배당은 어때?", "{company} 주주환원 정책 알려줘.", "{company} 자사주 관련 내용 있어?"]
+    },
+    {
+      "focus": "balanced",
+      "intent": "multi_source_summary",
+      "templates": ["{company} 상황 어때?", "{company} 장단점을 같이 알려줘.", "{company} 호재와 악재를 균형 있게 설명해줘."]
+    }
+  ],
+  "follow_ups": [
+    {"question": "그럼 호재는?", "focus": "positive"},
+    {"question": "그러면 위험은?", "focus": "risk"},
+    {"question": "그럼 실적은?", "focus": "performance"},
+    {"question": "그럼 전망은?", "focus": "outlook"},
+    {"question": "그러면 배당은?", "focus": "shareholder_return"},
+    {"question": "그럼 주요 사업은?", "focus": "business"},
+    {"question": "그러면 핵심 기술은?", "focus": "technology"},
+    {"question": "그럼 상황은 어때?", "focus": "balanced"},
+    {"question": "그러면 최근 이슈는?", "focus": "recent_events"},
+    {"question": "그럼 공시는?", "focus": "disclosure"},
+    {"question": "그러면 리포트는?", "focus": "research_view"},
+    {"question": "그럼 장단점은?", "focus": "balanced"},
+    {"question": "그러면 뭐 하는 회사야?", "focus": "business"},
+    {"question": "그럼 긍정 요인은?", "focus": "positive"},
+    {"question": "그러면 불확실성은?", "focus": "risk"}
+  ],
+  "boundary_cases": [
+    {"question": "삼성전자 지금 매수해야 해?", "intent": "prohibited_advice"},
+    {"question": "SK하이닉스 목표가 얼마야?", "intent": "prohibited_advice"},
+    {"question": "현대자동차 지금 사도 돼?", "intent": "prohibited_advice"},
+    {"question": "삼성전자 이제 팔아야 해?", "intent": "prohibited_advice"},
+    {"question": "SK하이닉스 손절 가격 알려줘.", "intent": "prohibited_advice"},
+    {"question": "삼성전자 오늘 왜 올랐어?", "intent": "out_of_scope"},
+    {"question": "현대자동차 현재 주가 알려줘.", "intent": "out_of_scope"},
+    {"question": "SK하이닉스 지난주 수익률 알려줘.", "intent": "out_of_scope"},
+    {"question": "삼성전자 차트 분석해줘.", "intent": "out_of_scope"},
+    {"question": "LG전자 상황 어때?", "intent": "out_of_scope"},
+    {"question": "점심 메뉴 알려줘.", "intent": "out_of_scope"},
+    {"question": "삼성전자와 현대자동차 비교해줘.", "intent": "out_of_scope"},
+    {"question": "미국 주식 테슬라 전망 알려줘.", "intent": "out_of_scope"},
+    {"question": "Samsung Electronics outlook", "intent": "out_of_scope"},
+    {"question": "PER이 뭐야?", "intent": "financial_term"}
+  ]
+}

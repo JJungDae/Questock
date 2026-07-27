@@ -198,6 +198,54 @@ def test_exact_field_mapping_and_source_type_passthrough() -> None:
     }
 
 
+def test_verified_disclosure_is_normalized_to_retrievable_fact_evidence() -> None:
+    source_document = document(
+        document_id="disclosure:unit",
+        source_type="disclosure",
+        title="삼성전자 공시 핵심",
+        text="원문 전체는 런타임 근거로 사용하지 않는다.",
+        locator={
+            "provider": "opendart_disclosure",
+            "content_level": "verified_body_facts",
+            "facts": [
+                {
+                    "fact_id": "fact-revenue",
+                    "category": "consolidated_revenue",
+                    "claim": "2026년 1분기 연결 매출액은 10조원이다.",
+                    "verification_status": "verified_against_source",
+                },
+                {
+                    "fact_id": "fact-risk",
+                    "category": "risk_or_uncertainty",
+                    "claim": "환율 변동 위험이 기재되어 있다.",
+                    "verification_status": "verified_against_source",
+                },
+            ],
+        },
+        metadata={"reference_title": "분기보고서"},
+    )
+
+    result = normalize_financial_documents([source_document])
+
+    assert [item.evidence_id for item in result] == [
+        "evidence:disclosure:unit:fact-revenue",
+        "evidence:disclosure:unit:fact-risk",
+    ]
+    assert [item.title for item in result] == [
+        "분기보고서 · 매출 실적",
+        "분기보고서 · 위험 불확실성",
+    ]
+    assert [item.snippet for item in result] == [
+        "2026년 1분기 연결 매출액은 10조원이다.",
+        "환율 변동 위험이 기재되어 있다.",
+    ]
+    assert all("facts" not in item.locator for item in result)
+    assert [item.locator["fact_id"] for item in result] == [
+        "fact-revenue",
+        "fact-risk",
+    ]
+
+
 def test_snippet_whitespace_truncation_and_content_contract() -> None:
     long_text = "  revenue\n  12 percent\t" + ("x" * 600)
     source_document = document(text=long_text, title="Title must not be prepended")
