@@ -14,11 +14,21 @@ from app.services.demo_source_gateway import (
     load_demo_corpus,
 )
 from app.services.glossary_service import GlossaryService
+from app.services.service_snapshot import (
+    SERVICE_SNAPSHOT_ID,
+    ServiceSnapshot,
+    ServiceSnapshotValidationError,
+    load_service_snapshot,
+)
+from app.services.service_snapshot_gateway import (
+    RecordedServiceSnapshotGateway,
+)
 from app.services.session_store import InMemorySessionStore
 from app.services.source_gateway import ExplicitUnconfiguredSourceGateway
 
 SourceMode = Literal["unconfigured", "recorded"]
 _SOURCE_MODE_ENV = "QUESTOCK_SOURCE_MODE"
+_SNAPSHOT_ID_ENV = "QUESTOCK_SNAPSHOT_ID"
 _RUNTIME_VERSION = "b9-recorded-v1"
 
 
@@ -29,13 +39,14 @@ class RuntimeConfigurationError(ValueError):
 @dataclass(frozen=True)
 class RuntimeConfig:
     source_mode: SourceMode
+    snapshot_id: str | None = None
 
 
 @dataclass(frozen=True)
 class RuntimeState:
     config: RuntimeConfig
     chat_service: ChatService
-    corpus: DemoCorpus | None
+    corpus: DemoCorpus | ServiceSnapshot | None
 
 
 def load_runtime_config(
@@ -48,18 +59,34 @@ def load_runtime_config(
         mode = "unconfigured"
     if mode not in {"unconfigured", "recorded"}:
         raise RuntimeConfigurationError("source mode is invalid")
-    return RuntimeConfig(source_mode=mode)  # type: ignore[arg-type]
+    raw_snapshot_id = values.get(_SNAPSHOT_ID_ENV)
+    snapshot_id = (
+        None
+        if raw_snapshot_id is None or not raw_snapshot_id.strip()
+        else raw_snapshot_id.strip()
+    )
+    if snapshot_id is not None and (
+        mode != "recorded" or snapshot_id != SERVICE_SNAPSHOT_ID
+    ):
+        raise RuntimeConfigurationError("snapshot selection is invalid")
+    return RuntimeConfig(  # type: ignore[arg-type]
+        source_mode=mode,
+        snapshot_id=snapshot_id,
+    )
 
 
 def build_runtime(
     *,
     config: RuntimeConfig | None = None,
     corpus_loader: Callable[[], DemoCorpus] | None = None,
+    snapshot_loader: Callable[[], ServiceSnapshot] | None = None,
 ) -> RuntimeState:
     canonical_config = config or load_runtime_config()
     if not isinstance(canonical_config, RuntimeConfig):
         raise RuntimeConfigurationError("runtime config is invalid")
     if canonical_config.source_mode == "unconfigured":
+        if canonical_config.snapshot_id is not None:
+            raise RuntimeConfigurationError("snapshot selection is invalid")
         return RuntimeState(
             config=canonical_config,
             chat_service=ChatService(
@@ -72,10 +99,31 @@ def build_runtime(
     if canonical_config.source_mode != "recorded":
         raise RuntimeConfigurationError("runtime config is invalid")
     try:
-        loader = corpus_loader or load_demo_corpus
-        corpus = loader()
-        gateway = RecordedDemoSourceGateway(corpus)
-    except (DemoCorpusValidationError, OSError, TypeError, ValueError):
+        if canonical_config.snapshot_id is None:
+            loader = corpus_loader or load_demo_corpus
+            corpus: DemoCorpus | ServiceSnapshot = loader()
+            gateway = RecordedDemoSourceGateway(corpus)
+        else:
+            if corpus_loader is not None:
+                raise RuntimeConfigurationError(
+                    "runtime loader selection is invalid"
+                )
+            loader = snapshot_loader or load_service_snapshot
+            corpus = loader()
+            if corpus.snapshot_id != canonical_config.snapshot_id:
+                raise ServiceSnapshotValidationError(
+                    "snapshot selection is invalid"
+                )
+            gateway = RecordedServiceSnapshotGateway(corpus)
+    except RuntimeConfigurationError:
+        raise
+    except (
+        DemoCorpusValidationError,
+        ServiceSnapshotValidationError,
+        OSError,
+        TypeError,
+        ValueError,
+    ):
         raise RuntimeConfigurationError(
             "recorded runtime data is invalid"
         ) from None
@@ -126,7 +174,7 @@ def get_runtime_health_payload() -> dict[str, object]:
         )
         for source in ("news", "disclosure", "research_report")
     }
-    return {
+    payload: dict[str, object] = {
         "status": "ok",
         "version": corpus.schema_version,
         "mode": "recorded",
@@ -140,6 +188,17 @@ def get_runtime_health_payload() -> dict[str, object]:
             "document_count": len(corpus.documents),
         },
     }
+    if isinstance(corpus, ServiceSnapshot):
+        payload["snapshot_id"] = corpus.snapshot_id
+        payload["phase_slice"] = {
+            "status": "recorded",
+            "scope": "service_snapshot",
+            "document_count": len(corpus.documents),
+            "report_count": corpus.coverage["research_report"][
+                "report_count"
+            ],
+        }
+    return payload
 
 
 __all__ = [

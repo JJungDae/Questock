@@ -12,3 +12,4 @@ __pycache__/
 dist/
 build/
 *.egg-info/
+var/service_completion/

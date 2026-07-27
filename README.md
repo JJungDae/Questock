@@ -1,9 +1,9 @@
 # Questock
 
 Questock is an evidence-grounded Korean stock RAG prototype for Samsung
-Electronics, SK hynix, and Hyundai Motor. The release runtime is a deterministic
-recorded demo: it does not call live news, OpenDART, research-report, or LLM
-providers.
+Electronics, SK hynix, and Hyundai Motor. The recorded runtime supports the
+release demo and the approved immutable service snapshot. Neither mode calls
+live news, OpenDART, research-report, or LLM providers.
 
 ## Runtime Flow
 
@@ -23,6 +23,8 @@ The main implementation boundaries are:
 
 - `app/runtime.py`: mode selection, fixed demo clock, and singleton service
 - `app/services/demo_source_gateway.py`: recorded corpus loader and gateway
+- `app/services/service_snapshot.py`: immutable service snapshot validation
+- `app/services/service_snapshot_gateway.py`: recorded snapshot gateway
 - `app/services/chat_service.py`: orchestration
 - `app/ui/app.py`: user-facing answer and process view
 - `data/demo/manifest.json`: recorded corpus version and fixed basis timestamp
@@ -45,6 +47,14 @@ Recorded API:
 
 ```powershell
 $env:QUESTOCK_SOURCE_MODE = "recorded"
+uv run --no-sync uvicorn app.api.main:app --host 127.0.0.1 --port 8000
+```
+
+Approved service snapshot API:
+
+```powershell
+$env:QUESTOCK_SOURCE_MODE = "recorded"
+$env:QUESTOCK_SNAPSHOT_ID = "svc-20260724-1402"
 uv run --no-sync uvicorn app.api.main:app --host 127.0.0.1 --port 8000
 ```
 
@@ -86,6 +96,8 @@ docker compose down
 ## Configuration
 
 - `QUESTOCK_SOURCE_MODE`: `unconfigured` or `recorded`
+- `QUESTOCK_SNAPSHOT_ID`: empty for the release demo or
+  `svc-20260724-1402` for the approved service snapshot
 - `QUESTOCK_IMAGE_TAG`: immutable release SHA for release builds
 - `QUESTOCK_API_URL`: Streamlit chat endpoint
 - `QUESTOCK_UI_TIMEOUT_SECONDS`: UI request timeout
@@ -111,8 +123,11 @@ uv run --no-sync python scripts/release_smoke.py --api-url http://127.0.0.1:8000
 
 ## Data Boundary
 
-- News and research-note text is a short Questock-authored synthetic summary
-  with a public reference URL.
+- Service-snapshot news contains only Human Owner-approved, Questock-authored
+  short summaries and public reference URLs.
+- Service-snapshot research reports contain only verified structured facts and
+  Questock-authored short summaries. Source PDFs, excerpts, and raw text are
+  excluded, and report Evidence is not eligible for external LLM processing.
 - The DART item contains a Human Owner-approved receipt and six verified body
   facts. It preserves each approved value and unit, physical PDF page, DART
   printed page, and fact-specific section locator.
