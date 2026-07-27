@@ -92,7 +92,7 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$GEMINI_API_KEY"
-          [[ "$GEMINI_API_KEY" =~ ^[A-Za-z0-9_-]{20,256}$ ]]
+          [[ "$GEMINI_API_KEY" =~ ^[A-Za-z0-9._-]{20,256}$ ]]
           {
             printf 'GEMINI_API_KEY=%s\n' "$GEMINI_API_KEY"
             printf '%s\n' \

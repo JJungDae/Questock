@@ -88,6 +88,19 @@ def test_gce_runtime_environment_has_exact_active_nonsecret_contract() -> None:
     assert "gemini-2.5" not in install
     assert "GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}" in install
     assert "printf 'GEMINI_API_KEY=%s\\n' \"$GEMINI_API_KEY\"" in install
+    assert (
+        install.count(
+            '[[ "$GEMINI_API_KEY" =~ ^[A-Za-z0-9._-]{20,256}$ ]]'
+        )
+        == 1
+    )
+    for unsafe_pattern in (
+        '=~ ^.*$',
+        '=~ ^.+$',
+        r'=~ ^\S+',
+        "=~ ^[^[:space:]]",
+    ):
+        assert unsafe_pattern not in install
 
 
 def test_secret_and_joint_rollback_contract_remain_api_only() -> None:
