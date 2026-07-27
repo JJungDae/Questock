@@ -41,7 +41,7 @@ class _RecordedTransport:
         return self.response.model_copy(deep=True)
 
 
-def _streamlit_app(transport: _RecordedTransport) -> None:
+def _streamlit_app(transport) -> None:
     from app.ui.app import run
 
     run(transport)
