@@ -3,7 +3,7 @@
 > 결정일: `2026-07-27`
 > 기준 branch: `main`
 > 계획 기준 SHA: `da03a6fb3be5c985cef7d5d1f0523827340fe088`
-> 상태: `ACTIVE - FSC-0~FSC-2 PASS / complete; FSC-3 SC-06 PASS / complete; SC-07 local gate PASS; remote release closure pending`
+> 상태: `COMPLETE - FSC-0~FSC-3 PASS / complete; Service Completion Gate PASS / complete; A15-M activation check READY`
 
 ## 1. 문서 효력
 
@@ -62,16 +62,16 @@ M4 Gate:
 PASS
 
 current official bundle:
-First Service Completion
+First Service Completion - complete
 
 current checkpoint:
-FSC-3 / SC-07 remote release closure
+A15-M activation check - READY / NOT_STARTED
 
 Service Completion Gate:
-LOCAL PASS / overall NOT_RUN
+PASS / complete
 
 A15-M:
-BLOCKED until Service Completion Gate PASS
+activation and entry READY / implementation NOT_STARTED
 ```
 
 M1-09는 `mandatory supplement implemented - final independent review pending`
@@ -395,7 +395,7 @@ FSC-1:
 `PASS / complete - SC-01~04 complete`
 
 FSC-2/FSC-3 구현:
-`FSC-2 PASS / complete - Human Owner confirmed 2026-07-27; FSC-3 SC-06 PASS / complete; SC-07 local gate PASS; remote release closure pending`
+`PASS / complete - FSC-2 Human Owner confirmed 2026-07-27; FSC-3 local and remote closure complete`
 
 ## 7. 변경 제한
 
@@ -453,7 +453,7 @@ Local verification:
 - independent pytest rerun: `NOT_RUN`
 - deploy: `NOT_RUN`
 
-Current boundary:
+FSC-2 closure boundary (historical snapshot):
 
 - FSC-2: `PASS / complete - Human Owner confirmed 2026-07-27`
 - FSC-2 Git: commit/push
@@ -518,7 +518,7 @@ passed `2048`; M3 Gate passed `34/34`, Critical `17/17`, public exposure `0`.
 No additional live Gemini or provider call was made. The 15-case live
 acceptance remains `NOT_RUN` pending separate Human Owner approval.
 
-Current boundary:
+SC-06 closure boundary (historical snapshot):
 
 - SC-06:
   `PASS / complete - live acceptance passed 2026-07-27`
@@ -565,13 +565,71 @@ Current boundary:
 
 - SC-07 local gate:
   `PASS`
+- SC-07 remote gate:
+  `PASS`
 - FSC-3:
-  `LOCAL CHECKPOINT PASS / remote release closure pending`
+  `PASS / complete`
 - Service Completion Gate:
-  `LOCAL PASS / overall NOT_RUN`
+  `PASS / complete`
 - GitHub CI / GCE remote smoke / exact-SHA deploy / external UI:
-  `NOT_RUN / NOT_RUN / NOT_RUN / NOT_RUN`
+  `PASS / PASS / PASS / PASS`
 - A15-M:
-  `BLOCKED until overall Service Completion Gate PASS`
+  `activation and entry READY / implementation NOT_STARTED`
 - commit / push / PR / merge / deploy:
-  `NOT_RUN / NOT_RUN / NOT_RUN / NOT_RUN / NOT_RUN`
+  `complete / complete / complete / complete / complete for the release`
+
+## 11. FSC-3 / SC-07 remote closure result
+
+### 11.1 CI and merge
+
+- PR #11:
+  head `8d1b9521fdbef003cb84708b6aa7b47d01d8dc8a`; first CI
+  `30273039760` failed because Python 3.11 could not resolve an extracted
+  Streamlit helper annotation; fix commit `8d1b952`; CI `30273607080` passed;
+  merge `6affd27f4f95aae438268acd2bc4fa7733346b5d`
+- PR #12:
+  commits `499bf03`, `bed5684`; first CI `30274239625` failed because a legacy
+  B9 static expectation retained the old Gemini-key regex; the synchronized
+  focused contract passed `139`; CI `30274469379` passed; merge
+  `2adcc787a803996d4a181a6cd3faa3158602660a`
+
+### 11.2 Deployment
+
+- first deploy `30273898079`:
+  failed before runtime write or deploy because the anchored key allowlist
+  excluded one dot in the already-live-verified 53-character Gemini key;
+  existing service and image were unchanged; rollback execution `NOT_RUN`
+- exact-SHA deploy `30274651799`:
+  `PASS - 3m32s`
+- deployed release SHA:
+  `2adcc787a803996d4a181a6cd3faa3158602660a`
+- deployed image:
+  `sha256:53628bacc40f2329bc3f7dfcb6771aeee2e5fd83a1a44592ee08bbc950daf138`
+- previous rollback target:
+  SHA `67fa43dd5a7ec74e7785713eb1adcfa402baab85`; image
+  `sha256:56df8f16ed3ed58de659e9ec46c9e24b7d3ddc896dc8a022102f68f351d7b928`
+- rollback execution:
+  `NOT_RUN - deployment passed`
+
+### 11.3 Remote verification and final boundary
+
+- runtime health:
+  `PASS - status ok; recorded snapshot svc-20260724-1402; 54 documents`;
+  news `15`, disclosure `3`, research report `36`;
+  `live_connectivity_checked=false`
+- recorded smoke:
+  `PASS - 7/7`; recent issue `complete`, disclosure `partial`, research report
+  `complete`, glossary `complete`, wrong-company `no_evidence`, blocked
+  `blocked`, multi-turn `partial`
+- workflow external UI health:
+  `PASS`
+- independent visual check:
+  `LIMITED / non-gate`; a separate reviewer browser attempt to the registered
+  host on port 8501 timed out, so interactive visual rendering is not claimed
+- Gemini provider attempts:
+  cumulative `26/30`; fixed/disabled recorded deployment smoke added `0`
+
+FSC-3 and the Service Completion Gate are `PASS / complete`; remote release
+closure is complete. A15-M activation and entry are `READY / ALLOWED`, but
+implementation has not started. Stretch M2-09, M5-01, and later P1 ordering
+remains unchanged.

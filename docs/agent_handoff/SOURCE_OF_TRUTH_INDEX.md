@@ -5,7 +5,7 @@
 > Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
 > Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
 > B9 planning base: `b9ddf7461306d16cf1da14634ce458050d78f7bc`
-> 상태: `B9 PASS / M4 Gate PASS / FSC-0~FSC-2 PASS / complete; FSC-3 SC-06 PASS / complete; SC-07 local gate PASS; remote release closure pending`
+> 상태: `B9 PASS / M4 Gate PASS / FSC-0~FSC-3 PASS / complete; Service Completion Gate PASS / complete; A15-M activation check READY`
 
 ## 1. 목적
 
@@ -63,13 +63,13 @@ PASS / complete
 Task Card 사실 동기화 완료, B6-0에서 상태 확인
 
 현재 완료 bundle:
-B9
+B9, First Service Completion
 
 현재 공식 bundle:
-First Service Completion
+A15-M activation check - READY / NOT_STARTED
 
 현재 checkpoint:
-FSC-3 / SC-07 remote release closure
+A15-M activation check
 
 FSC 실행 결정:
 docs/agent_handoff/FIRST_SERVICE_COMPLETION_EXECUTION_DECISION_2026-07-27.md
@@ -143,7 +143,7 @@ passed; M3 Gate 34/34; Critical 17/17; public exposure 0; Ruff, compile,
 secret/local-path scan, and diff check PASS; GitHub CI/deploy NOT_RUN
 
 FSC-3:
-SC-06 PASS / complete; SC-07 local gate PASS; remote release closure pending
+PASS / complete - SC-06 and SC-07 local/remote closure complete
 
 SC-06 verification:
 live acceptance PASS; cumulative LLM success 10/12; Critical 3/3 with zero
@@ -170,14 +170,39 @@ compile, and secret/local-path scan PASS; Docker server 29.6.2; clean locked
 image `sha256:ad8d753d78a0b84fa3321f225188d567fc1940df5e5dac38c6b075ff50384bf4`;
 non-root/read-only/capability-drop boundary PASS; API/UI HTTP 200; recorded
 release smoke 7/7 PASS; release-smoke focused regression 28 passed; additional
-Gemini/provider attempts 0 and cumulative total remains 26/30; GitHub CI, GCE
-remote smoke, exact-SHA deployment, and external UI NOT_RUN
+Gemini/provider attempts 0 and cumulative total remains 26/30
+
+SC-07 remote release closure:
+PR #11 head `8d1b9521fdbef003cb84708b6aa7b47d01d8dc8a`; first CI
+`30273039760` failed on the Python 3.11 Streamlit extracted-helper annotation;
+fix `8d1b952`; CI `30273607080` passed; merge
+`6affd27f4f95aae438268acd2bc4fa7733346b5d`.
+PR #12 commits `499bf03`, `bed5684`; first CI `30274239625` failed on the
+legacy B9 old-regex expectation; focused contracts `139 passed`; CI
+`30274469379` passed; merge and deployed main
+`2adcc787a803996d4a181a6cd3faa3158602660a`.
+First deploy `30273898079` failed before runtime write/deploy because the
+anchored allowlist excluded one dot in the already-live-verified 53-character
+Gemini key; the existing service/image stayed unchanged and rollback was not
+executed. Exact-SHA deploy `30274651799` passed in `3m32s`; release image
+`sha256:53628bacc40f2329bc3f7dfcb6771aeee2e5fd83a1a44592ee08bbc950daf138`.
+The previous rollback target is SHA
+`67fa43dd5a7ec74e7785713eb1adcfa402baab85` and image
+`sha256:56df8f16ed3ed58de659e9ec46c9e24b7d3ddc896dc8a022102f68f351d7b928`;
+rollback execution was `NOT_RUN` because deployment passed.
+The recorded runtime reported status ok, snapshot `svc-20260724-1402`, 54
+documents (news 15 / disclosure 3 / research_report 36), and
+`live_connectivity_checked=false`. Remote recorded smoke passed 7/7 and the
+workflow external UI health check passed. A separate non-gate reviewer browser
+attempt to the registered host on port 8501 timed out, so interactive visual
+rendering is not claimed. Deployment smoke used the fixed/disabled path and
+added 0 Gemini calls; the cumulative total remains 26/30.
 
 Service Completion Gate:
-LOCAL PASS / overall NOT_RUN - remote release closure pending
+PASS / complete
 
 A15-M:
-BLOCKED until Service Completion Gate PASS
+activation and entry READY / implementation NOT_STARTED
 
 B6 구현:
 PASS / complete
@@ -186,7 +211,7 @@ B6 완료 SHA:
 60e6203b265a967a8b6ba45da2ba3128e1e1bcfe
 
 다음 공식 checkpoint:
-FSC-3 / SC-07 Docker/remote follow-up
+A15-M activation check - READY / NOT_STARTED
 
 B9 계획:
 docs/TASK_CARDS/B9-release-deployment-traceability.md
@@ -306,8 +331,8 @@ docs/TASK_CARDS/FSC-first-service-completion.md
 current execution decision:
 docs/agent_handoff/FIRST_SERVICE_COMPLETION_EXECUTION_DECISION_2026-07-27.md
 
-blocked until Service Completion Gate PASS:
-A15-M activation check
+ready after Service Completion Gate PASS:
+A15-M activation check - implementation NOT_STARTED
 ```
 
 ## 6. 금지
