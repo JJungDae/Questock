@@ -9,6 +9,7 @@ import streamlit as st
 from pydantic import ValidationError
 
 from app.api.schemas import ChatRequest, ChatResponse
+from app.services.service_snapshot import SERVICE_SNAPSHOT_ID
 from app.ui.projections import (
     ProjectionError,
     project_baseline_answer,
@@ -23,17 +24,11 @@ from app.ui.transport import (
     load_ui_config,
 )
 
-_SECURITY_CHOICES = (
-    "선택 안 함",
-    "삼성전자",
-    "SK하이닉스",
-    "현대자동차",
-)
 _INPUT_FAILURE = "질문을 한 글자 이상 입력해 주세요."
 _PROJECTION_FAILURE = "응답을 화면에 표시할 수 없습니다."
-
-
 _MAX_UI_TRANSCRIPT_ENTRIES = 4
+_SNAPSHOT_BASIS_LABEL = "2026-07-24 14:02 KST"
+_NEWS_COLLECTION_LABEL = "2026-07-24 00:00~14:00 KST"
 
 
 @dataclass(frozen=True)
@@ -52,11 +47,7 @@ def run(transport: ChatTransport | None = None) -> None:
     _initialize_state()
 
     st.sidebar.title("Questock")
-    selected_security = st.sidebar.selectbox(
-        "지원 종목",
-        _SECURITY_CHOICES,
-        key="security_selector",
-    )
+    _render_snapshot_status()
     st.sidebar.caption(f"세션: {st.session_state.session_id}")
     if st.sidebar.button("새 세션", key="reset_session"):
         st.session_state.session_id = _new_session_id()
@@ -64,14 +55,11 @@ def run(transport: ChatTransport | None = None) -> None:
         st.session_state.question = ""
         st.session_state.transcript = ()
 
-    if (
-        selected_security != _SECURITY_CHOICES[0]
-        and not st.session_state.question.strip()
-    ):
-        st.session_state.question = f"{selected_security} "
-
     st.title("Questock")
     st.caption("근거 기반 국내 종목 질의")
+    st.warning(
+        "계좌번호, 인증정보, 거래내역 등 개인 금융정보를 입력하지 마세요."
+    )
 
     with st.form("chat_form", clear_on_submit=False):
         st.text_area(
@@ -199,6 +187,24 @@ def _transport_timeout(transport: ChatTransport | None) -> float:
     return load_ui_config().timeout_seconds
 
 
+def _render_snapshot_status() -> None:
+    st.sidebar.markdown("**고정 스냅샷**")
+    st.sidebar.caption(f"Snapshot ID: {SERVICE_SNAPSHOT_ID}")
+    st.sidebar.caption(f"기준 시점: {_SNAPSHOT_BASIS_LABEL}")
+    st.sidebar.caption(f"뉴스 수집 범위: {_NEWS_COLLECTION_LABEL}")
+    st.sidebar.caption("자료 모드: recorded")
+    st.sidebar.caption(
+        "답변 생성: Gemini 3.5 Flash 또는 근거 기반 고정 응답"
+    )
+    st.sidebar.caption(
+        "리포트: Questock 검증 요약 사용 · 외부 LLM 전송 안 함"
+    )
+    st.sidebar.caption(
+        "공시: 종목별 단일 분기보고서 · 범위 부족 시 경고"
+    )
+    st.sidebar.caption("요청 한도 도달 시: 근거 기반 고정 응답")
+
+
 def _render_sidebar_status(response: ChatResponse) -> None:
     process = response.diagnostics_public
     mode_labels = {
@@ -212,6 +218,15 @@ def _render_sidebar_status(response: ChatResponse) -> None:
     st.sidebar.caption(f"실시간 연결: {live_label}")
     if process.data_mode == "recorded":
         st.sidebar.caption("고정 데모 자료 · 실시간 연결 아님")
+    generation_labels = {
+        "llm": "Gemini 3.5 Flash",
+        "fixed_template": "근거 기반 고정 응답",
+        "blocked": "정책에 따른 제공 제한",
+        "not_called": "생성 호출 없음",
+    }
+    st.sidebar.caption(
+        f"현재 답변 생성: {generation_labels[process.generation.mode]}"
+    )
 
 
 def _render_response(response: ChatResponse) -> None:

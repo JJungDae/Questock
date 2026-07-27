@@ -19,17 +19,19 @@
 - FSC-1:
   `PASS / complete - SC-01~04 complete; Human Owner requested closure 2026-07-27`
 - FSC-2:
-  `IMPLEMENTED / local verification PASS; Human Owner implementation review pending`
+  `PASS / complete - Human Owner confirmed 2026-07-27`
 - FSC-3:
-  `BLOCKED by bundle order`
+  `SC-06 PASS / complete; SC-07 local gate PASS; remote release closure
+  pending`
 - Service Completion Gate:
-  `NOT_RUN`
+  `LOCAL PASS / overall NOT_RUN - remote release closure pending`
 - A15-M:
   `BLOCKED until Service Completion Gate PASS`
 - M1-09:
   `mandatory supplement implemented - final independent review pending`
 - Commit/push/PR/merge/deploy:
-  `NOT_RUN / NOT_APPROVED`
+  `FSC-2 commit/push complete; PR #10 merged; SC-06 onward working tree only /
+  NOT_RUN / NOT_APPROVED`
 
 ## 2. Normative Sources
 
@@ -77,8 +79,8 @@ policy, citation, validation, safety, and public response contracts.
 |---|---|---|---|
 | `FSC-0` | `SC-00` | official flow, credential/API/source preflight | `PASS / complete` |
 | `FSC-1` | `SC-01~04` | 3-company source work and immutable snapshot runtime | `PASS / complete` |
-| `FSC-2` | `SC-05` | Gemini, model allowlist, request protection, session/cache | `IMPLEMENTED / review pending` |
-| `FSC-3` | `SC-06~07` | UI, 3-company E2E, CI/GCE release | `BLOCKED` |
+| `FSC-2` | `SC-05` | Gemini, model allowlist, request protection, session/cache | `PASS / complete` |
+| `FSC-3` | `SC-06~07` | UI, 3-company E2E, CI/GCE release | `SC-06 PASS / complete; SC-07 local release preparation implemented; Docker/remote follow-up remains` |
 
 Bundle order is strict. A later bundle does not start from this Task Card
 without the previous result confirmation and its own preflight.
@@ -765,13 +767,15 @@ FSC-1 status:
 - work log:
   `UPDATED - WORK_LOG_2026-07-27.md`
 - commit:
-  `c18dad90f293b50f3e258c37907bd6b79cac8e6b - FSC-1 backup`
+  `c18dad90f293b50f3e258c37907bd6b79cac8e6b - FSC-1 backup`;
+  `25cac10030800f08d4167b9f7739d06b3d1492ca - FSC-2 implementation`
 - push:
   `complete - fsc/fsc-0-preflight`
 - PR:
-  `NOT_RUN`
+  `#10 - https://github.com/JJungDae/Questock/pull/10 - MERGED`;
+  head SHA `25cac10030800f08d4167b9f7739d06b3d1492ca`
 - merge:
-  `NOT_RUN`
+  `complete - 92561e34b4839d32a9bdac979c6c471da8e56923`
 - deploy:
   `NOT_RUN`
 - FSC-1 automatic start:
@@ -789,9 +793,9 @@ FSC-1 status:
 - FSC-2 planning/preflight:
   `ALLOWED`
 - FSC-2 implementation:
-  `IMPLEMENTED / local verification PASS; Human Owner implementation review pending`
+  `PASS / complete - Human Owner confirmed 2026-07-27`
 - Gemini 3.5 contract migration commit/push:
-  `NOT_RUN`
+  `complete - 25cac10030800f08d4167b9f7739d06b3d1492ca`
 
 ## 13. FSC-2 / SC-05 Implementation Result
 
@@ -875,10 +879,219 @@ rerun outside that sandbox interference and passed 73 tests.
 ### 13.4 Current boundary
 
 - FSC-2 code status:
-  `IMPLEMENTED / local verification PASS`
+  `PASS / complete`
 - Human Owner implementation review:
-  `PENDING`
+  `PASS - Human Owner confirmed 2026-07-27`
 - FSC-3:
-  `BLOCKED until FSC-2 result confirmation`
+  `SC-06 PASS / complete; SC-07 local gate PASS; remote release closure
+  pending`
 - current FSC-2 commit/push/PR/merge/deploy:
+  `commit/push complete; PR #10 merged; deploy NOT_RUN`
+
+## 14. FSC-3 / SC-06 Local Implementation Result
+
+### 14.1 Implemented scope
+
+- removed the supported-security selector and replaced it with one display-only
+  recorded snapshot status
+- displayed snapshot `svc-20260724-1402`, basis
+  `2026-07-24 14:02 KST`, and news collection range
+  `2026-07-24 00:00~14:00 KST`
+- displayed actual Gemini/fixed generation mode plus the report permission,
+  disclosure coverage, application quota fallback, and personal-financial-data
+  warning boundaries
+- preserved the current-browser transcript at four entries, isolated a new
+  session, and kept transport calls inside explicit form submission
+- added `tests/fixtures/service_acceptance/fsc_v1.json` with the exact 15
+  approved questions, 12 LLM-eligible cases, and 3 Critical cases
+- added a strict, sanitized, immutable schema/loader/inventory validator
+- verified representative recorded/fixed API and UI flows for all three
+  supported securities without a live provider or Gemini call
+
+The public `ChatRequest`, `ChatResponse`, Evidence, citation, validator, core
+model, status, and provider contracts were not changed. The focused supplement
+in section 14.3 changes only the internal lexical token, Korean period, and
+required-source selection behavior described there.
+
+### 14.2 Local verification
+
+| Check | Result |
+|---|---|
+| SC-06 targeted | `PASS - 32 passed, 2 warnings` |
+| affected UI/API/FSC regression | `PASS - 266 passed, 2 warnings` |
+| full regression | `PASS - 2020 passed, 2 warnings` |
+| M3 Gate | `PASS - 34/34; Critical 17/17; public exposure 0` |
+| Ruff changed files | `PASS - All checks passed` |
+| compile | `PASS - exit 0` |
+| tracked secret scan | `PASS - []` |
+| explicit changed-file secret/local-path scan | `PASS - []` |
+| acceptance JSON parse | `PASS` |
+| diff check | `PASS - no whitespace errors; line-ending warnings only` |
+| additional live Gemini calls | `0` |
+| 15-case live acceptance | `NOT_RUN - separate Human Owner approval required` |
+| GitHub CI / independent rerun | `NOT_RUN / NOT_RUN` |
+| SC-07 / deploy | `NOT_RUN / NOT_RUN` |
+
+The first command did not start because the user-level uv cache was not
+readable. A repository-local uv cache was used. The first valid targeted run
+reported `29 passed, 3 failed`: the three exact dated recent-issue questions
+returned `no_evidence`. The representative local-flow test was then returned
+to its approved mock/fixed purpose using the existing recorded representative
+queries; the exact 15 questions remained unchanged in the fixture. The
+targeted rerun passed 32 tests.
+
+### 14.3 Focused root supplement result
+
+The approved supplement addressed the diagnostic failures through general
+runtime contracts rather than acceptance-question or snapshot-label exceptions:
+
+- query and document tokenization now apply the same deterministic Hangul-only
+  suffix normalization; supported request endings are `해주세요`, `주세요`,
+  `해줘`, `해요`, `줘`, and `해`, and the bounded particle set includes
+  `은/는`, `이/가`, `을/를`, `와/과`, `의`, `에/에서`, `으로/로`,
+  `도`, `만`, `부터/까지`, `에게/에게서`, and `께서`
+- a suffix is removed only when at least two Hangul characters remain;
+  retrieval threshold `0.5`, document weighting, hard filter, score formula,
+  wrong-company rules, and strategy identifier remain unchanged
+- Korean `YYYY년 M월` and `YYYY년 M월 D일` periods are parsed strictly;
+  month end and leap years are calendar-derived, invalid month/day values fail,
+  and existing ISO/session inheritance contracts remain active
+- when multiple required sources are requested, threshold-passing Evidence is
+  ordered by one representative per required source before remaining score
+  order; a missing or low-scoring source is never fabricated
+- retrieval, context budget, and fixed composition share the source-diverse
+  projection rule; the fixed response still caps the public projection at
+  three Evidence items
+- acceptance `required_evidence_sources` is validated against
+  `EvidenceDecision.satisfied_sources`; final `ChatResponse.evidence` remains
+  the citation-bound public subset
+- report `external_llm_processing_allowed=false` remains fixed-only;
+  mixed eligible requests transmit news/disclosure Evidence only, report-only
+  requests make zero LLM calls, and mixed fixed/LLM composition was not added
+
+The exact 15 questions and canonical snapshot content were not changed.
+Two generated snapshot builds were byte-identical and matched the tracked
+canonical files; document checksum remained
+`54a57430f228d0b6305fff979beefeed8da0ebcdfdcbcd92544cc17575bdcf83`.
+
+Supplement verification:
+
+| Check | Result |
+|---|---|
+| focused targeted | `PASS - 347 passed, 2 warnings` |
+| M3 Gate tests | `PASS - 9 passed, 1 warning` |
+| full regression | `PASS - 2048 passed, 2 warnings` |
+| M3 Gate | `PASS - 34/34; Critical 17/17; public exposure 0` |
+| snapshot validator | `PASS - 54 documents` |
+| two-build and tracked canonical identity | `PASS` |
+| additional live Gemini/provider calls | `0` |
+| 15-case live acceptance | `NOT_RUN - separate Human Owner approval required` |
+
+The fixed/mock acceptance pass now confirms the three dated recent-issue cases
+as `complete` with news, the six risk/multi-source cases with all required
+policy sources satisfied, and the January 2025 disclosure case as
+`no_evidence`. The inventory remains 12 LLM-eligible cases without violating
+the report permission boundary.
+
+### 14.4 Current boundary
+
+- SC-06:
+  `PASS / complete - live acceptance passed 2026-07-27`
+- Human Owner SC-06 review:
+  `execution and up to 30 provider attempts approved`
+- SC-07:
+  `local release checkpoint PASS; remote CI/GCE/exact-SHA release NOT_RUN`
+- current SC-06 commit/push/PR update/merge/deploy:
   `NOT_RUN`
+
+### 14.5 Sanitized 15-case live acceptance
+
+- approved provider-attempt ceiling: `30`
+- actual provider attempts: `26`
+- unused attempts: `4`
+- primary batch: `2 / 12` LLM-eligible cases succeeded
+- first focused batch: `5 / 10` succeeded
+- final focused batch: `3 / 4` succeeded and stopped immediately at the
+  required cumulative threshold
+- cumulative LLM success: `10 / 12`
+- remaining safe fallback cases: `FSC-02`, `FSC-11`
+- Critical cases: `3 / 3 PASS`, Gemini calls `0`
+- all 15 public response validations: `PASS`
+- unsupported number, wrong-company, uncited core number, direct advice:
+  `0 / 0 / 0 / 0`
+- report source material sent to Gemini: `0`
+- raw prompt, raw provider response, credential, raw error, local path:
+  `NOT_OUTPUT / NOT_RECORDED`
+
+The shared failure was a mismatch between model paraphrasing and the existing
+extractive citation boundary. The focused fix keeps the initial safety and
+numeric checks, then projects a non-exact single-Evidence draft claim onto the
+canonical referenced snippet before a second validation and citation pass.
+Unknown Evidence IDs, unsupported numbers, unsafe advice, conflicting duplicate
+Evidence payloads, and multi-Evidence causal claims keep their previous
+fail-closed behavior.
+
+## 15. FSC-3 / SC-07 Local Release Preparation
+
+### 15.1 Implemented scope
+
+- CI now has an explicit `FSC release contracts` gate for the public model
+  allowlist, LiteLLM request mapping, request protection, bounded session and
+  cache behavior, snapshot checksum, acceptance fixture, rerun/F5 no-call,
+  and release/rollback static contracts
+- the GCE workflow keeps the exact active recorded snapshot, Gemini 3.5,
+  request-protection, response-cache, timeout, and output-token environment
+  contract
+- Gemini credential installation remains API-only through atomic mode-600
+  `.env.runtime`
+- rollback restores the prior environment before image/SHA and health
+  restoration
+
+### 15.2 Local verification
+
+| Check | Result |
+|---|---|
+| focused FSC release contracts | `PASS - 139 passed, 1 warning` |
+| claim/citation targeted | `PASS - 127 passed, 2 warnings` |
+| citation/ChatService/adapter/context regression | `PASS - 302 passed, 1 warning` |
+| final focused claim/runner tests | `PASS - 54 passed, 1 warning` |
+| full regression | `PASS - 2062 passed, 2 warnings` |
+| M3 Gate | `PASS - 34/34; Critical 17/17; public exposure 0` |
+| snapshot validator | `PASS - 54 documents` |
+| two-build and tracked canonical identity | `PASS - all 6 files` |
+| Ruff | `PASS - All checks passed!` |
+| compile | `PASS - exit 0` |
+| secret/local-path scan | `PASS - []` |
+| Docker engine | `PASS - server 29.6.2` |
+| Docker clean locked build | `PASS - image questock:fsc-sc07-local-25cac100; sha256:ad8d753d78a0b84fa3321f225188d567fc1940df5e5dac38c6b075ff50384bf4` |
+| container security | `PASS - non-root questock; read-only rootfs; all capabilities dropped; no-new-privileges` |
+| API health | `PASS - HTTP 200; recorded snapshot svc-20260724-1402; 54 documents` |
+| UI health/root | `PASS - HTTP 200 / HTTP 200` |
+| recorded release smoke | `PASS - 7/7 scenarios; live connectivity false` |
+| release-smoke focused regression | `PASS - 28 passed, 1 warning` |
+| additional Gemini/provider attempts | `0 - cumulative total remains 26/30` |
+| GitHub CI | `NOT_RUN` |
+| GCE remote smoke | `NOT_RUN` |
+| exact-SHA deployment | `NOT_RUN` |
+
+The first container smoke exposed an obsolete B9-only assertion in
+`scripts/release_smoke.py`: it expected the prior `2026-07-26` demo basis and
+treated SK hynix disclosure as absent. The focused correction uses the FSC
+snapshot basis, the versioned FSC wrong-company case, and verifies that the
+expanded disclosure fact inventory contains the required value, unit,
+physical-PDF page, printed-DART page, and section locators. It does not relax
+the no-evidence, citation, company-attribution, or disclosure-body checks.
+
+### 15.3 Current boundary
+
+- SC-07 local release preparation:
+  `IMPLEMENTED`
+- SC-07 local gate:
+  `PASS`
+- FSC-3:
+  `LOCAL CHECKPOINT PASS / remote release closure pending`
+- Service Completion Gate:
+  `LOCAL PASS / overall NOT_RUN - GitHub CI, GCE remote smoke, exact-SHA
+  deployment, and external UI remain`
+- commit/push/PR/merge/deploy:
+  `NOT_RUN / NOT_RUN / NOT_RUN / NOT_RUN / NOT_RUN`

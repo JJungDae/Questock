@@ -188,6 +188,10 @@ def test_real_chain_accepts_only_citation_bound_structured_draft() -> None:
     assert "삼성전자 최근 이슈" in rendered
     assert evidence.evidence_id in rendered
     assert SNIPPET in rendered
+    assert "This is an extractive task, not a paraphrasing task." in rendered
+    assert "character-for-character from one complete Snippet" in rendered
+    assert "Never combine snippets" in rendered
+    assert "the one Evidence ID directly above" in rendered
     for forbidden in ("https://", "source_url", "locator", "permission"):
         assert forbidden not in rendered
 
@@ -231,7 +235,6 @@ def test_one_eligible_request_reserves_exactly_one_call() -> None:
         '{"claims":',
         json.dumps({"claims": []}),
         _draft(extra={"unknown": "rejected"}),
-        _draft(text="근거에 없는 문장"),
         _draft(evidence_id="evidence:unknown"),
     ],
 )
@@ -258,6 +261,54 @@ def test_invalid_draft_falls_back_without_retry(content: str) -> None:
     assert result.llm_result.status == LLMStatus.INVALID_RESPONSE
     assert len(client.calls) == 1
     assert budget.snapshot().calls_used == 1
+
+
+def test_single_evidence_paraphrase_is_projected_to_canonical_snippet() -> None:
+    paraphrase = "삼성전자가 반도체 설비 투자를 늘렸다고 전해졌다."
+    client = FakeLLMClient(_draft(text=paraphrase))
+    document = _document()
+    evidence = _evidence()
+
+    result = asyncio.run(
+        AnswerComposer(client).compose(
+            question="삼성전자 최근 이슈",
+            plan=_plan(),
+            selected_evidence=[evidence],
+            documents_by_id={document.document_id: document},
+            timeout_seconds=2,
+        )
+    )
+
+    assert result.generation_mode == "llm"
+    assert result.answer_sections.summary == [SNIPPET]
+    assert paraphrase not in result.answer_sections.model_dump_json()
+    assert result.claims[0].text == SNIPPET
+    assert result.citations.citations[0].snippet == SNIPPET
+    assert result.citation_rejection_count == 0
+    assert len(client.calls) == 1
+
+
+def test_supported_numeric_paraphrase_uses_canonical_evidence_text() -> None:
+    evidence = _evidence(snippet="투자 규모는 2조원으로 확인됐다.")
+    paraphrase = "확인된 투자 규모는 2조원이다."
+    client = FakeLLMClient(_draft(text=paraphrase))
+    document = _document()
+
+    result = asyncio.run(
+        AnswerComposer(client).compose(
+            question="삼성전자 투자 규모",
+            plan=_plan(),
+            selected_evidence=[evidence],
+            documents_by_id={document.document_id: document},
+            timeout_seconds=2,
+        )
+    )
+
+    assert result.generation_mode == "llm"
+    assert result.answer_sections.summary == [evidence.snippet]
+    assert paraphrase not in result.answer_sections.model_dump_json()
+    assert result.citation_rejection_count == 0
+    assert len(client.calls) == 1
 
 
 def test_llm_failure_preserves_fixed_extractive_answer() -> None:
@@ -1264,6 +1315,85 @@ def test_permission_denied_report_is_excluded_before_projection_and_refilled() -
     )
     assert denied_report.evidence_id not in rendered
     assert denied_report.snippet not in rendered
+
+
+def test_fixed_multi_source_projection_uses_same_source_diverse_order() -> None:
+    news_first = _evidence(
+        evidence_id="evidence:news:first",
+        snippet="뉴스 첫 번째 근거다.",
+    )
+    news_second = _evidence(
+        evidence_id="evidence:news:second",
+        snippet="뉴스 두 번째 근거다.",
+    )
+    disclosure = _evidence(
+        source_type="disclosure",
+        evidence_id="evidence:disclosure:first",
+        source_url=(
+            "https://dart.fss.or.kr/dsaf001/main.do"
+            "?rcpNo=20260721000005"
+        ),
+        locator={
+            "provider": "opendart_disclosure",
+            "receipt_no": "20260721000005",
+            "viewer_url": (
+                "https://dart.fss.or.kr/dsaf001/main.do"
+                "?rcpNo=20260721000005"
+            ),
+            "corp_code": "00126380",
+            "stock_code": "005930",
+            "corp_name": "삼성전자",
+            "report_name": "분기보고서",
+            "received_date": "20260721",
+        },
+        snippet="공시는 2026년 7월 21일에 접수됐다.",
+    )
+    report = _evidence(
+        source_type="research_report",
+        evidence_id="evidence:report:first",
+        snippet="리포트 근거다.",
+    )
+    plan = _plan().model_copy(
+        update={
+            "intent": "multi_source_summary",
+            "required_sources": [
+                "news",
+                "disclosure",
+                "research_report",
+            ],
+            "required_evidence": [
+                "recent_news",
+                "disclosure",
+                "research_report",
+            ],
+        },
+        deep=True,
+    )
+
+    result = AnswerComposer(FakeLLMClient(_draft())).compose_fixed(
+        plan=plan,
+        selected_evidence=[
+            news_first,
+            news_second,
+            disclosure,
+            report,
+        ],
+    )
+
+    assert result.generation_mode == "fixed_template"
+    assert [
+        item.evidence_id for item in result.public_evidence
+    ] == [
+        news_first.evidence_id,
+        disclosure.evidence_id,
+        report.evidence_id,
+    ]
+    assert {
+        citation.evidence_id
+        for citation in result.citations.citations
+    } == {
+        item.evidence_id for item in result.public_evidence
+    }
 
 
 def test_two_sided_composition_requires_uncertainty_without_retry() -> None:

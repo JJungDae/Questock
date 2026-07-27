@@ -8,6 +8,7 @@ import unicodedata
 
 from app.core.models import Evidence, FinancialDocument, RetrievalRequest, RetrievalResult
 from app.core.status import RetrievalStatus
+from app.evidence.selection import source_diverse_indexes
 from app.retrieval.filters import filter_evidence
 
 STRATEGY = "lexical-bm25-m2-03-v1"
@@ -21,16 +22,48 @@ _TOKEN_PATTERN = re.compile(r"[가-힣]+|[a-z0-9]+")
 _GENERIC_QUERY_TOKENS = frozenset(
     {
         "최근",
-        "요약",
         "설명",
         "알려",
         "알려줘",
+        "주세요",
         "자료",
         "정보",
         "관련",
         "어때",
         "대해",
     }
+)
+_KOREAN_REQUEST_ENDINGS = (
+    "해주세요",
+    "주세요",
+    "해줘",
+    "해요",
+    "줘",
+    "해",
+)
+_KOREAN_PARTICLES = (
+    "으로부터",
+    "에서부터",
+    "에게서",
+    "으로",
+    "에서",
+    "에게",
+    "께서",
+    "부터",
+    "까지",
+    "은",
+    "는",
+    "이",
+    "가",
+    "을",
+    "를",
+    "와",
+    "과",
+    "의",
+    "에",
+    "로",
+    "도",
+    "만",
 )
 _DIAGNOSTIC_KEYS = (
     "input_count",
@@ -116,9 +149,19 @@ def retrieve_evidence(
         )
 
     eligible.sort(key=lambda entry: (-entry[0], entry[1]))
-    selected = [
+    ranked = [
         item.model_copy(deep=True, update={"retrieval_score": score})
-        for score, _, item in eligible[:effective_top_k]
+        for score, _, item in eligible
+    ]
+    required_sources = (
+        request.source_types if len(request.source_types) > 1 else ()
+    )
+    selected_indexes = source_diverse_indexes(
+        [item.source_type for item in ranked],
+        required_sources,
+    )
+    selected = [
+        ranked[index] for index in selected_indexes[:effective_top_k]
     ]
     return _result(
         evidence=selected,
@@ -143,7 +186,30 @@ def _tokenize_query(query: str) -> list[str]:
 
 def _tokenize_text(value: str) -> list[str]:
     normalized = unicodedata.normalize("NFKC", value).casefold()
-    return _TOKEN_PATTERN.findall(normalized)
+    return [
+        _normalize_korean_token(token)
+        for token in _TOKEN_PATTERN.findall(normalized)
+    ]
+
+
+def _normalize_korean_token(token: str) -> str:
+    if not token or any(
+        not "\uac00" <= character <= "\ud7a3"
+        for character in token
+    ):
+        return token
+    normalized = token
+    for ending in _KOREAN_REQUEST_ENDINGS:
+        stem = normalized[: -len(ending)]
+        if normalized.endswith(ending) and len(stem) >= 2:
+            normalized = stem
+            break
+    for particle in _KOREAN_PARTICLES:
+        stem = normalized[: -len(particle)]
+        if normalized.endswith(particle) and len(stem) >= 2:
+            normalized = stem
+            break
+    return normalized
 
 
 def _score_candidates(evidence: Sequence[Evidence], query_tokens: Sequence[str]) -> list[float]:

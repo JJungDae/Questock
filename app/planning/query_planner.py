@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import calendar
 import re
 import unicodedata
 from dataclasses import dataclass
@@ -209,6 +210,18 @@ FOLLOW_UP_PATTERNS = (
 DATE_RE = re.compile(r"(?<!\d)\d{4}-\d{2}-\d{2}(?!\d)")
 RANGE_RE = re.compile(r"(?<!\d)(\d{4}-\d{2}-\d{2})\s*~\s*(\d{4}-\d{2}-\d{2})(?!\d)")
 MALFORMED_DATE_RE = re.compile(r"(?<!\d)\d{4}-\d{2}-\d{2}\d+(?!\d)")
+KOREAN_DATE_RE = re.compile(
+    r"(?<!\d)(\d{4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일(?!\d)"
+)
+KOREAN_MONTH_RE = re.compile(
+    r"(?<!\d)(\d{4})\s*년\s*(\d{1,2})\s*월"
+)
+KOREAN_DAY_CUE_RE = re.compile(
+    r"(?<!\d)\d{4}\s*년\s*\d+\s*월\s*\d+\s*일"
+)
+KOREAN_PERIOD_CUE_RE = re.compile(
+    r"(?<!\d)\d{4}\s*년\s*\d+\s*월"
+)
 TOKEN_RE = re.compile(r"\S+")
 UPPER_FOREIGN_RE = re.compile(r"^[A-Z]{1,5}([.\-][A-Z])?$")
 HANGUL_RE = re.compile(r"[\uac00-\ud7a3]")
@@ -384,7 +397,9 @@ def _is_follow_up(normalized_query: str) -> bool:
     if _contains_any(normalized_query, FOLLOW_UP_PATTERNS):
         return True
     return "기간" in normalized_query and bool(
-        RANGE_RE.search(normalized_query) or DATE_RE.search(normalized_query)
+        RANGE_RE.search(normalized_query)
+        or DATE_RE.search(normalized_query)
+        or KOREAN_PERIOD_CUE_RE.search(normalized_query)
     )
 
 
@@ -397,16 +412,40 @@ def _parse_period(normalized_query: str, basis_date: date) -> _PeriodParse:
     ranges = list(RANGE_RE.finditer(normalized_query))
     range_spans = tuple((match.start(), match.end()) for match in ranges)
     dates = tuple(match.group(0) for match in DATE_RE.finditer(normalized_query) if not _span_is_inside_any((match.start(), match.end()), range_spans))
+    korean_dates = list(KOREAN_DATE_RE.finditer(normalized_query))
+    korean_day_cues = list(KOREAN_DAY_CUE_RE.finditer(normalized_query))
+    if len(korean_day_cues) != len(korean_dates):
+        return _PeriodParse(None, True)
+    korean_date_spans = tuple(
+        (match.start(), match.end()) for match in korean_day_cues
+    )
+    korean_months = tuple(
+        match
+        for match in KOREAN_MONTH_RE.finditer(normalized_query)
+        if not _span_is_inside_any(
+            (match.start(), match.end()),
+            korean_date_spans,
+        )
+    )
+    explicit_count = (
+        len(ranges)
+        + len(dates)
+        + len(korean_dates)
+        + len(korean_months)
+    )
+    has_korean_period_cue = bool(
+        KOREAN_PERIOD_CUE_RE.search(normalized_query)
+    )
 
     if has_today and has_recent:
         return _PeriodParse(None, True)
-    if (has_today or has_recent) and (ranges or dates):
+    if (has_today or has_recent) and explicit_count:
         return _PeriodParse(None, True)
-    if len(ranges) > 1:
+    if explicit_count > 1:
         return _PeriodParse(None, True)
-    if ranges and dates:
-        return _PeriodParse(None, True)
-    if len(dates) > 1:
+    if has_korean_period_cue and not (
+        korean_dates or korean_months
+    ):
         return _PeriodParse(None, True)
 
     if ranges:
@@ -422,6 +461,26 @@ def _parse_period(normalized_query: str, basis_date: date) -> _PeriodParse:
         except ValueError:
             return _PeriodParse(None, True)
         return _PeriodParse(DateRange(start=parsed, end=parsed), True)
+    if korean_dates:
+        try:
+            parsed = date(
+                int(korean_dates[0].group(1)),
+                int(korean_dates[0].group(2)),
+                int(korean_dates[0].group(3)),
+            )
+        except ValueError:
+            return _PeriodParse(None, True)
+        return _PeriodParse(DateRange(start=parsed, end=parsed), True)
+    if korean_months:
+        try:
+            year = int(korean_months[0].group(1))
+            month = int(korean_months[0].group(2))
+            end_day = calendar.monthrange(year, month)[1]
+            start = date(year, month, 1)
+            end = date(year, month, end_day)
+        except (ValueError, calendar.IllegalMonthError):
+            return _PeriodParse(None, True)
+        return _PeriodParse(DateRange(start=start, end=end), True)
     if has_today:
         return _PeriodParse(DateRange(start=basis_date, end=basis_date), True)
     if has_recent:

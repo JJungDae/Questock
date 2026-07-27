@@ -5,7 +5,7 @@
 > Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
 > Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
 > B9 planning base: `b9ddf7461306d16cf1da14634ce458050d78f7bc`
-> 상태: `B9 PASS / M4 Gate PASS / FSC-1 PASS / complete; FSC-2 implemented / local verification PASS / Human Owner review pending`
+> 상태: `B9 PASS / M4 Gate PASS / FSC-0~FSC-2 PASS / complete; FSC-3 SC-06 PASS / complete; SC-07 local gate PASS; remote release closure pending`
 
 ## 1. 목적
 
@@ -69,7 +69,7 @@ B9
 First Service Completion
 
 현재 checkpoint:
-FSC-2 / SC-05 implementation review
+FSC-3 / SC-07 remote release closure
 
 FSC 실행 결정:
 docs/agent_handoff/FIRST_SERVICE_COMPLETION_EXECUTION_DECISION_2026-07-27.md
@@ -124,8 +124,13 @@ byte-identically; targeted 41 passed; full regression 1946 passed;
 GitHub CI and independent pytest rerun NOT_RUN
 
 FSC-2:
-IMPLEMENTED / local verification PASS; Human Owner billing confirmation and
-one sanitized Gemini smoke PASS; Human Owner implementation review pending
+PASS / complete - Human Owner confirmed 2026-07-27; Human Owner billing
+confirmation and one sanitized Gemini smoke PASS
+
+FSC-2 Git:
+commit/push `25cac10030800f08d4167b9f7739d06b3d1492ca` / complete;
+PR #10 `MERGED`; https://github.com/JJungDae/Questock/pull/10;
+merge SHA `92561e34b4839d32a9bdac979c6c471da8e56923`
 
 FSC-2 smoke:
 exactly one live call; status ok; model gemini/gemini-3.5-flash;
@@ -138,10 +143,38 @@ passed; M3 Gate 34/34; Critical 17/17; public exposure 0; Ruff, compile,
 secret/local-path scan, and diff check PASS; GitHub CI/deploy NOT_RUN
 
 FSC-3:
-BLOCKED until FSC-2 Human Owner result confirmation
+SC-06 PASS / complete; SC-07 local gate PASS; remote release closure pending
+
+SC-06 verification:
+live acceptance PASS; cumulative LLM success 10/12; Critical 3/3 with zero
+Gemini calls; actual provider attempts 26/30; all 15 public validations PASS;
+unsupported number, wrong-company, uncited core number, and direct advice 0
+
+SC-06 focused root supplement:
+symmetric Korean query/document token normalization; strict Korean month/day
+periods; threshold-only required-source-aware retrieval/context/fixed
+projection; policy `satisfied_sources` acceptance validation; citation-bound
+public Evidence; report fixed-only and mixed prompt exclusion preserved
+
+SC-06 focused verification:
+targeted 347 passed; M3 Gate tests 9 passed; full regression 2048 passed;
+M3 Gate 34/34; Critical 17/17; public exposure 0; snapshot validator 54
+documents; two builds byte-identical and equal to tracked canonical output;
+additional live Gemini/provider calls 0 before live acceptance
+
+SC-07 local release preparation:
+explicit CI release-contract gate added; focused 139 passed; full regression
+2062 passed; M3 Gate 34/34; Critical 17/17; public exposure 0; snapshot
+validator 54 documents; two-build and tracked canonical identity PASS; Ruff,
+compile, and secret/local-path scan PASS; Docker server 29.6.2; clean locked
+image `sha256:ad8d753d78a0b84fa3321f225188d567fc1940df5e5dac38c6b075ff50384bf4`;
+non-root/read-only/capability-drop boundary PASS; API/UI HTTP 200; recorded
+release smoke 7/7 PASS; release-smoke focused regression 28 passed; additional
+Gemini/provider attempts 0 and cumulative total remains 26/30; GitHub CI, GCE
+remote smoke, exact-SHA deployment, and external UI NOT_RUN
 
 Service Completion Gate:
-NOT_RUN
+LOCAL PASS / overall NOT_RUN - remote release closure pending
 
 A15-M:
 BLOCKED until Service Completion Gate PASS
@@ -153,7 +186,7 @@ B6 완료 SHA:
 60e6203b265a967a8b6ba45da2ba3128e1e1bcfe
 
 다음 공식 checkpoint:
-FSC-2 Human Owner implementation review; FSC-3 remains blocked
+FSC-3 / SC-07 Docker/remote follow-up
 
 B9 계획:
 docs/TASK_CARDS/B9-release-deployment-traceability.md

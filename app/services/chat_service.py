@@ -754,7 +754,10 @@ def _run_evidence_pipeline(
         freshness,
         retrieval,
     )
-    budget = select_evidence_context(decision.evidence)
+    budget = select_evidence_context(
+        decision.evidence,
+        required_sources=plan.required_sources,
+    )
     return _PipelineResult(
         documents_by_id=documents_by_id,
         normalized=normalized,

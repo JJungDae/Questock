@@ -3,7 +3,7 @@
 > 결정일: `2026-07-27`
 > 기준 branch: `main`
 > 계획 기준 SHA: `da03a6fb3be5c985cef7d5d1f0523827340fe088`
-> 상태: `ACTIVE - FSC-0 and FSC-1 PASS / complete; FSC-2 implemented with local verification PASS and Human Owner review pending`
+> 상태: `ACTIVE - FSC-0~FSC-2 PASS / complete; FSC-3 SC-06 PASS / complete; SC-07 local gate PASS; remote release closure pending`
 
 ## 1. 문서 효력
 
@@ -65,10 +65,10 @@ current official bundle:
 First Service Completion
 
 current checkpoint:
-FSC-2 / SC-05 implementation review
+FSC-3 / SC-07 remote release closure
 
 Service Completion Gate:
-NOT_RUN
+LOCAL PASS / overall NOT_RUN
 
 A15-M:
 BLOCKED until Service Completion Gate PASS
@@ -395,7 +395,7 @@ FSC-1:
 `PASS / complete - SC-01~04 complete`
 
 FSC-2/FSC-3 구현:
-`FSC-2 IMPLEMENTED / local verification PASS / Human Owner review pending; FSC-3 BLOCKED until FSC-2 result confirmation`
+`FSC-2 PASS / complete - Human Owner confirmed 2026-07-27; FSC-3 SC-06 PASS / complete; SC-07 local gate PASS; remote release closure pending`
 
 ## 7. 변경 제한
 
@@ -455,7 +455,123 @@ Local verification:
 
 Current boundary:
 
-- FSC-2: `IMPLEMENTED / local verification PASS`
-- Human Owner implementation review: `PENDING`
-- FSC-3: `BLOCKED until FSC-2 result confirmation`
-- commit/push/PR/merge/deploy: `NOT_RUN`
+- FSC-2: `PASS / complete - Human Owner confirmed 2026-07-27`
+- FSC-2 Git: commit/push
+  `25cac10030800f08d4167b9f7739d06b3d1492ca` / `complete`
+- FSC-2 PR: `#10`, `MERGED`,
+  `https://github.com/JJungDae/Questock/pull/10`, merge SHA
+  `92561e34b4839d32a9bdac979c6c471da8e56923`
+- FSC-3:
+  `SC-06 PASS / complete; SC-07 local gate PASS; remote release closure
+  pending`
+- SC-06 onward commit/push/PR update/merge/deploy:
+  `NOT_RUN / NOT_RUN / NOT_RUN / NOT_RUN / NOT_RUN`
+
+## 9. FSC-3 / SC-06 local implementation result
+
+- fixed snapshot UI:
+  selector removed; snapshot ID, `2026-07-24 14:02 KST` basis, recorded mode,
+  news range, generation/fallback, report permission, disclosure coverage,
+  quota fallback, and personal-financial-data warning displayed
+- session/UI behavior:
+  recent transcript 4, new-session isolation, rerun/F5 automatic POST 0
+- acceptance asset:
+  exact versioned 15-case fixture plus strict schema/validator/static tests
+- representative local API/UI:
+  three supported securities PASS in recorded/fixed mode
+- targeted:
+  `32 passed, 2 warnings`
+- affected regression:
+  `266 passed, 2 warnings`
+- full regression:
+  `2020 passed, 2 warnings`
+- M3 Gate:
+  `34/34`; Critical `17/17`; public exposure `0`
+- Ruff / compile / secret scans / JSON / diff check:
+  `PASS / PASS / [] / PASS / PASS`
+- additional live Gemini calls:
+  `0`
+- 15-case live acceptance:
+  `NOT_RUN - separate Human Owner approval required`
+
+The approved focused supplement resolved those local preconditions with general
+contracts rather than acceptance-question or snapshot-label exceptions:
+
+- symmetric Hangul suffix normalization is applied to query and document tokens
+  while the BM25 threshold, hard filter, score formula, and wrong-company rules
+  remain unchanged
+- strict `YYYY년 M월` and `YYYY년 M월 D일` parsing now composes with the
+  existing ISO and session-period contracts
+- threshold-passing Evidence is source-aware when multiple required sources are
+  requested; missing or low-scoring sources are not fabricated
+- retrieval, context budget, and fixed composition use the same source-diverse
+  projection helper
+- acceptance required sources are checked against policy
+  `satisfied_sources`, while the public response remains citation-bound
+- reports without external LLM permission remain fixed-only; mixed requests
+  transmit no report Evidence and no mixed composition was introduced
+
+The exact 15 questions and canonical snapshot content were unchanged. Two
+snapshot builds were byte-identical and matched the tracked canonical output.
+Focused targeted tests passed `347`; M3 Gate tests passed `9`; full regression
+passed `2048`; M3 Gate passed `34/34`, Critical `17/17`, public exposure `0`.
+No additional live Gemini or provider call was made. The 15-case live
+acceptance remains `NOT_RUN` pending separate Human Owner approval.
+
+Current boundary:
+
+- SC-06:
+  `PASS / complete - live acceptance passed 2026-07-27`
+- live acceptance:
+  `PASS - cumulative LLM success 10/12; Critical 3/3 with 0 calls; actual
+  provider attempts 26/30; all public validations PASS`
+- SC-07:
+  `local release checkpoint PASS; remote CI/GCE/exact-SHA release NOT_RUN`
+- GitHub CI / GCE remote smoke / exact-SHA deploy:
+  `NOT_RUN / NOT_RUN / NOT_RUN`
+- commit / push / PR update / merge:
+  `NOT_RUN / NOT_RUN / NOT_RUN / NOT_RUN`
+
+## 10. FSC-3 / SC-07 Docker checkpoint result
+
+- Docker engine:
+  `PASS - server 29.6.2`
+- clean locked build:
+  `PASS - questock:fsc-sc07-local-25cac100`,
+  image `sha256:ad8d753d78a0b84fa3321f225188d567fc1940df5e5dac38c6b075ff50384bf4`
+- container boundary:
+  `PASS - non-root, read-only rootfs, capabilities dropped,
+  no-new-privileges`
+- API:
+  `PASS - HTTP 200; recorded snapshot svc-20260724-1402; 54 documents`
+- UI:
+  `PASS - health HTTP 200; root HTTP 200`
+- recorded release smoke:
+  `PASS - 7/7; recent issue complete, disclosure partial, report complete,
+  glossary complete, wrong-company no_evidence, blocked blocked, multi-turn
+  partial`
+- focused release-smoke regression:
+  `PASS - 28 passed, 1 warning`
+- additional Gemini/provider attempts:
+  `0 - cumulative total remains 26/30`
+
+The initial smoke found a B9-only basis-date and unsupported-company
+expectation in the release script. The focused correction aligns that
+deployment check with the FSC snapshot and versioned wrong-company case, while
+retaining exact receipt, official URL, required disclosure value/unit/page/
+section, body-answer, and no-evidence checks.
+
+Current boundary:
+
+- SC-07 local gate:
+  `PASS`
+- FSC-3:
+  `LOCAL CHECKPOINT PASS / remote release closure pending`
+- Service Completion Gate:
+  `LOCAL PASS / overall NOT_RUN`
+- GitHub CI / GCE remote smoke / exact-SHA deploy / external UI:
+  `NOT_RUN / NOT_RUN / NOT_RUN / NOT_RUN`
+- A15-M:
+  `BLOCKED until overall Service Completion Gate PASS`
+- commit / push / PR / merge / deploy:
+  `NOT_RUN / NOT_RUN / NOT_RUN / NOT_RUN / NOT_RUN`

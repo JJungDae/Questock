@@ -37,6 +37,22 @@ jobs:
       - name: Ruff
         run: uv run --no-sync ruff check --select E4,E7,E9,F app tests scripts streamlit_app.py
 
+      - name: FSC release contracts
+        run: >-
+          uv run --no-sync pytest
+          tests/unit/test_llm_config.py
+          tests/unit/test_litellm_client.py
+          tests/unit/test_request_protection.py
+          tests/unit/test_session_store.py
+          tests/unit/test_response_cache.py
+          tests/unit/test_service_snapshot.py
+          tests/unit/test_service_acceptance.py
+          tests/unit/test_service_acceptance_live_runner.py
+          tests/unit/test_b9_release_assets.py
+          tests/unit/test_fsc_sc07_release_contract.py
+          tests/integration/test_streamlit_app.py
+          -q
+
       - name: Full pytest
         run: uv run --no-sync pytest tests -q
 

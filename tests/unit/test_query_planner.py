@@ -387,6 +387,9 @@ def test_missing_security_for_security_required_intent_clarifies():
         (f"{SAMSUNG} 2026-07-21 {DISCLOSURE}", DateRange(start=date(2026, 7, 21), end=date(2026, 7, 21))),
         (f"{SAMSUNG} 2026-07-20~2026-07-21 {DISCLOSURE}", DateRange(start=date(2026, 7, 20), end=date(2026, 7, 21))),
         (f"{SAMSUNG} 2026-07-20 ~ 2026-07-21 {DISCLOSURE}", DateRange(start=date(2026, 7, 20), end=date(2026, 7, 21))),
+        (f"{SAMSUNG} 2025년 1월 {DISCLOSURE}", DateRange(start=date(2025, 1, 1), end=date(2025, 1, 31))),
+        (f"{SAMSUNG} 2024년 2월 {DISCLOSURE}", DateRange(start=date(2024, 2, 1), end=date(2024, 2, 29))),
+        (f"{SAMSUNG} 2026년 7월 24일 {DISCLOSURE}", DateRange(start=date(2026, 7, 24), end=date(2026, 7, 24))),
         (f"{SAMSUNG} {TODAY} {DISCLOSURE}", DateRange(start=date(2026, 7, 23), end=date(2026, 7, 23))),
     ],
 )
@@ -409,6 +412,12 @@ def test_deterministic_period_parsing(query, expected):
         f"{SAMSUNG} {RECENT_NEWS} 2026-07-21",
         f"{SAMSUNG} {TODAY} 2026-07-20~2026-07-21 {DISCLOSURE}",
         f"{SAMSUNG} \ucd5c\uadfc 2026-07-20~2026-07-21 {DISCLOSURE}",
+        f"{SAMSUNG} 2026년 0월 {DISCLOSURE}",
+        f"{SAMSUNG} 2026년 13월 {DISCLOSURE}",
+        f"{SAMSUNG} 2026년 2월 30일 {DISCLOSURE}",
+        f"{SAMSUNG} 2026년 2월 300일 {DISCLOSURE}",
+        f"{SAMSUNG} 2026년 7월 24일 2026-07-24 {DISCLOSURE}",
+        f"{SAMSUNG} 최근 2026년 7월 24일 {RECENT_NEWS}",
     ],
 )
 def test_period_cues_suppress_session_date_fallback(query):
@@ -419,6 +428,32 @@ def test_period_cues_suppress_session_date_fallback(query):
         assert_success(result, security_id=SAMSUNG_ID, intent=RECENT_ISSUE, sources=["news"], evidence=["recent_news"], date_range=None)
     else:
         assert_success(result, security_id=SAMSUNG_ID, intent=DISCLOSURE_SUMMARY, sources=["disclosure"], evidence=["disclosure"], date_range=None)
+
+
+def test_korean_month_follow_up_overrides_session_period() -> None:
+    session = SessionContext(
+        current_security_id=SAMSUNG_ID,
+        current_date_range=DateRange(
+            start=date(2026, 1, 1),
+            end=date(2026, 1, 2),
+        ),
+        previous_intent=DISCLOSURE_SUMMARY,
+        previous_source_types=["disclosure"],
+    )
+
+    result = planner().plan("2024년 2월 기간은?", session=session)
+
+    assert_success(
+        result,
+        security_id=SAMSUNG_ID,
+        intent=DISCLOSURE_SUMMARY,
+        sources=["disclosure"],
+        evidence=["disclosure"],
+        date_range=DateRange(
+            start=date(2024, 2, 1),
+            end=date(2024, 2, 29),
+        ),
+    )
 
 
 def test_session_date_fallback_is_used_only_without_period_cue_and_not_for_financial_term():

@@ -602,6 +602,75 @@ def test_mixed_sources_keep_input_order():
     ]
 
 
+def test_required_sources_prioritize_one_source_representative_then_fill():
+    items = [
+        evidence(1, source_type="news", score=1.0),
+        evidence(2, source_type="news", score=0.9),
+        evidence(1, source_type="disclosure", score=0.8),
+        evidence(1, source_type="research_report", score=0.7),
+        evidence(3, source_type="news", score=0.6),
+    ]
+
+    result = select_evidence_context(
+        items,
+        required_sources=[
+            "news",
+            "disclosure",
+            "research_report",
+        ],
+    )
+
+    assert [item.evidence_id for item in result.evidence] == [
+        items[0].evidence_id,
+        items[2].evidence_id,
+        items[3].evidence_id,
+        items[1].evidence_id,
+        items[4].evidence_id,
+    ]
+
+
+def test_required_sources_do_not_fabricate_absent_source() -> None:
+    items = [
+        evidence(1, source_type="news"),
+        evidence(1, source_type="disclosure"),
+    ]
+
+    result = select_evidence_context(
+        items,
+        required_sources=[
+            "news",
+            "disclosure",
+            "research_report",
+        ],
+    )
+
+    assert {item.source_type for item in result.evidence} == {
+        "news",
+        "disclosure",
+    }
+
+
+@pytest.mark.parametrize(
+    "required_sources",
+    [
+        "news",
+        ["news", "news"],
+        ["unsupported"],
+        ["news", 3],
+    ],
+)
+def test_required_source_priority_input_is_typed_and_sanitized(
+    required_sources,
+) -> None:
+    with pytest.raises(ContextBudgetValidationError) as exc_info:
+        select_evidence_context(
+            [evidence()],
+            required_sources=required_sources,
+        )
+
+    assert_sanitized(exc_info)
+
+
 def test_source_cap_precedes_count_cap_and_each_drop_has_one_stage():
     items = [
         evidence(1, source_type="news"),
