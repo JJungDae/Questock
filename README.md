@@ -101,9 +101,18 @@ docker compose down
 - `QUESTOCK_IMAGE_TAG`: immutable release SHA for release builds
 - `QUESTOCK_API_URL`: Streamlit chat endpoint
 - `QUESTOCK_UI_TIMEOUT_SECONDS`: UI request timeout
-- provider and LLM variable names remain documented for deferred work only
+- `QUESTOCK_LLM_MODE`: `disabled` or `gemini`
+- `QUESTOCK_REQUEST_PROTECTION_ENABLED`: application request limits
+- `QUESTOCK_RESPONSE_CACHE_ENABLED`: bounded 90-second response cache
 
-The recorded release requires no provider or LLM credential.
+The recorded fixed-generation mode requires no provider or LLM credential.
+Gemini mode requires an API credential in the API process only.
+
+The approved live-generation contract is `gemini/gemini-3.5-flash` with
+`LLM_THINKING_LEVEL=minimal`, `LLM_MAX_OUTPUT_TOKENS=1024`,
+`LLM_TIMEOUT_SECONDS=10`, and retry `0`. The legacy
+`LLM_THINKING_BUDGET` setting is rejected. One separately approved sanitized
+Gemini smoke passed; FSC-2 implementation remains pending Human Owner review.
 
 ## Verification
 

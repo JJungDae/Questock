@@ -5,7 +5,7 @@
 > Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
 > Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
 > B9 planning base: `b9ddf7461306d16cf1da14634ce458050d78f7bc`
-> 상태: `B9 PASS / M4 Gate PASS / FSC-1 PASS / complete; FSC-2 planning/preflight allowed`
+> 상태: `B9 PASS / M4 Gate PASS / FSC-1 PASS / complete; FSC-2 implemented / local verification PASS / Human Owner review pending`
 
 ## 1. 목적
 
@@ -69,7 +69,7 @@ B9
 First Service Completion
 
 현재 checkpoint:
-FSC-2 / SC-05 planning and preflight
+FSC-2 / SC-05 implementation review
 
 FSC 실행 결정:
 docs/agent_handoff/FIRST_SERVICE_COMPLETION_EXECUTION_DECISION_2026-07-27.md
@@ -82,6 +82,17 @@ PASS / complete - Human Owner confirmed 2026-07-27
 
 FSC-1:
 PASS / complete - SC-01~04 complete; Human Owner requested closure 2026-07-27
+
+FSC-1 backup:
+`c18dad90f293b50f3e258c37907bd6b79cac8e6b` pushed to
+`fsc/fsc-0-preflight`
+
+Current LLM contract:
+`gemini/gemini-3.5-flash`; `LLM_THINKING_LEVEL=minimal`;
+`LLM_MAX_OUTPUT_TOKENS=1024`; `LLM_TIMEOUT_SECONDS=10`; retry `0`;
+`litellm==1.84.1`; legacy `LLM_THINKING_BUDGET` rejected;
+local mock/compatibility verification PASS and one approved sanitized live
+Gemini smoke PASS
 
 SC-01 automatic result:
 initial broad canonical queries exhausted the 1,000-result ceiling before the
@@ -113,12 +124,21 @@ byte-identically; targeted 41 passed; full regression 1946 passed;
 GitHub CI and independent pytest rerun NOT_RUN
 
 FSC-2:
-planning/preflight ALLOWED; implementation BLOCKED pending Gemini
-quota/billing confirmation, approved sanitized generation smoke, and separate
-approval
+IMPLEMENTED / local verification PASS; Human Owner billing confirmation and
+one sanitized Gemini smoke PASS; Human Owner implementation review pending
+
+FSC-2 smoke:
+exactly one live call; status ok; model gemini/gemini-3.5-flash;
+structured parse PASS; usage present; finish reason stop; no raw payload,
+credential, provider error, or local path recorded
+
+FSC-2 verification:
+targeted 227 passed; affected integration 73 passed; full regression 1999
+passed; M3 Gate 34/34; Critical 17/17; public exposure 0; Ruff, compile,
+secret/local-path scan, and diff check PASS; GitHub CI/deploy NOT_RUN
 
 FSC-3:
-BLOCKED by bundle order
+BLOCKED until FSC-2 Human Owner result confirmation
 
 Service Completion Gate:
 NOT_RUN
@@ -133,7 +153,7 @@ B6 완료 SHA:
 60e6203b265a967a8b6ba45da2ba3128e1e1bcfe
 
 다음 공식 checkpoint:
-FSC-2 planning/preflight; implementation remains blocked by Gemini follow-up
+FSC-2 Human Owner implementation review; FSC-3 remains blocked
 
 B9 계획:
 docs/TASK_CARDS/B9-release-deployment-traceability.md

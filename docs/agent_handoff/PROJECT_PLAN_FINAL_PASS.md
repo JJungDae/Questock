@@ -1239,6 +1239,10 @@ M4 Gate 통과 후 `M5-01` activation check에서 market-session temporal filter
 - selected boundary:
   `langchain-core==1.5.1`의 실제 `RunnableSequence`와
   project-owned direct `litellm==1.83.7` adapter
+- migration note:
+  위 pin은 M3-00 구현 당시의 기록이다. 현재 runtime dependency와 모델
+  계약은 `LLM_STACK_DECISION.md`에 따라 `litellm==1.84.1`,
+  `gemini/gemini-3.5-flash`, `LLM_THINKING_LEVEL=minimal`로 대체됐다.
 - required artifact:
   - repository `uv.lock`
   - `tests/unit/test_m3_langchain_stack.py`

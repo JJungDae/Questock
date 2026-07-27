@@ -1,6 +1,7 @@
 # LLM_STACK_DECISION.md
 
 > 결정일: 2026-07-21
+> 현재 계약 개정일: 2026-07-27
 > 상태: P0 채택
 > 기본 사용 정책: Gemini API 무료 등급 우선 사용
 > 가용성 상태: credential 연결·AI Studio quota 확인·sanitized live smoke 전까지 미검증
@@ -18,7 +19,7 @@ AnswerComposer
 → project-owned validators
 ```
 
-- 기본 model: `gemini/gemini-2.5-flash`
+- 기본 model: `gemini/gemini-3.5-flash`
 - 사용 정책: Gemini API 무료 등급 우선 사용
 - 가용성: credential·활성 quota·live 호출 미검증
 - 자동 billing 연결 또는 유료 호출 전환: 금지
@@ -32,7 +33,7 @@ AnswerComposer
 
 - MVP 핵심은 provider→retrieval→Evidence→답변→검증 전체 흐름 완성이다.
 - LiteLLM을 adapter 내부에 한정하면 provider 교체 비용을 낮추면서 코어 구조를 바꾸지 않는다.
-- Gemini 2.5 Flash의 stable model ID를 고정해 preview·latest alias 변경 위험을 피한다.
+- Gemini 3.5 Flash의 exact model ID를 고정해 preview·latest alias 변경 위험을 피한다.
 - Gemini 환각은 유료 모델 선행 도입보다 Evidence 제한과 validator로 통제한다.
 - 무료 등급의 quota·rate limit은 운영 성능이 아니라 MVP 흐름 검증 조건으로 다룬다.
 
@@ -98,14 +99,17 @@ content_blocked
 M3 구현 전 다음 설정을 명시한다.
 
 ```text
-LLM_THINKING_BUDGET
+LLM_THINKING_LEVEL=minimal
 LLM_MAX_OUTPUT_TOKENS
 LLM_TIMEOUT_SECONDS
 ```
 
 - Gemini의 동적 thinking 기본값을 그대로 사용하지 않는다.
-- fixture에서 `thinking_budget=0`과 `1024`를 비교한다.
-- Critical set, 구조화 출력 안정성, full golden 기준과 p95 latency를 만족하는 가장 작은 값을 pin한다.
+- `LLM_THINKING_BUDGET`는 구 계약이며 설정에 존재하면 fail-closed한다.
+- `LLM_MAX_OUTPUT_TOKENS=1024`, `LLM_TIMEOUT_SECONDS=10`, retry `0`을
+  사용한다.
+- Gemini 3.5 요청에는 `reasoning_effort=minimal`만 전달하며 thinking
+  level과 budget을 함께 보내지 않는다.
 - 승인된 credential로 sanitized live smoke를 최소 1회 수행한다.
 - live smoke에서 실제 model ID, structured output 또는 JSON parse, timeout, usage 반환을 확인한다.
 - fixture 성공과 live API 성공을 별도로 기록한다.
@@ -123,7 +127,21 @@ LLM_TIMEOUT_SECONDS
 
 ## LiteLLM dependency 승인 기록
 
-### M3-00 LangChain composition boundary
+### Current Gemini 3.5 compatibility contract
+
+- Current direct runtime pin: `litellm==1.84.1`.
+- `1.84.0` has no `gemini/gemini-3.5-flash` model registration.
+- `1.84.1` is the first compared stable pin that contains both the exact model
+  metadata and `reasoning_effort=minimal` to `thinkingLevel=minimal` mapping.
+- The repository mock transport verifies the final Gemini request body without
+  making a live call.
+- No `drop_params`, undocumented `extra_body`, thinking omission, or Gemini
+  2.5 fallback is allowed.
+- The Human Owner supplied the prior local evidence that `litellm==1.83.7`
+  raises `UnsupportedParamsError` for the Gemini 3.5 minimal-thinking request.
+  That failing call was not repeated during this migration.
+
+### Historical M3-00 LangChain composition boundary
 
 - Selected architecture: LangChain Core `RunnableSequence` around the
   project-owned direct LiteLLM adapter boundary.
@@ -142,7 +160,7 @@ LLM_TIMEOUT_SECONDS
   callback logging, remote prompt, or live Gemini call is part of M3-00.
 - Deterministic dependency source: repository `uv.lock`.
 
-### M3-00 closure and M3-01 local implementation status
+### Historical M3-00 closure and M3-01 local implementation status
 
 - M3-00 implementation SHA:
   `a3cb8e6de5309bc68ac6856648d275883ec9407f`
@@ -163,7 +181,7 @@ LLM_TIMEOUT_SECONDS
 - 필요한 이유: Gemini 호출을 project-owned `LLMClient` 뒤에서 정규화하고 향후 adapter 교체 범위를 제한
 - 기존 dependency로 대체하기 어려운 이유: 현재 저장소에는 provider-neutral LLM 호출·예외 normalization 계층이 없음
 - license: 오픈소스 영역 MIT, enterprise 디렉터리는 별도 license이므로 P0에서 사용하지 않음
-- exact version: M3 compatibility smoke 후 선택하고 merge 전에 pin
+- current exact version: `1.84.1`
 - 배포 영향: transitive dependency, 이미지 크기, import/startup 시간을 M3에서 확인
 - 제거 방법: `LLMClient`는 유지하고 `litellm_client.py` adapter만 native SDK adapter로 교체
 - lock file: `pyproject.toml`과 lock file 변경을 별도 diff로 검토

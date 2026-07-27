@@ -434,7 +434,7 @@ class _DeterministicLLM:
         return create_llm_result(
             status=LLMStatus.OK,
             content=content,
-            model="gemini/gemini-2.5-flash",
+            model="gemini/gemini-3.5-flash",
             provider="gemini",
             usage={"total_tokens": 1},
             finish_reason="stop",

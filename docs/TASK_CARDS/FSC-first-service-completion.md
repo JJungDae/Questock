@@ -19,7 +19,7 @@
 - FSC-1:
   `PASS / complete - SC-01~04 complete; Human Owner requested closure 2026-07-27`
 - FSC-2:
-  `PLANNING/PREFLIGHT ALLOWED; implementation BLOCKED pending Gemini quota/billing confirmation, sanitized generation smoke, and approval`
+  `IMPLEMENTED / local verification PASS; Human Owner implementation review pending`
 - FSC-3:
   `BLOCKED by bundle order`
 - Service Completion Gate:
@@ -77,7 +77,7 @@ policy, citation, validation, safety, and public response contracts.
 |---|---|---|---|
 | `FSC-0` | `SC-00` | official flow, credential/API/source preflight | `PASS / complete` |
 | `FSC-1` | `SC-01~04` | 3-company source work and immutable snapshot runtime | `PASS / complete` |
-| `FSC-2` | `SC-05` | Gemini, model allowlist, request protection, session/cache | `PLANNING/PREFLIGHT ALLOWED` |
+| `FSC-2` | `SC-05` | Gemini, model allowlist, request protection, session/cache | `IMPLEMENTED / review pending` |
 | `FSC-3` | `SC-06~07` | UI, 3-company E2E, CI/GCE release | `BLOCKED` |
 
 Bundle order is strict. A later bundle does not start from this Task Card
@@ -148,6 +148,25 @@ Stop decision:
 - do not send `thinking_budget` with `thinking_level`
 - require Human Owner quota/billing confirmation and one separately approved
   sanitized generation rerun before FSC-2
+
+The bullets above record the FSC-0 decision at the time it was observed. The
+Human Owner later approved the repository-wide Gemini 3.5 contract migration.
+That migration does not rewrite the prior rate-limit result.
+
+Current normative contract:
+
+- model: `gemini/gemini-3.5-flash`
+- dependency: `litellm==1.84.1`, the smallest compared stable pin with the
+  exact 3.5 model registration and minimal thinking-level mapping
+- environment: `LLM_THINKING_LEVEL=minimal`,
+  `LLM_MAX_OUTPUT_TOKENS=1024`, `LLM_TIMEOUT_SECONDS=10`
+- adapter: `reasoning_effort=minimal`, retry `0`
+- prohibited: `LLM_THINKING_BUDGET`, simultaneous level/budget,
+  `drop_params`, undocumented `extra_body`, omitted thinking, or 2.5 fallback
+- compatibility verification: local mock transport PASS plus one separately
+  approved sanitized live Gemini smoke `PASS`; see section 13
+- prior 1.83.7 `UnsupportedParamsError`: Human Owner-supplied local evidence;
+  not reproduced in this migration
 
 ### 6.4 NAVER API HUB
 
@@ -270,7 +289,7 @@ Stop and report if:
 - copyrighted article/report body would be committed
 - public schema shape or trace version must change
 - M1/M2 freshness, coverage, Evidence, or policy contract must change
-- current LiteLLM requires a dependency update
+- a dependency update beyond approved `litellm==1.84.1` is required
 - a model other than approved Gemini 3.5 Flash is proposed automatically
 - secret, prompt, raw provider payload, raw IP, local path, or opaque client key
   would be exposed
@@ -746,9 +765,9 @@ FSC-1 status:
 - work log:
   `UPDATED - WORK_LOG_2026-07-27.md`
 - commit:
-  `NOT_RUN`
+  `c18dad90f293b50f3e258c37907bd6b79cac8e6b - FSC-1 backup`
 - push:
-  `NOT_RUN`
+  `complete - fsc/fsc-0-preflight`
 - PR:
   `NOT_RUN`
 - merge:
@@ -770,4 +789,96 @@ FSC-1 status:
 - FSC-2 planning/preflight:
   `ALLOWED`
 - FSC-2 implementation:
-  `BLOCKED pending Gemini quota/billing confirmation, approved sanitized generation smoke, and separate implementation approval`
+  `IMPLEMENTED / local verification PASS; Human Owner implementation review pending`
+- Gemini 3.5 contract migration commit/push:
+  `NOT_RUN`
+
+## 13. FSC-2 / SC-05 Implementation Result
+
+### 13.1 Approved sanitized Gemini smoke
+
+- Human Owner billing confirmation:
+  `CONFIRMED - Human Owner authorized the approved smoke after the billing and local runtime preparation check`
+- live generation calls in this step:
+  `exactly 1`
+- status:
+  `ok`
+- model:
+  `gemini/gemini-3.5-flash`
+- request contract:
+  `reasoning_effort=minimal`, provider `thinkingLevel=minimal`,
+  strict JSON schema, max output `1024`, timeout `10`, retry `0`
+- structured parse:
+  `PASS`
+- usage present:
+  `true`
+- finish reason:
+  `stop`
+- sanitized latency:
+  `1854.106 ms`
+- raw prompt, raw provider response, credential, provider error, local path:
+  `NOT_OUTPUT / NOT_RECORDED`
+- additional live Gemini calls:
+  `0`
+
+The smoke used only a short synthetic input through the actual `LLMConfig` and
+`LiteLLMClient` path. News, disclosure, research-report, session, and local
+source data were not transmitted.
+
+### 13.2 Implemented contract
+
+- runtime mode:
+  `QUESTOCK_LLM_MODE=disabled|gemini`; default `disabled`
+- request protection:
+  10 attempts per 5 minutes and 50 per KST day per client; global concurrency
+  2 and 100 attempts per KST day; bounded 1024 client buckets with 24-hour TTL
+- client identity:
+  canonical IP or session fallback is converted to an opaque HMAC-SHA256 key;
+  raw IP and raw identity are not sent to the API
+- session memory:
+  4 recent exchanges, 2,000 characters per user/assistant side, 16,000
+  characters per session, and at most 2 exchanges / 4,000 characters in LLM
+  context
+- response cache:
+  session-scoped 90-second TTL, global 256, per-session 4, resulting-revision
+  lookup, deep-copy return, and no duplicate quota/history/revision use on hit
+- browser transcript:
+  current-session entries are deep-copied and bounded to 4; a new session
+  clears the transcript, and transport remains inside explicit form submission
+- permission:
+  report content without exact external processing permission remains
+  fixed-only and consumes no Gemini admission
+- deployment contract:
+  `.env.runtime` is attached only to the API service; atomic mode-600 install
+  and one-generation environment rollback precede image/SHA rollback
+
+### 13.3 Local verification
+
+| Check | Result |
+|---|---|
+| FSC-2 targeted | `PASS - 227 passed, 2 warnings` |
+| affected integration | `PASS - 73 passed, 2 warnings` |
+| M3 Gate | `PASS - 34/34; Critical 17/17; public exposure 0` |
+| full regression | `PASS - 1999 passed, 2 warnings` |
+| Ruff | `PASS - All checks passed` |
+| compile | `PASS - exit 0` |
+| secret/local-path scan | `PASS - []` |
+| diff check | `PASS - no whitespace errors; line-ending warnings only` |
+| GitHub CI | `NOT_RUN` |
+| independent pytest rerun | `NOT_RUN` |
+| deploy/runtime secret install | `NOT_RUN` |
+
+The first affected-integration attempt was invalidated by a Windows temporary
+directory access error during pytest cleanup. The same test selection was
+rerun outside that sandbox interference and passed 73 tests.
+
+### 13.4 Current boundary
+
+- FSC-2 code status:
+  `IMPLEMENTED / local verification PASS`
+- Human Owner implementation review:
+  `PENDING`
+- FSC-3:
+  `BLOCKED until FSC-2 result confirmation`
+- current FSC-2 commit/push/PR/merge/deploy:
+  `NOT_RUN`

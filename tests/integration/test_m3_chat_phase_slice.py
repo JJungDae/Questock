@@ -99,7 +99,7 @@ class _LLM:
                 },
                 ensure_ascii=False,
             ),
-            model="gemini/gemini-2.5-flash",
+            model="gemini/gemini-3.5-flash",
             provider="gemini",
             latency_ms=1,
         )
@@ -144,7 +144,6 @@ def test_m3_chat_vertical_slice_composes_existing_m2_contracts() -> None:
     assert process.generation.model_dump() == {
         "mode": "llm",
         "llm_status": "ok",
-        "model": "gemini/gemini-2.5-flash",
+        "model": "gemini/gemini-3.5-flash",
         "live_verified": False,
     }
-

@@ -12,11 +12,12 @@ from app.llm.base import LLMMessage, LLMRequest, LLMStatus
 from app.llm.litellm_client import LiteLLMClient
 
 
-def _config(monkeypatch: pytest.MonkeyPatch, *, thinking: str = "0") -> LLMConfig:
+def _config(monkeypatch: pytest.MonkeyPatch) -> LLMConfig:
+    monkeypatch.delenv("LLM_THINKING_BUDGET", raising=False)
     monkeypatch.setenv("GEMINI_API_KEY", "-".join(("m3", "fixture", "key")))
-    monkeypatch.setenv("LLM_THINKING_BUDGET", thinking)
-    monkeypatch.setenv("LLM_MAX_OUTPUT_TOKENS", "256")
-    monkeypatch.setenv("LLM_TIMEOUT_SECONDS", "6")
+    monkeypatch.setenv("LLM_THINKING_LEVEL", "minimal")
+    monkeypatch.setenv("LLM_MAX_OUTPUT_TOKENS", "1024")
+    monkeypatch.setenv("LLM_TIMEOUT_SECONDS", "10")
     return LLMConfig.from_env(require_credential=True)
 
 
@@ -48,10 +49,8 @@ def _response(*, finish_reason: str = "stop") -> dict[str, Any]:
     }
 
 
-@pytest.mark.parametrize("thinking", ["0", "1024"])
 def test_adapter_maps_exact_options_and_normalizes_success(
     monkeypatch: pytest.MonkeyPatch,
-    thinking: str,
 ) -> None:
     calls: list[dict[str, Any]] = []
 
@@ -61,7 +60,7 @@ def test_adapter_maps_exact_options_and_normalizes_success(
 
     result = asyncio.run(
         LiteLLMClient(
-            _config(monkeypatch, thinking=thinking),
+            _config(monkeypatch),
             completion=completion,
             monotonic=iter((1.0, 1.012)).__next__,
         ).complete(_request(), timeout_seconds=4)
@@ -78,13 +77,14 @@ def test_adapter_maps_exact_options_and_normalizes_success(
     assert result.latency_ms == 12
     assert len(calls) == 1
     call = calls[0]
-    assert call["model"] == "gemini/gemini-2.5-flash"
+    assert call["model"] == "gemini/gemini-3.5-flash"
     assert call["timeout"] == 4
-    assert call["max_tokens"] == 256
-    assert call["thinking"] == {
-        "type": "enabled",
-        "budget_tokens": int(thinking),
-    }
+    assert call["max_tokens"] == 1024
+    assert call["reasoning_effort"] == "minimal"
+    assert "thinking" not in call
+    assert "thinking_budget" not in call
+    assert "drop_params" not in call
+    assert "extra_body" not in call
     assert call["num_retries"] == 0
     assert call["response_format"]["type"] == "json_schema"
     assert call["response_format"]["json_schema"]["strict"] is True

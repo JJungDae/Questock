@@ -75,10 +75,7 @@ class LiteLLMClient:
                         "strict": True,
                     },
                 },
-                thinking={
-                    "type": "enabled",
-                    "budget_tokens": self._config.thinking_budget,
-                },
+                reasoning_effort=self._config.thinking_level,
                 num_retries=0,
                 api_key=self._api_key,
             )

@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from functools import cache
 from typing import Literal
 
+from app.answer.composer import AnswerComposer
+from app.config import ConfigValidationError, LLMConfig
+from app.llm.litellm_client import LiteLLMClient
 from app.services.chat_service import ChatService
 from app.services.demo_source_gateway import (
     DemoCorpus,
@@ -24,11 +29,17 @@ from app.services.service_snapshot_gateway import (
     RecordedServiceSnapshotGateway,
 )
 from app.services.session_store import InMemorySessionStore
+from app.services.request_protection import RequestProtector
+from app.services.response_cache import ResponseCache
 from app.services.source_gateway import ExplicitUnconfiguredSourceGateway
 
 SourceMode = Literal["unconfigured", "recorded"]
+LLMMode = Literal["disabled", "gemini"]
 _SOURCE_MODE_ENV = "QUESTOCK_SOURCE_MODE"
 _SNAPSHOT_ID_ENV = "QUESTOCK_SNAPSHOT_ID"
+_LLM_MODE_ENV = "QUESTOCK_LLM_MODE"
+_REQUEST_PROTECTION_ENV = "QUESTOCK_REQUEST_PROTECTION_ENABLED"
+_RESPONSE_CACHE_ENV = "QUESTOCK_RESPONSE_CACHE_ENABLED"
 _RUNTIME_VERSION = "b9-recorded-v1"
 
 
@@ -40,6 +51,9 @@ class RuntimeConfigurationError(ValueError):
 class RuntimeConfig:
     source_mode: SourceMode
     snapshot_id: str | None = None
+    llm_mode: LLMMode = "disabled"
+    request_protection_enabled: bool = False
+    response_cache_enabled: bool = False
 
 
 @dataclass(frozen=True)
@@ -69,9 +83,28 @@ def load_runtime_config(
         mode != "recorded" or snapshot_id != SERVICE_SNAPSHOT_ID
     ):
         raise RuntimeConfigurationError("snapshot selection is invalid")
+    raw_llm_mode = values.get(_LLM_MODE_ENV)
+    llm_mode = (
+        "disabled"
+        if raw_llm_mode is None or not raw_llm_mode.strip()
+        else raw_llm_mode.strip().casefold()
+    )
+    if llm_mode not in {"disabled", "gemini"}:
+        raise RuntimeConfigurationError("LLM mode is invalid")
+    request_protection_enabled = _read_switch(
+        values,
+        _REQUEST_PROTECTION_ENV,
+    )
+    response_cache_enabled = _read_switch(
+        values,
+        _RESPONSE_CACHE_ENV,
+    )
     return RuntimeConfig(  # type: ignore[arg-type]
         source_mode=mode,
         snapshot_id=snapshot_id,
+        llm_mode=llm_mode,
+        request_protection_enabled=request_protection_enabled,
+        response_cache_enabled=response_cache_enabled,
     )
 
 
@@ -84,15 +117,16 @@ def build_runtime(
     canonical_config = config or load_runtime_config()
     if not isinstance(canonical_config, RuntimeConfig):
         raise RuntimeConfigurationError("runtime config is invalid")
+    _validate_runtime_config(canonical_config)
     if canonical_config.source_mode == "unconfigured":
         if canonical_config.snapshot_id is not None:
             raise RuntimeConfigurationError("snapshot selection is invalid")
         return RuntimeState(
             config=canonical_config,
-            chat_service=ChatService(
+            chat_service=_build_chat_service(
+                config=canonical_config,
                 source_gateway=ExplicitUnconfiguredSourceGateway(),
-                glossary_service=GlossaryService(),
-                session_store=InMemorySessionStore(),
+                snapshot_id="runtime-unconfigured",
             ),
             corpus=None,
         )
@@ -128,10 +162,12 @@ def build_runtime(
             "recorded runtime data is invalid"
         ) from None
     basis_at = corpus.basis_at
-    service = ChatService(
+    service = _build_chat_service(
+        config=canonical_config,
         source_gateway=gateway,
-        glossary_service=GlossaryService(),
-        session_store=InMemorySessionStore(),
+        snapshot_id=(
+            canonical_config.snapshot_id or "b9-recorded-demo"
+        ),
         utc_now=lambda: basis_at,
     )
     return RuntimeState(
@@ -139,6 +175,88 @@ def build_runtime(
         chat_service=service,
         corpus=corpus,
     )
+
+
+def _build_chat_service(
+    *,
+    config: RuntimeConfig,
+    source_gateway: object,
+    snapshot_id: str,
+    utc_now: Callable[[], object] | None = None,
+) -> ChatService:
+    composer = None
+    model_fingerprint = "disabled"
+    live_llm_enabled = False
+    if config.llm_mode == "gemini":
+        try:
+            llm_config = LLMConfig.from_env(require_credential=True)
+            composer = AnswerComposer(LiteLLMClient(llm_config))
+        except (ConfigValidationError, TypeError, ValueError):
+            raise RuntimeConfigurationError(
+                "LLM runtime configuration is invalid"
+            ) from None
+        model_fingerprint = hashlib.sha256(
+            json.dumps(
+                llm_config.safe_summary(),
+                ensure_ascii=True,
+                separators=(",", ":"),
+                sort_keys=True,
+            ).encode("utf-8")
+        ).hexdigest()
+        live_llm_enabled = True
+    try:
+        return ChatService(
+            source_gateway=source_gateway,  # type: ignore[arg-type]
+            composer=composer,
+            glossary_service=GlossaryService(),
+            session_store=InMemorySessionStore(),
+            request_protector=RequestProtector(
+                enabled=config.request_protection_enabled,
+            ),
+            response_cache=ResponseCache(
+                enabled=config.response_cache_enabled,
+            ),
+            utc_now=utc_now,  # type: ignore[arg-type]
+            snapshot_id=snapshot_id,
+            model_fingerprint=model_fingerprint,
+            live_llm_enabled=live_llm_enabled,
+        )
+    except (TypeError, ValueError):
+        raise RuntimeConfigurationError(
+            "runtime service configuration is invalid"
+        ) from None
+
+
+def _validate_runtime_config(config: RuntimeConfig) -> None:
+    if (
+        config.source_mode not in {"unconfigured", "recorded"}
+        or config.llm_mode not in {"disabled", "gemini"}
+        or type(config.request_protection_enabled) is not bool
+        or type(config.response_cache_enabled) is not bool
+        or (
+            config.snapshot_id is not None
+            and (
+                config.source_mode != "recorded"
+                or config.snapshot_id != SERVICE_SNAPSHOT_ID
+            )
+        )
+    ):
+        raise RuntimeConfigurationError("runtime config is invalid")
+
+
+def _read_switch(
+    values: Mapping[str, str],
+    name: str,
+) -> bool:
+    raw = values.get(name)
+    if raw is None or not raw.strip():
+        return False
+    canonical = raw.strip().casefold()
+    if canonical == "true":
+        return True
+    if canonical == "false":
+        return False
+    raise RuntimeConfigurationError("runtime switch is invalid")
 
 
 @cache

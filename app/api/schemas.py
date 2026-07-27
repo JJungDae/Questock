@@ -146,7 +146,7 @@ class PublicGenerationSummary(PublicModel):
         "invalid_response",
         "content_blocked",
     ] | None
-    model: Literal["gemini/gemini-2.5-flash"] | None
+    model: Literal["gemini/gemini-3.5-flash"] | None
     live_verified: bool
 
 

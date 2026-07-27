@@ -387,7 +387,7 @@ AnswerComposer
 
 확정값:
 
-- 기본 model: `gemini/gemini-2.5-flash`
+- 기본 model: `gemini/gemini-3.5-flash`
 - 사용 정책: Gemini API 무료 등급 우선
 - 가용성: credential·AI Studio quota·live smoke 전까지 미검증
 - 자동 billing·유료 fallback 금지
@@ -438,13 +438,15 @@ content_blocked
 실행 설정:
 
 ```text
-LLM_THINKING_BUDGET
+LLM_THINKING_LEVEL
 LLM_MAX_OUTPUT_TOKENS
 LLM_TIMEOUT_SECONDS
 ```
 
-- 동적 thinking 기본값을 사용하지 않는다.
-- 0과 1024를 비교해 Critical·full golden·p95 latency를 통과하는 가장 작은 값을 pin한다.
+- `LLM_THINKING_LEVEL=minimal`, `LLM_MAX_OUTPUT_TOKENS=1024`,
+  `LLM_TIMEOUT_SECONDS=10`, retry `0`을 사용한다.
+- 구 `LLM_THINKING_BUDGET` 설정은 거부하며 level과 budget을 함께
+  전송하지 않는다.
 - sanitized live smoke 전에는 Gemini live 연동 완료로 표시하지 않는다.
 
 환각 통제:
@@ -1143,7 +1145,7 @@ LangGraph가 없어도 이 흐름은 구현 가능해야 한다. 분기와 상�
 - Google Gemini API
 - LiteLLM Python SDK
 - `LLMClient` provider-neutral boundary
-- 기본 model `gemini/gemini-2.5-flash`
+- 기본 model `gemini/gemini-3.5-flash`
 - Gemini API 무료 등급 우선 사용, live smoke 전 가용성 미검증
 - 유료 모델 전환은 MVP 완성 이후 별도 승인
 - `GEMINI_API_KEY`

@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import secrets
+from dataclasses import dataclass
+from functools import cache
 from uuid import uuid4
 
 import streamlit as st
@@ -16,6 +19,7 @@ from app.ui.transport import (
     ChatTransport,
     ChatTransportError,
     HttpChatTransport,
+    build_opaque_client_key,
     load_ui_config,
 )
 
@@ -27,6 +31,15 @@ _SECURITY_CHOICES = (
 )
 _INPUT_FAILURE = "질문을 한 글자 이상 입력해 주세요."
 _PROJECTION_FAILURE = "응답을 화면에 표시할 수 없습니다."
+
+
+_MAX_UI_TRANSCRIPT_ENTRIES = 4
+
+
+@dataclass(frozen=True)
+class _UITranscriptEntry:
+    question: str
+    response: ChatResponse
 
 
 def run(transport: ChatTransport | None = None) -> None:
@@ -49,6 +62,7 @@ def run(transport: ChatTransport | None = None) -> None:
         st.session_state.session_id = _new_session_id()
         st.session_state.response = None
         st.session_state.question = ""
+        st.session_state.transcript = ()
 
     if (
         selected_security != _SECURITY_CHOICES[0]
@@ -78,12 +92,20 @@ def run(transport: ChatTransport | None = None) -> None:
             st.error(_INPUT_FAILURE)
         else:
             try:
-                active_transport = transport or _default_transport()
+                active_transport = transport or _default_transport(
+                    st.session_state.session_id
+                )
                 with st.spinner("답변을 확인하고 있습니다."):
-                    st.session_state.response = active_transport.send(
+                    response = active_transport.send(
                         request,
                         _transport_timeout(transport),
                     )
+                st.session_state.response = response
+                st.session_state.transcript = _append_transcript(
+                    st.session_state.transcript,
+                    question=request.message,
+                    response=response,
+                )
             except ChatTransportError as exc:
                 st.session_state.response = None
                 st.error(str(exc))
@@ -91,6 +113,13 @@ def run(transport: ChatTransport | None = None) -> None:
     response = st.session_state.response
     if isinstance(response, ChatResponse):
         _render_sidebar_status(response)
+    transcript = st.session_state.transcript
+    if isinstance(transcript, tuple) and transcript:
+        try:
+            _render_transcript(transcript)
+        except ProjectionError:
+            st.error(_PROJECTION_FAILURE)
+    elif isinstance(response, ChatResponse):
         try:
             _render_response(response)
         except ProjectionError:
@@ -104,15 +133,64 @@ def _initialize_state() -> None:
         st.session_state.response = None
     if "question" not in st.session_state:
         st.session_state.question = ""
+    if "transcript" not in st.session_state:
+        st.session_state.transcript = ()
+
+
+def _append_transcript(
+    entries: object,
+    *,
+    question: str,
+    response: ChatResponse,
+) -> tuple[_UITranscriptEntry, ...]:
+    canonical_entries = (
+        entries
+        if isinstance(entries, tuple)
+        and all(isinstance(item, _UITranscriptEntry) for item in entries)
+        else ()
+    )
+    updated = (
+        *canonical_entries,
+        _UITranscriptEntry(
+            question=question,
+            response=response.model_copy(deep=True),
+        ),
+    )
+    return updated[-_MAX_UI_TRANSCRIPT_ENTRIES:]
+
+
+def _render_transcript(entries: tuple[_UITranscriptEntry, ...]) -> None:
+    for entry in entries:
+        with st.chat_message("user"):
+            st.text(entry.question)
+        with st.chat_message("assistant"):
+            _render_response(entry.response)
 
 
 def _new_session_id() -> str:
     return f"anonymous-{uuid4()}"
 
 
-def _default_transport() -> HttpChatTransport:
+def _default_transport(session_id: str) -> HttpChatTransport:
     config = load_ui_config()
-    return HttpChatTransport(config.endpoint)
+    try:
+        ip_address_value = st.context.ip_address
+    except Exception:
+        ip_address_value = None
+    client_key = build_opaque_client_key(
+        ip_address_value=ip_address_value,
+        session_id=session_id,
+        secret=_client_hmac_secret(),
+    )
+    return HttpChatTransport(
+        config.endpoint,
+        client_key=client_key,
+    )
+
+
+@cache
+def _client_hmac_secret() -> bytes:
+    return secrets.token_bytes(32)
 
 
 def _transport_timeout(transport: ChatTransport | None) -> float:

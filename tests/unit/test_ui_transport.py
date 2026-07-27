@@ -15,6 +15,7 @@ from app.ui.transport import (
     MAX_CHAT_RESPONSE_BYTES,
     ChatTransportError,
     HttpChatTransport,
+    build_opaque_client_key,
     load_ui_config,
 )
 
@@ -107,6 +108,74 @@ def test_transport_success_and_exact_request_contract() -> None:
         "message": "삼성전자 최근 뉴스",
         "session_id": "ui-unit",
     }
+
+
+def test_transport_sends_only_opaque_client_key_in_internal_header() -> None:
+    secret = b"s" * 32
+    client_key = build_opaque_client_key(
+        ip_address_value="2001:0db8:0:0:0:0:0:1",
+        session_id="ui-unit",
+        secret=secret,
+    )
+    opener = FakeOpener(FakeResponse(_valid_body()))
+
+    result = HttpChatTransport(
+        opener=opener,
+        client_key=client_key,
+    ).send(_chat_request(), 1.5)
+
+    assert result.status in {
+        "complete",
+        "partial",
+        "provider_failed",
+        "no_evidence",
+        "blocked",
+    }
+    assert opener.request.get_header("X-questock-client-key") == client_key
+    assert json.loads(opener.request.data.decode("utf-8")) == (
+        _chat_request().model_dump(mode="json")
+    )
+    assert "2001:db8::1" not in client_key
+    assert "ui-unit" not in client_key
+    assert secret.decode("ascii") not in client_key
+
+
+def test_client_key_canonicalizes_ip_and_falls_back_to_session() -> None:
+    secret = b"k" * 32
+
+    expanded = build_opaque_client_key(
+        ip_address_value="2001:0db8:0:0:0:0:0:1",
+        session_id="session-a",
+        secret=secret,
+    )
+    compressed = build_opaque_client_key(
+        ip_address_value="2001:db8::1",
+        session_id="session-b",
+        secret=secret,
+    )
+    invalid_ip = build_opaque_client_key(
+        ip_address_value="not-an-ip",
+        session_id="session-a",
+        secret=secret,
+    )
+    missing_ip = build_opaque_client_key(
+        ip_address_value=None,
+        session_id="session-a",
+        secret=secret,
+    )
+
+    assert expanded == compressed
+    assert invalid_ip == missing_ip
+    assert len(expanded) == 64
+    assert set(expanded) <= set("0123456789abcdef")
+
+
+@pytest.mark.parametrize("client_key", ["raw-ip", "A" * 64, "0" * 63])
+def test_invalid_transport_client_key_is_sanitized(client_key: str) -> None:
+    with pytest.raises(ChatTransportError) as error:
+        HttpChatTransport(client_key=client_key)
+
+    assert client_key not in str(error.value)
 
 
 def test_response_exactly_at_cap_is_not_rejected_as_oversized() -> None:

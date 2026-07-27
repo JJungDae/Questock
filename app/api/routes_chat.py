@@ -1,10 +1,13 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Header, HTTPException
 
 from app.api.schemas import ChatRequest, ChatResponse
 from app.runtime import get_chat_service as get_runtime_chat_service
 from app.services.chat_service import ChatService, ChatServiceError
+from app.services.request_protection import CLIENT_KEY_HEADER
 
 chat_router = APIRouter()
 
@@ -17,9 +20,13 @@ def get_chat_service() -> ChatService:
 async def chat(
     request: ChatRequest,
     service: ChatService = Depends(get_chat_service),
+    client_key: Annotated[
+        str | None,
+        Header(alias=CLIENT_KEY_HEADER),
+    ] = None,
 ) -> ChatResponse:
     try:
-        return await service.chat(request)
+        return await service.chat(request, client_key=client_key)
     except ChatServiceError:
         raise HTTPException(
             status_code=503,

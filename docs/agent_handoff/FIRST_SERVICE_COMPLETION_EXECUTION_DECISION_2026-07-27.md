@@ -3,7 +3,7 @@
 > 결정일: `2026-07-27`
 > 기준 branch: `main`
 > 계획 기준 SHA: `da03a6fb3be5c985cef7d5d1f0523827340fe088`
-> 상태: `ACTIVE - FSC-0 and FSC-1 PASS / complete; FSC-2 planning/preflight allowed and implementation blocked by Gemini follow-up`
+> 상태: `ACTIVE - FSC-0 and FSC-1 PASS / complete; FSC-2 implemented with local verification PASS and Human Owner review pending`
 
 ## 1. 문서 효력
 
@@ -65,7 +65,7 @@ current official bundle:
 First Service Completion
 
 current checkpoint:
-FSC-2 / SC-05 planning and preflight
+FSC-2 / SC-05 implementation review
 
 Service Completion Gate:
 NOT_RUN
@@ -136,6 +136,27 @@ Stop decision:
 - `thinking_budget`와 `thinking_level`을 함께 보내지 않는다.
 - FSC-2 전 Human Owner가 quota/billing 상태를 확인하고 승인한 sanitized
   generation smoke 1회로 실제 structured output과 thinking 전달을 확인한다.
+
+위 항목은 FSC-0 당시의 관측·중단 결정을 보존한다. 이후 Human Owner가
+Gemini 3.5 계약 전체 교체와 필요한 최소 호환 dependency 갱신을 승인했다.
+현재 효력이 있는 계약은 다음과 같다.
+
+- `gemini/gemini-3.5-flash`
+- `litellm==1.84.1`
+- `LLM_THINKING_LEVEL=minimal`
+- `LLM_MAX_OUTPUT_TOKENS=1024`
+- `LLM_TIMEOUT_SECONDS=10`
+- retry `0`
+- adapter 전달값 `reasoning_effort=minimal`
+- `LLM_THINKING_BUDGET`, level/budget 동시 전송, `drop_params`,
+  undocumented `extra_body`, thinking 생략, 2.5 fallback 금지
+
+Human Owner가 제공한 로컬 evidence에 따르면 기존 `litellm==1.83.7`은
+해당 3.5 minimal-thinking 요청에서 `UnsupportedParamsError`를 냈다. 이번
+교체에서는 그 실패 요청을 재실행하지 않았다. `1.84.0`에는 3.5 모델 등록이
+없고 `1.84.1`에는 exact model metadata와 minimal thinking-level mapping이
+함께 있음을 확인했다. local mock transport 검증 뒤 Human Owner가 승인한
+sanitized Gemini live smoke를 정확히 1회 실행했고 결과는 `PASS`였다.
 
 ### 5.4 NAVER API HUB
 
@@ -374,7 +395,7 @@ FSC-1:
 `PASS / complete - SC-01~04 complete`
 
 FSC-2/FSC-3 구현:
-`FSC-2 planning/preflight ALLOWED; FSC-2 implementation BLOCKED pending Gemini quota/billing confirmation, approved sanitized generation smoke, and separate approval; FSC-3 BLOCKED by bundle order`
+`FSC-2 IMPLEMENTED / local verification PASS / Human Owner review pending; FSC-3 BLOCKED until FSC-2 result confirmation`
 
 ## 7. 변경 제한
 
@@ -390,3 +411,51 @@ FSC-0에서는 다음을 변경하지 않는다.
 
 work log는 Human Owner가 FSC-0 결과를 확인한 뒤 실제 작업일 파일에만
 기록한다.
+
+## 8. FSC-2 / SC-05 실행 결과
+
+- Human Owner billing confirmation:
+  `CONFIRMED - approved smoke authorized after billing and runtime preparation`
+- sanitized Gemini smoke:
+  `PASS - exactly one live call`
+- safe result:
+  `status=ok`, `model=gemini/gemini-3.5-flash`,
+  `structured_parse_ok=true`, `usage_present=true`, `finish_reason=stop`,
+  `latency_ms=1854.106`
+- request contract:
+  strict JSON schema, `reasoning_effort=minimal`,
+  provider `thinkingLevel=minimal`, max output `1024`, timeout `10`, retry `0`
+- prohibited payloads:
+  no news, disclosure, research-report, session, credential, or local-path data
+- raw prompt/provider response/error:
+  `NOT_OUTPUT / NOT_RECORDED`
+- additional live calls:
+  `0`
+
+FSC-2 implements disabled/gemini runtime selection, bounded request
+protection, bounded recent anonymous exchanges, a 90-second session response
+cache, a browser-local current-session transcript bounded to 4 entries, opaque
+client identity, and API-only atomic secret deployment with environment-first
+rollback. Report content without exact external processing permission remains
+fixed-only.
+
+Local verification:
+
+- targeted: `227 passed, 2 warnings`
+- affected integration: `73 passed, 2 warnings`
+- full regression: `1999 passed, 2 warnings`
+- M3 Gate: `34/34`; Critical `17/17`; public exposure `0`
+- Ruff: `PASS`
+- compile: `PASS`
+- secret/local-path scan: `PASS - []`
+- diff check: `PASS`
+- GitHub CI: `NOT_RUN`
+- independent pytest rerun: `NOT_RUN`
+- deploy: `NOT_RUN`
+
+Current boundary:
+
+- FSC-2: `IMPLEMENTED / local verification PASS`
+- Human Owner implementation review: `PENDING`
+- FSC-3: `BLOCKED until FSC-2 result confirmation`
+- commit/push/PR/merge/deploy: `NOT_RUN`

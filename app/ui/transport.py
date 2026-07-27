@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import hashlib
+import hmac
+import ipaddress
 import json
 import math
 import os
+import re
 from dataclasses import dataclass
 from email.message import Message
 from typing import Any, Callable, Mapping, Protocol
@@ -18,10 +22,12 @@ from urllib.request import (
 from pydantic import ValidationError
 
 from app.api.schemas import ChatRequest, ChatResponse
+from app.services.request_protection import CLIENT_KEY_HEADER
 
 DEFAULT_CHAT_ENDPOINT = "http://127.0.0.1:8000/api/chat"
 DEFAULT_UI_TIMEOUT_SECONDS = 21.0
 MAX_CHAT_RESPONSE_BYTES = 1_048_576
+_CLIENT_KEY = re.compile(r"^[0-9a-f]{64}$")
 
 _CONFIGURATION_FAILURE = "UI 연결 설정을 확인할 수 없습니다."
 _REQUEST_FAILURE = "요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요."
@@ -69,12 +75,16 @@ class HttpChatTransport:
         endpoint: str = DEFAULT_CHAT_ENDPOINT,
         *,
         opener: OpenerDirector | Any | None = None,
+        client_key: str | None = None,
     ) -> None:
         try:
             self._endpoint = _validate_endpoint(endpoint).geturl()
         except (TypeError, ValueError):
             raise ChatTransportError(_CONFIGURATION_FAILURE) from None
         self._opener = opener or build_opener(_NoRedirectHandler())
+        if client_key is not None and not _CLIENT_KEY.fullmatch(client_key):
+            raise ChatTransportError(_CONFIGURATION_FAILURE)
+        self._client_key = client_key
 
     def send(
         self,
@@ -90,13 +100,16 @@ class HttpChatTransport:
             ensure_ascii=False,
             separators=(",", ":"),
         ).encode("utf-8")
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json; charset=utf-8",
+        }
+        if self._client_key is not None:
+            headers[CLIENT_KEY_HEADER] = self._client_key
         http_request = Request(
             self._endpoint,
             data=payload,
-            headers={
-                "Accept": "application/json",
-                "Content-Type": "application/json; charset=utf-8",
-            },
+            headers=headers,
             method="POST",
         )
 
@@ -137,6 +150,37 @@ def load_ui_config(
         return UIConfig(endpoint=endpoint, timeout_seconds=timeout)
     except (TypeError, ValueError):
         raise ChatTransportError(_CONFIGURATION_FAILURE) from None
+
+
+def build_opaque_client_key(
+    *,
+    ip_address_value: object,
+    session_id: str,
+    secret: bytes,
+) -> str:
+    if (
+        not isinstance(session_id, str)
+        or not session_id
+        or len(session_id) > 128
+        or not isinstance(secret, bytes)
+        or len(secret) < 32
+    ):
+        raise ChatTransportError(_CONFIGURATION_FAILURE)
+    identity = f"session:{session_id}"
+    if isinstance(ip_address_value, str) and ip_address_value.strip():
+        try:
+            canonical_ip = ipaddress.ip_address(
+                ip_address_value.strip()
+            ).compressed
+        except ValueError:
+            canonical_ip = None
+        if canonical_ip is not None:
+            identity = f"ip:{canonical_ip}"
+    return hmac.new(
+        secret,
+        identity.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
 
 
 def _validate_endpoint(endpoint: str) -> SplitResult:
@@ -234,5 +278,6 @@ __all__ = [
     "HttpChatTransport",
     "MAX_CHAT_RESPONSE_BYTES",
     "UIConfig",
+    "build_opaque_client_key",
     "load_ui_config",
 ]

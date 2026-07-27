@@ -37,7 +37,8 @@ jobs:
           chmod 600 "$HOME/.ssh/questock_key"
           ssh-keyscan -H "$GCE_HOST" > "$HOME/.ssh/known_hosts"
 
-      - name: Deploy and verify exact recorded release
+      - name: Capture exact rollback target
+        id: rollback_target
         env:
           GCE_HOST: ${{ secrets.GCE_HOST }}
           GCE_USER: ${{ secrets.GCE_USER }}
@@ -80,6 +81,67 @@ jobs:
           if [ "$previous_image_id" != "NONE" ]; then
             [[ "$previous_image_id" =~ ^sha256:[0-9a-f]{64}$ ]]
           fi
+          printf 'previous_sha=%s\n' "$previous_sha" >> "$GITHUB_OUTPUT"
+          printf 'previous_image_id=%s\n' "$previous_image_id" >> "$GITHUB_OUTPUT"
+
+      - name: Install API runtime environment
+        env:
+          GCE_HOST: ${{ secrets.GCE_HOST }}
+          GCE_USER: ${{ secrets.GCE_USER }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$GEMINI_API_KEY"
+          [[ "$GEMINI_API_KEY" =~ ^[A-Za-z0-9_-]{20,256}$ ]]
+          {
+            printf 'GEMINI_API_KEY=%s\n' "$GEMINI_API_KEY"
+            printf '%s\n' \
+              'QUESTOCK_SOURCE_MODE=recorded' \
+              'QUESTOCK_SNAPSHOT_ID=svc-20260724-1402' \
+              'QUESTOCK_LLM_MODE=gemini' \
+              'QUESTOCK_REQUEST_PROTECTION_ENABLED=true' \
+              'QUESTOCK_RESPONSE_CACHE_ENABLED=true' \
+              'LLM_MODEL=gemini/gemini-3.5-flash' \
+              'LLM_THINKING_LEVEL=minimal' \
+              'LLM_TIMEOUT_SECONDS=10' \
+              'LLM_MAX_OUTPUT_TOKENS=1024'
+          } | ssh -i "$HOME/.ssh/questock_key" \
+            "$GCE_USER@$GCE_HOST" '
+              set -euo pipefail
+              cd "$HOME/Questock"
+              umask 077
+              cleanup_runtime_next() {
+                rm -f .env.runtime.next .env.runtime.rollback.next
+              }
+              trap cleanup_runtime_next EXIT
+              if [ -f .env.runtime ]; then
+                cp .env.runtime .env.runtime.rollback.next
+                chmod 600 .env.runtime.rollback.next
+                mv -f .env.runtime.rollback.next .env.runtime.rollback
+              else
+                rm -f .env.runtime.rollback .env.runtime.rollback.next
+              fi
+              cat > .env.runtime.next
+              chmod 600 .env.runtime.next
+              mv -f .env.runtime.next .env.runtime
+              trap - EXIT
+            '
+
+      - name: Deploy and verify exact recorded release
+        env:
+          GCE_HOST: ${{ secrets.GCE_HOST }}
+          GCE_USER: ${{ secrets.GCE_USER }}
+          RELEASE_SHA: ${{ inputs.release_sha }}
+          PREVIOUS_SHA: ${{ steps.rollback_target.outputs.previous_sha }}
+          PREVIOUS_IMAGE_ID: ${{ steps.rollback_target.outputs.previous_image_id }}
+        run: |
+          set -euo pipefail
+          previous_sha="$PREVIOUS_SHA"
+          previous_image_id="$PREVIOUS_IMAGE_ID"
+          [[ "$previous_sha" =~ ^[0-9a-f]{40}$ ]]
+          if [ "$previous_image_id" != "NONE" ]; then
+            [[ "$previous_image_id" =~ ^sha256:[0-9a-f]{64}$ ]]
+          fi
 
           rollback_release() {
             ssh -i "$HOME/.ssh/questock_key" \
@@ -90,6 +152,14 @@ jobs:
           previous_image_id="$2"
           repo_dir="$HOME/Questock"
           cd "$repo_dir"
+
+          if [ -f .env.runtime.rollback ]; then
+            cp .env.runtime.rollback .env.runtime.next
+            chmod 600 .env.runtime.next
+            mv -f .env.runtime.next .env.runtime
+          else
+            rm -f .env.runtime .env.runtime.next
+          fi
 
           if [ "$previous_image_id" != "NONE" ] \
             && docker image inspect "$previous_image_id" >/dev/null 2>&1; then
