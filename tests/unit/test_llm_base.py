@@ -33,7 +33,7 @@ def test_every_llm_result_json_round_trip(status: LLMStatus) -> None:
     result = create_llm_result(
         status=status,
         content='{"claims":[]}' if status == LLMStatus.OK else None,
-        model="gemini/gemini-2.5-flash",
+        model="gemini/gemini-3.5-flash",
         provider="gemini",
         usage={"total_tokens": 3} if status == LLMStatus.OK else {},
         finish_reason="stop" if status == LLMStatus.OK else None,
@@ -51,7 +51,7 @@ def test_result_factory_deep_copies_usage() -> None:
     result = create_llm_result(
         status=LLMStatus.OK,
         content="{}",
-        model="gemini/gemini-2.5-flash",
+        model="gemini/gemini-3.5-flash",
         provider="gemini",
         usage=usage,
         latency_ms=0,
@@ -68,7 +68,7 @@ def test_invalid_usage_is_rejected(value: object) -> None:
         create_llm_result(
             status=LLMStatus.OK,
             content="{}",
-            model="gemini/gemini-2.5-flash",
+            model="gemini/gemini-3.5-flash",
             provider="gemini",
             usage={"total_tokens": value},  # type: ignore[dict-item]
             latency_ms=0,
@@ -79,7 +79,7 @@ def test_status_invariants_reject_missing_or_failed_content() -> None:
     with pytest.raises(LLMValidationError):
         create_llm_result(
             status=LLMStatus.OK,
-            model="gemini/gemini-2.5-flash",
+            model="gemini/gemini-3.5-flash",
             provider="gemini",
             latency_ms=0,
         )
@@ -87,7 +87,7 @@ def test_status_invariants_reject_missing_or_failed_content() -> None:
         create_llm_result(
             status=LLMStatus.TIMEOUT,
             content="raw response",
-            model="gemini/gemini-2.5-flash",
+            model="gemini/gemini-3.5-flash",
             provider="gemini",
             latency_ms=0,
         )

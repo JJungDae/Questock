@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import copy
 import math
 import re
 import time
@@ -14,8 +15,30 @@ from app.core.models import SessionContext
 
 MAX_SESSIONS = 256
 SESSION_TTL_SECONDS = 1800.0
+MAX_RECENT_EXCHANGES = 4
+MAX_EXCHANGE_USER_CHARS = 2000
+MAX_EXCHANGE_ASSISTANT_CHARS = 2000
+MAX_SESSION_CONVERSATION_CHARS = 16_000
+MAX_LLM_CONTEXT_EXCHANGES = 2
+MAX_LLM_CONTEXT_CHARS = 4000
 
 _CONTROL_CHARACTER = re.compile(r"[\x00-\x1f\x7f]")
+_TEXT_CONTROL_CHARACTER = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+_WINDOWS_PATH = re.compile(r"(?<![A-Za-z0-9_])[A-Za-z]:[\\/]")
+_UNC_PATH = re.compile(r"(?:\\\\|//)[^\\/\s]+[\\/][^\\/\s]+")
+_POSIX_PRIVATE_PATH = re.compile(
+    r"(?:^|[\s\"'()=\[\]{},;])/"
+    r"(?:root|opt|workspace|home|Users|etc|var|tmp|mnt|srv|usr|app|media|custom)"
+    r"(?:/|$)"
+)
+_CREDENTIAL_VALUE = re.compile(
+    r"(?i)(?:api[-_]?key|client[-_]?secret|access[-_]?token|"
+    r"authorization|credential)\s*[:=]\s*\S+"
+)
+_SAFE_IDENTIFIER = re.compile(r"^[A-Za-z0-9._:/-]{1,256}$")
+_SECURITY_IDS = frozenset(
+    {"KRX:005930", "KRX:000660", "KRX:005380"}
+)
 _INTENTS = frozenset(
     {
         "recent_issue",
@@ -26,7 +49,13 @@ _INTENTS = frozenset(
         "multi_source_summary",
     }
 )
+_EXCHANGE_INTENTS = _INTENTS | frozenset(
+    {"prohibited_advice", "out_of_scope"}
+)
 _SOURCES = frozenset({"news", "disclosure", "research_report", "glossary"})
+_RESPONSE_STATUSES = frozenset(
+    {"complete", "partial", "provider_failed", "no_evidence", "blocked"}
+)
 _INVALID_STORE = "session store is unavailable"
 
 
@@ -37,9 +66,30 @@ class SessionStoreError(RuntimeError):
 @dataclass
 class _SessionEntry:
     context: SessionContext
+    recent_exchanges: tuple["SessionExchange", ...]
+    revision: int
     last_access: float
     lock: asyncio.Lock
     users: int = 0
+
+
+@dataclass(frozen=True)
+class SessionExchange:
+    user_question: str
+    assistant_public_text: str
+    status: str
+    security_id: str | None
+    intent: str
+    selected_evidence_ids: tuple[str, ...]
+    snapshot_id: str
+    revision: int
+
+
+@dataclass(frozen=True)
+class SessionState:
+    context: SessionContext
+    recent_exchanges: tuple[SessionExchange, ...]
+    revision: int
 
 
 class InMemorySessionStore:
@@ -83,6 +133,8 @@ class InMemorySessionStore:
             now = self._now()
             if now - entry.last_access >= self._ttl_seconds:
                 entry.context = SessionContext()
+                entry.recent_exchanges = ()
+                entry.revision = 0
             entry.last_access = now
             yield
         finally:
@@ -112,6 +164,110 @@ class InMemorySessionStore:
         entry.context = canonical
         entry.last_access = now
 
+    def state(self, session_id: str) -> SessionState | None:
+        key = _session_id(session_id)
+        now = self._now()
+        self._purge_expired(now)
+        entry = self._entries.get(key)
+        if entry is None:
+            return None
+        entry.last_access = now
+        return SessionState(
+            context=_canonical_context(entry.context),
+            recent_exchanges=tuple(
+                copy.deepcopy(item) for item in entry.recent_exchanges
+            ),
+            revision=entry.revision,
+        )
+
+    def revision(self, session_id: str) -> int:
+        state = self.state(session_id)
+        return 0 if state is None else state.revision
+
+    def append_exchange(
+        self,
+        session_id: str,
+        *,
+        user_question: str,
+        assistant_public_text: str,
+        status: str,
+        security_id: str | None,
+        intent: str,
+        selected_evidence_ids: tuple[str, ...],
+        snapshot_id: str,
+    ) -> int:
+        key = _session_id(session_id)
+        now = self._now()
+        self._purge_expired(now)
+        entry = self._entries.get(key)
+        if entry is None:
+            entry = self._new_entry(key, now)
+        revision = entry.revision + 1
+        exchange = _canonical_exchange(
+            SessionExchange(
+                user_question=user_question,
+                assistant_public_text=assistant_public_text,
+                status=status,
+                security_id=security_id,
+                intent=intent,
+                selected_evidence_ids=selected_evidence_ids,
+                snapshot_id=snapshot_id,
+                revision=revision,
+            )
+        )
+        recent = (*entry.recent_exchanges, exchange)[
+            -MAX_RECENT_EXCHANGES:
+        ]
+        if (
+            sum(
+                len(item.user_question)
+                + len(item.assistant_public_text)
+                for item in recent
+            )
+            > MAX_SESSION_CONVERSATION_CHARS
+        ):
+            raise SessionStoreError(_INVALID_STORE)
+        entry.recent_exchanges = recent
+        entry.revision = revision
+        entry.last_access = now
+        return revision
+
+    def conversation_context(
+        self,
+        session_id: str,
+        *,
+        max_exchanges: int = MAX_LLM_CONTEXT_EXCHANGES,
+        max_chars: int = MAX_LLM_CONTEXT_CHARS,
+    ) -> str:
+        if (
+            type(max_exchanges) is not int
+            or not 1 <= max_exchanges <= MAX_LLM_CONTEXT_EXCHANGES
+            or type(max_chars) is not int
+            or not 1 <= max_chars <= MAX_LLM_CONTEXT_CHARS
+        ):
+            raise SessionStoreError(_INVALID_STORE)
+        state = self.state(session_id)
+        if state is None:
+            return ""
+        selected: list[str] = []
+        remaining = max_chars
+        for exchange in reversed(state.recent_exchanges):
+            block = (
+                f"User: {exchange.user_question}\n"
+                f"Assistant: {exchange.assistant_public_text}"
+            )
+            if len(block) > remaining:
+                if not selected and remaining > 0:
+                    selected.append(block[:remaining])
+                    remaining = 0
+                break
+            selected.append(block)
+            remaining -= len(block)
+            if len(selected) >= max_exchanges:
+                break
+        selected.reverse()
+        return "\n\n".join(selected)
+
     def _entry_for_request(self, key: str) -> _SessionEntry:
         now = self._now()
         self._purge_expired(now)
@@ -133,6 +289,8 @@ class InMemorySessionStore:
             del self._entries[evicted_id]
         entry = _SessionEntry(
             context=SessionContext(),
+            recent_exchanges=(),
+            revision=0,
             last_access=now,
             lock=asyncio.Lock(),
         )
@@ -207,9 +365,66 @@ def _canonical_context(value: object) -> SessionContext:
     return canonical.model_copy(deep=True)
 
 
+def _canonical_exchange(value: object) -> SessionExchange:
+    if not isinstance(value, SessionExchange):
+        raise SessionStoreError(_INVALID_STORE)
+    if (
+        not _memory_text(
+            value.user_question,
+            max_chars=MAX_EXCHANGE_USER_CHARS,
+        )
+        or not _memory_text(
+            value.assistant_public_text,
+            max_chars=MAX_EXCHANGE_ASSISTANT_CHARS,
+        )
+        or value.status not in _RESPONSE_STATUSES
+        or (
+            value.security_id is not None
+            and value.security_id not in _SECURITY_IDS
+        )
+        or value.intent not in _EXCHANGE_INTENTS
+        or not isinstance(value.selected_evidence_ids, tuple)
+        or len(value.selected_evidence_ids) > 6
+        or any(
+            not isinstance(item, str)
+            or not _SAFE_IDENTIFIER.fullmatch(item)
+            for item in value.selected_evidence_ids
+        )
+        or len(value.selected_evidence_ids)
+        != len(set(value.selected_evidence_ids))
+        or not isinstance(value.snapshot_id, str)
+        or not _SAFE_IDENTIFIER.fullmatch(value.snapshot_id)
+        or type(value.revision) is not int
+        or value.revision < 1
+    ):
+        raise SessionStoreError(_INVALID_STORE)
+    return copy.deepcopy(value)
+
+
+def _memory_text(value: object, *, max_chars: int) -> bool:
+    return (
+        isinstance(value, str)
+        and bool(value.strip())
+        and len(value) <= max_chars
+        and not _TEXT_CONTROL_CHARACTER.search(value)
+        and not _WINDOWS_PATH.search(value)
+        and not _UNC_PATH.search(value)
+        and not _POSIX_PRIVATE_PATH.search(value)
+        and not _CREDENTIAL_VALUE.search(value)
+    )
+
+
 __all__ = [
     "InMemorySessionStore",
+    "MAX_EXCHANGE_ASSISTANT_CHARS",
+    "MAX_EXCHANGE_USER_CHARS",
+    "MAX_LLM_CONTEXT_CHARS",
+    "MAX_LLM_CONTEXT_EXCHANGES",
+    "MAX_RECENT_EXCHANGES",
     "MAX_SESSIONS",
+    "MAX_SESSION_CONVERSATION_CHARS",
     "SESSION_TTL_SECONDS",
+    "SessionExchange",
+    "SessionState",
     "SessionStoreError",
 ]

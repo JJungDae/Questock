@@ -147,3 +147,130 @@ def test_malformed_context_and_clock_fail_with_typed_error() -> None:
     clock.value = -1
     with pytest.raises(SessionStoreError, match="session store is unavailable"):
         _ = timed.size
+
+
+def _append_exchange(
+    store: InMemorySessionStore,
+    index: int,
+    *,
+    user_question: str | None = None,
+    assistant_public_text: str | None = None,
+) -> int:
+    return store.append_exchange(
+        "session-a",
+        user_question=user_question or f"질문 {index}",
+        assistant_public_text=(
+            assistant_public_text or f"공개 답변 {index}"
+        ),
+        status="complete",
+        security_id="KRX:005930",
+        intent="recent_issue",
+        selected_evidence_ids=(f"evidence:news:{index}",),
+        snapshot_id="svc-20260724-1402",
+    )
+
+
+def test_recent_exchange_revision_bound_and_deep_copy() -> None:
+    store = InMemorySessionStore()
+
+    for index in range(1, 6):
+        assert _append_exchange(store, index) == index
+
+    state = store.state("session-a")
+    assert state is not None
+    assert state.revision == 5
+    assert len(state.recent_exchanges) == 4
+    assert state.recent_exchanges[0].user_question == "질문 2"
+
+    copied = list(state.recent_exchanges)
+    copied.clear()
+    assert len(store.state("session-a").recent_exchanges) == 4  # type: ignore[union-attr]
+
+
+def test_exchange_text_bounds_and_session_total_are_enforced() -> None:
+    store = InMemorySessionStore()
+
+    for index in range(1, 6):
+        _append_exchange(
+            store,
+            index,
+            user_question=str(index) + ("u" * 1999),
+            assistant_public_text=str(index) + ("a" * 1999),
+        )
+
+    state = store.state("session-a")
+    assert state is not None
+    assert len(state.recent_exchanges) == 4
+    assert sum(
+        len(item.user_question) + len(item.assistant_public_text)
+        for item in state.recent_exchanges
+    ) == 16_000
+
+    with pytest.raises(SessionStoreError):
+        _append_exchange(
+            InMemorySessionStore(),
+            1,
+            user_question="x" * 2001,
+        )
+
+
+def test_context_keeps_at_most_two_newest_exchanges_and_4000_chars() -> None:
+    store = InMemorySessionStore()
+    for index in range(1, 4):
+        _append_exchange(store, index)
+
+    context_value = store.conversation_context("session-a")
+    assert "질문 1" not in context_value
+    assert "질문 2" in context_value
+    assert "질문 3" in context_value
+    assert len(context_value) <= 4000
+
+    bounded = InMemorySessionStore()
+    _append_exchange(
+        bounded,
+        1,
+        user_question="u" * 2000,
+        assistant_public_text="a" * 2000,
+    )
+    assert len(bounded.conversation_context("session-a")) == 4000
+
+
+def test_session_ttl_clears_context_exchanges_and_revision() -> None:
+    clock = Clock()
+    store = InMemorySessionStore(ttl_seconds=10, monotonic=clock)
+    store.put("session-a", context())
+    _append_exchange(store, 1)
+
+    clock.advance(10)
+    with asyncio.Runner() as runner:
+        runner.run(_enter_once(store))
+
+    state = store.state("session-a")
+    assert state is not None
+    assert state.context == SessionContext()
+    assert state.recent_exchanges == ()
+    assert state.revision == 0
+
+
+async def _enter_once(store: InMemorySessionStore) -> None:
+    async with store.serialized("session-a"):
+        return
+
+
+@pytest.mark.parametrize(
+    "user_question",
+    [
+        "credential=sentinel-value",
+        "private path C:\\private\\file",
+        "private path /root/private",
+    ],
+)
+def test_unsafe_exchange_text_is_not_stored(
+    user_question: str,
+) -> None:
+    with pytest.raises(SessionStoreError):
+        _append_exchange(
+            InMemorySessionStore(),
+            1,
+            user_question=user_question,
+        )

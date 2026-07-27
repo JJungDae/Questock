@@ -8,10 +8,10 @@ from pydantic import PrivateAttr, ValidationError, model_validator
 
 from app.core.models import QuestockModel
 
-_GEMINI_MODEL = "gemini/gemini-2.5-flash"
-_THINKING_BUDGETS = frozenset({0, 1024})
-_MAX_OUTPUT_TOKENS = 8192
-_MAX_LLM_TIMEOUT_SECONDS = 20
+APPROVED_LLM_MODEL = "gemini/gemini-3.5-flash"
+_APPROVED_THINKING_LEVEL = "minimal"
+_APPROVED_MAX_OUTPUT_TOKENS = 1024
+_APPROVED_LLM_TIMEOUT_SECONDS = 10
 
 
 class ConfigValidationError(ValueError):
@@ -107,25 +107,37 @@ class ProviderConfig(QuestockModel):
 
 
 class LLMConfig(QuestockModel):
-    model: str = _GEMINI_MODEL
-    thinking_budget: int = 0
-    max_output_tokens: int = 1024
-    timeout_seconds: float = 8
+    model: str = APPROVED_LLM_MODEL
+    thinking_level: str = _APPROVED_THINKING_LEVEL
+    max_output_tokens: int = _APPROVED_MAX_OUTPUT_TOKENS
+    timeout_seconds: float = _APPROVED_LLM_TIMEOUT_SECONDS
     gemini_api_key_configured: bool = False
 
     _gemini_api_key: str | None = PrivateAttr(default=None)
 
     @classmethod
     def from_env(cls, *, require_credential: bool = False) -> "LLMConfig":
-        model = os.getenv("LLM_MODEL") or _GEMINI_MODEL
-        thinking_budget = _read_int("LLM_THINKING_BUDGET", 0)
-        max_output_tokens = _read_int("LLM_MAX_OUTPUT_TOKENS", 1024)
-        timeout_seconds = _read_float("LLM_TIMEOUT_SECONDS", 8)
+        if "LLM_THINKING_BUDGET" in os.environ:
+            raise ConfigValidationError(
+                "LLM_THINKING_BUDGET is not supported"
+            )
+        model = os.getenv("LLM_MODEL") or APPROVED_LLM_MODEL
+        thinking_level = (
+            os.getenv("LLM_THINKING_LEVEL") or _APPROVED_THINKING_LEVEL
+        )
+        max_output_tokens = _read_int(
+            "LLM_MAX_OUTPUT_TOKENS",
+            _APPROVED_MAX_OUTPUT_TOKENS,
+        )
+        timeout_seconds = _read_float(
+            "LLM_TIMEOUT_SECONDS",
+            _APPROVED_LLM_TIMEOUT_SECONDS,
+        )
         api_key = os.getenv("GEMINI_API_KEY") or None
         try:
             config = cls(
                 model=model,
-                thinking_budget=thinking_budget,
+                thinking_level=thinking_level,
                 max_output_tokens=max_output_tokens,
                 timeout_seconds=timeout_seconds,
                 gemini_api_key_configured=bool(api_key),
@@ -139,21 +151,27 @@ class LLMConfig(QuestockModel):
 
     @model_validator(mode="after")
     def validate_llm_config(self) -> "LLMConfig":
-        if self.model != _GEMINI_MODEL:
+        if self.model != APPROVED_LLM_MODEL:
             raise ConfigValidationError("LLM_MODEL is not an approved model")
-        if type(self.thinking_budget) is not int or self.thinking_budget not in _THINKING_BUDGETS:
-            raise ConfigValidationError("LLM_THINKING_BUDGET is not approved")
+        if self.thinking_level != _APPROVED_THINKING_LEVEL:
+            raise ConfigValidationError(
+                "LLM_THINKING_LEVEL is not approved"
+            )
         if (
             type(self.max_output_tokens) is not int
-            or not 1 <= self.max_output_tokens <= _MAX_OUTPUT_TOKENS
+            or self.max_output_tokens != _APPROVED_MAX_OUTPUT_TOKENS
         ):
-            raise ConfigValidationError("LLM_MAX_OUTPUT_TOKENS is outside allowed range")
+            raise ConfigValidationError(
+                "LLM_MAX_OUTPUT_TOKENS is not approved"
+            )
         if (
             type(self.timeout_seconds) not in {int, float}
             or not math.isfinite(self.timeout_seconds)
-            or not 0 < self.timeout_seconds <= _MAX_LLM_TIMEOUT_SECONDS
+            or self.timeout_seconds != _APPROVED_LLM_TIMEOUT_SECONDS
         ):
-            raise ConfigValidationError("LLM_TIMEOUT_SECONDS is outside allowed range")
+            raise ConfigValidationError(
+                "LLM_TIMEOUT_SECONDS is not approved"
+            )
         if type(self.gemini_api_key_configured) is not bool:
             raise ConfigValidationError("LLM credential state is invalid")
         return self
@@ -166,11 +184,16 @@ class LLMConfig(QuestockModel):
     def safe_summary(self) -> dict[str, Any]:
         return {
             "model": self.model,
-            "thinking_budget": self.thinking_budget,
+            "thinking_level": self.thinking_level,
             "max_output_tokens": self.max_output_tokens,
             "timeout_seconds": self.timeout_seconds,
             "gemini_api_key_configured": self.gemini_api_key_configured,
         }
 
 
-__all__ = ["ConfigValidationError", "LLMConfig", "ProviderConfig"]
+__all__ = [
+    "APPROVED_LLM_MODEL",
+    "ConfigValidationError",
+    "LLMConfig",
+    "ProviderConfig",
+]

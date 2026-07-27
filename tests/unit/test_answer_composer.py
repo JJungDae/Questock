@@ -46,7 +46,7 @@ class FakeLLMClient:
         return create_llm_result(
             status=self.status,
             content=self.content if self.status == LLMStatus.OK else None,
-            model="gemini/gemini-2.5-flash",
+            model="gemini/gemini-3.5-flash",
             provider="gemini",
             usage={"total_tokens": 9} if self.status == LLMStatus.OK else {},
             finish_reason="stop" if self.status == LLMStatus.OK else None,

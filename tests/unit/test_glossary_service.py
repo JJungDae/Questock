@@ -80,7 +80,7 @@ class GlossaryLLM:
         return create_llm_result(
             status=LLMStatus.OK,
             content=json.dumps({"claims": claims}, ensure_ascii=False),
-            model="gemini/gemini-2.5-flash",
+            model="gemini/gemini-3.5-flash",
             provider="gemini",
             latency_ms=1,
         )

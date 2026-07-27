@@ -10,6 +10,7 @@ from app.config import ConfigValidationError, LLMConfig
 LLM_ENV = (
     "GEMINI_API_KEY",
     "LLM_MODEL",
+    "LLM_THINKING_LEVEL",
     "LLM_THINKING_BUDGET",
     "LLM_MAX_OUTPUT_TOKENS",
     "LLM_TIMEOUT_SECONDS",
@@ -28,31 +29,49 @@ def test_fake_config_loads_without_credential(monkeypatch: pytest.MonkeyPatch) -
     config = LLMConfig.from_env()
 
     assert config.safe_summary() == {
-        "model": "gemini/gemini-2.5-flash",
-        "thinking_budget": 0,
+        "model": "gemini/gemini-3.5-flash",
+        "thinking_level": "minimal",
         "max_output_tokens": 1024,
-        "timeout_seconds": 8,
+        "timeout_seconds": 10,
         "gemini_api_key_configured": False,
     }
     with pytest.raises(ConfigValidationError, match="not configured"):
         config.require_api_key()
 
 
-def test_exact_thinking_budget_values_are_supported(
+def test_exact_thinking_level_is_supported(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _clear(monkeypatch)
-    for value in ("0", "1024"):
-        monkeypatch.setenv("LLM_THINKING_BUDGET", value)
-        assert LLMConfig.from_env().thinking_budget == int(value)
+    monkeypatch.setenv("LLM_THINKING_LEVEL", "minimal")
+
+    assert LLMConfig.from_env().thinking_level == "minimal"
+
+
+@pytest.mark.parametrize("value", ["", "0", "1024", "not-a-number"])
+def test_legacy_thinking_budget_env_is_rejected_without_echo(
+    monkeypatch: pytest.MonkeyPatch,
+    value: str,
+) -> None:
+    _clear(monkeypatch)
+    monkeypatch.setenv("LLM_THINKING_BUDGET", value)
+
+    with pytest.raises(ConfigValidationError) as exc_info:
+        LLMConfig.from_env()
+
+    assert str(exc_info.value) == "LLM_THINKING_BUDGET is not supported"
+    if value:
+        assert value not in str(exc_info.value)
 
 
 @pytest.mark.parametrize(
     "model",
     [
+        "gemini/gemini-2.5-flash",
         "gemini/gemini-2.5-flash-preview",
         "gemini/gemini-2.5-flash-latest",
         "gemini/gemini-2.0-flash",
+        "gemini/gemini-3.5-flash-preview",
     ],
 )
 def test_nonapproved_model_is_rejected_without_echo(
@@ -71,17 +90,18 @@ def test_nonapproved_model_is_rejected_without_echo(
 @pytest.mark.parametrize(
     ("name", "value"),
     [
-        ("LLM_THINKING_BUDGET", "7"),
-        ("LLM_THINKING_BUDGET", "not-a-number"),
+        ("LLM_THINKING_LEVEL", "low"),
         ("LLM_MAX_OUTPUT_TOKENS", "0"),
+        ("LLM_MAX_OUTPUT_TOKENS", "256"),
         ("LLM_MAX_OUTPUT_TOKENS", "9000"),
         ("LLM_TIMEOUT_SECONDS", "0"),
+        ("LLM_TIMEOUT_SECONDS", "8"),
         ("LLM_TIMEOUT_SECONDS", "nan"),
         ("LLM_TIMEOUT_SECONDS", "inf"),
         ("LLM_TIMEOUT_SECONDS", "21"),
     ],
 )
-def test_invalid_numeric_config_is_sanitized(
+def test_invalid_llm_contract_value_is_sanitized(
     monkeypatch: pytest.MonkeyPatch,
     name: str,
     value: str,
@@ -135,6 +155,10 @@ def test_env_example_keeps_llm_values_empty() -> None:
 
     assert values["GEMINI_API_KEY"] == ""
     assert values["LLM_MODEL"] == ""
-    assert values["LLM_THINKING_BUDGET"] == ""
+    assert values["LLM_THINKING_LEVEL"] == ""
+    assert "LLM_THINKING_BUDGET" not in values
     assert values["LLM_MAX_OUTPUT_TOKENS"] == ""
     assert values["LLM_TIMEOUT_SECONDS"] == ""
+    assert values["QUESTOCK_LLM_MODE"] == ""
+    assert values["QUESTOCK_REQUEST_PROTECTION_ENABLED"] == ""
+    assert values["QUESTOCK_RESPONSE_CACHE_ENABLED"] == ""

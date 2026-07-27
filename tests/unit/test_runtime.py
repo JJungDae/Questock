@@ -46,6 +46,89 @@ def test_invalid_mode_failure_is_sanitized() -> None:
     assert sentinel not in str(exc_info.value)
 
 
+def test_llm_and_protection_switch_defaults_and_exact_values() -> None:
+    defaults = load_runtime_config({})
+    enabled = load_runtime_config(
+        {
+            "QUESTOCK_SOURCE_MODE": "recorded",
+            "QUESTOCK_LLM_MODE": "gemini",
+            "QUESTOCK_REQUEST_PROTECTION_ENABLED": "true",
+            "QUESTOCK_RESPONSE_CACHE_ENABLED": "true",
+        }
+    )
+
+    assert defaults.llm_mode == "disabled"
+    assert defaults.request_protection_enabled is False
+    assert defaults.response_cache_enabled is False
+    assert enabled.llm_mode == "gemini"
+    assert enabled.request_protection_enabled is True
+    assert enabled.response_cache_enabled is True
+
+
+@pytest.mark.parametrize(
+    ("name", "value"),
+    [
+        ("QUESTOCK_LLM_MODE", "automatic"),
+        ("QUESTOCK_REQUEST_PROTECTION_ENABLED", "1"),
+        ("QUESTOCK_RESPONSE_CACHE_ENABLED", "yes"),
+    ],
+)
+def test_invalid_runtime_switch_is_sanitized(
+    name: str,
+    value: str,
+) -> None:
+    with pytest.raises(RuntimeConfigurationError) as exc_info:
+        load_runtime_config({name: value})
+
+    assert value not in str(exc_info.value)
+
+
+def test_gemini_runtime_wires_llm_protection_and_cache_without_call(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeLiteLLMClient:
+        def __init__(self, config):
+            self.config = config
+
+        async def complete(self, request, *, timeout_seconds):  # pragma: no cover
+            raise AssertionError("unit runtime wiring must not call Gemini")
+
+    monkeypatch.delenv("LLM_THINKING_BUDGET", raising=False)
+    monkeypatch.setenv("GEMINI_API_KEY", "unit-configured-key")
+    monkeypatch.setattr(runtime, "LiteLLMClient", FakeLiteLLMClient)
+
+    state = build_runtime(
+        config=RuntimeConfig(
+            source_mode="recorded",
+            llm_mode="gemini",
+            request_protection_enabled=True,
+            response_cache_enabled=True,
+        )
+    )
+
+    assert state.chat_service._live_llm_enabled is True  # noqa: SLF001
+    assert state.chat_service._request_protector.enabled is True  # noqa: SLF001
+    assert state.chat_service._response_cache.enabled is True  # noqa: SLF001
+    assert state.chat_service._model_fingerprint != "disabled"  # noqa: SLF001
+
+
+def test_gemini_runtime_missing_credential_is_sanitized(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("LLM_THINKING_BUDGET", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+
+    with pytest.raises(RuntimeConfigurationError) as exc_info:
+        build_runtime(
+            config=RuntimeConfig(
+                source_mode="recorded",
+                llm_mode="gemini",
+            )
+        )
+
+    assert "GEMINI_API_KEY" not in str(exc_info.value)
+
+
 def test_recorded_runtime_uses_manifest_basis_for_chat() -> None:
     state = build_runtime(config=RuntimeConfig(source_mode="recorded"))
 

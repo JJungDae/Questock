@@ -105,6 +105,11 @@ def test_dockerfile_is_digest_pinned_locked_and_non_root() -> None:
 
 def test_compose_uses_one_image_and_safe_host_bindings() -> None:
     compose = _read(COMPOSE_PATH)
+    api = compose.split("  api:", maxsplit=1)[1].split(
+        "\n  ui:",
+        maxsplit=1,
+    )[0]
+    ui = compose.split("\n  ui:", maxsplit=1)[1]
 
     assert "image: questock:${QUESTOCK_IMAGE_TAG:-b9-local}" in compose
     assert '"127.0.0.1:8000:8000"' in compose
@@ -112,6 +117,10 @@ def test_compose_uses_one_image_and_safe_host_bindings() -> None:
     assert "QUESTOCK_API_URL: http://api:8000/api/chat" in compose
     assert "QUESTOCK_UI_TIMEOUT_SECONDS: \"21\"" in compose
     assert "QUESTOCK_SOURCE_MODE: ${QUESTOCK_SOURCE_MODE:-recorded}" in compose
+    assert "env_file:" in api
+    assert "path: .env.runtime" in api
+    assert "required: false" in api
+    assert ".env.runtime" not in ui
     assert "API_BASE_URL" not in compose
     assert "GEMINI_API_KEY" not in compose
     assert "OPENDART_API_KEY" not in compose
@@ -168,7 +177,10 @@ def test_gce_deploy_is_manual_exact_sha_recorded_and_scoped() -> None:
     assert "push:" not in workflow
     assert "git reset" not in workflow
     assert "docker system prune" not in workflow
-    assert "GEMINI_API_KEY" not in workflow
+    assert "Install API runtime environment" in workflow
+    assert "GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}" in workflow
+    assert "printf 'GEMINI_API_KEY=%s\\n' \"$GEMINI_API_KEY\"" in workflow
+    assert "docker compose config" not in workflow
     assert "OPENDART_API_KEY" not in workflow
 
 
@@ -232,12 +244,54 @@ def test_rollback_restores_previous_health_or_removes_failed_release() -> None:
         in rollback
     )
     assert 'git switch --detach "$previous_sha"' in rollback
+    env_restore = rollback.index("if [ -f .env.runtime.rollback ]; then")
+    image_restore = rollback.index(
+        'if [ "$previous_image_id" != "NONE" ]'
+    )
+    assert env_restore < image_restore
+    assert "cp .env.runtime.rollback .env.runtime.next" in rollback
+    assert "chmod 600 .env.runtime.next" in rollback
+    assert "mv -f .env.runtime.next .env.runtime" in rollback
+    assert "rm -f .env.runtime .env.runtime.next" in rollback
     assert 'export QUESTOCK_IMAGE_TAG="$previous_sha"' in rollback
     assert "docker compose up -d --wait" in rollback
     assert "http://127.0.0.1:8000/health" in rollback
     assert "http://127.0.0.1:8501/_stcore/health" in rollback
     assert "docker compose rm --stop --force" in rollback
     assert "docker system prune" not in rollback
+
+
+def test_runtime_env_is_atomic_api_only_and_one_generation_rollback() -> None:
+    workflow = _read(DEPLOY_PATH)
+    install = workflow.split(
+        "- name: Install API runtime environment",
+        maxsplit=1,
+    )[1].split("- name: Deploy and verify", maxsplit=1)[0]
+
+    assert "test -n \"$GEMINI_API_KEY\"" in install
+    assert (
+        '[[ "$GEMINI_API_KEY" =~ ^[A-Za-z0-9_-]{20,256}$ ]]'
+        in install
+    )
+    assert "umask 077" in install
+    assert "trap cleanup_runtime_next EXIT" in install
+    assert "trap - EXIT" in install
+    assert "cp .env.runtime .env.runtime.rollback.next" in install
+    assert "chmod 600 .env.runtime.rollback.next" in install
+    assert (
+        "mv -f .env.runtime.rollback.next .env.runtime.rollback"
+        in install
+    )
+    assert "cat > .env.runtime.next" in install
+    assert "chmod 600 .env.runtime.next" in install
+    assert "mv -f .env.runtime.next .env.runtime" in install
+    assert "QUESTOCK_LLM_MODE=gemini" in install
+    assert "QUESTOCK_REQUEST_PROTECTION_ENABLED=true" in install
+    assert "QUESTOCK_RESPONSE_CACHE_ENABLED=true" in install
+    assert "LLM_MODEL=gemini/gemini-3.5-flash" in install
+    assert "LLM_THINKING_LEVEL=minimal" in install
+    assert "LLM_TIMEOUT_SECONDS=10" in install
+    assert "LLM_MAX_OUTPUT_TOKENS=1024" in install
 
 
 def test_deploy_preflight_fails_before_the_rollback_guard() -> None:

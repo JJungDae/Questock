@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import asyncio
 import math
+import re
 import time
 from collections.abc import Mapping
+from dataclasses import replace
 from datetime import UTC, datetime
 from typing import Callable
 from uuid import uuid4
@@ -22,6 +24,7 @@ from app.api.schemas import (
     PublicSecuritySummary,
     PublicSourceSummary,
 )
+from app.config import APPROVED_LLM_MODEL
 from app.core.models import (
     Evidence,
     FinancialDocument,
@@ -58,6 +61,15 @@ from app.services.observability import (
     RequestObservation,
     fallback_used_for_generation_mode,
 )
+from app.services.request_protection import (
+    RequestProtectionError,
+    RequestProtectionLimitError,
+    RequestProtector,
+)
+from app.services.response_cache import (
+    ResponseCache,
+    ResponseCacheError,
+)
 from app.services.source_gateway import (
     ExplicitUnconfiguredSourceGateway,
     SourceGateway,
@@ -71,6 +83,7 @@ _DEFAULT_DEADLINE_SECONDS = 20.0
 _DEGRADATION_WARNING = "llm_generation_degraded"
 _DEADLINE_WARNING = "request_deadline_exceeded"
 _FALLBACK_SECURITY_ID = "KRX:005930"
+_SAFE_RUNTIME_TOKEN = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
 
 
 class ChatServiceError(RuntimeError):
@@ -86,7 +99,7 @@ class _DisabledLLMClient:
     ) -> LLMResult:
         return create_llm_result(
             status=LLMStatus.PROVIDER_UNAVAILABLE,
-            model="gemini/gemini-2.5-flash",
+            model=APPROVED_LLM_MODEL,
             provider="gemini",
             latency_ms=0,
         )
@@ -101,12 +114,17 @@ class ChatService:
         resolver: SecurityResolver | None = None,
         glossary_service: GlossaryService | None = None,
         session_store: InMemorySessionStore | None = None,
+        request_protector: RequestProtector | None = None,
+        response_cache: ResponseCache | None = None,
         call_budget_factory: Callable[[], LLMCallBudget] | None = None,
         observation_sink: ObservationSink | None = None,
         request_id_factory: Callable[[], str] | None = None,
         deadline_seconds: float = _DEFAULT_DEADLINE_SECONDS,
         utc_now: Callable[[], datetime] | None = None,
         monotonic: Callable[[], float] = time.monotonic,
+        snapshot_id: str = "runtime-unconfigured",
+        model_fingerprint: str = "disabled",
+        live_llm_enabled: bool = False,
     ) -> None:
         if (
             type(deadline_seconds) not in {int, float}
@@ -115,6 +133,14 @@ class ChatService:
             or deadline_seconds > _DEFAULT_DEADLINE_SECONDS
         ):
             raise ValueError("chat deadline is invalid")
+        if (
+            not isinstance(snapshot_id, str)
+            or not _SAFE_RUNTIME_TOKEN.fullmatch(snapshot_id)
+            or not isinstance(model_fingerprint, str)
+            or not _SAFE_RUNTIME_TOKEN.fullmatch(model_fingerprint)
+            or type(live_llm_enabled) is not bool
+        ):
+            raise ValueError("chat runtime identity is invalid")
         self._source_gateway = (
             source_gateway or ExplicitUnconfiguredSourceGateway()
         )
@@ -122,6 +148,8 @@ class ChatService:
         self._resolver = resolver or SecurityResolver()
         self._glossary_service = glossary_service
         self._session_store = session_store or InMemorySessionStore()
+        self._request_protector = request_protector or RequestProtector()
+        self._response_cache = response_cache or ResponseCache()
         self._call_budget_factory = (
             call_budget_factory
             if call_budget_factory is not None
@@ -149,21 +177,54 @@ class ChatService:
         self._deadline_seconds = float(deadline_seconds)
         self._utc_now = utc_now or (lambda: datetime.now(UTC))
         self._monotonic = monotonic
+        self._snapshot_id = snapshot_id
+        self._model_fingerprint = model_fingerprint
+        self._live_llm_enabled = live_llm_enabled
 
-    async def chat(self, request: ChatRequest) -> ChatResponse:
+    async def chat(
+        self,
+        request: ChatRequest,
+        *,
+        client_key: str | None = None,
+    ) -> ChatResponse:
         if not isinstance(request, ChatRequest):
             raise ChatServiceError("chat request is invalid")
         try:
             async with self._session_store.serialized(request.session_id):
-                return await self._chat_serialized(request)
+                revision = self._session_store.revision(
+                    request.session_id
+                )
+                cached = self._response_cache.get(
+                    session_id=request.session_id,
+                    snapshot_id=self._snapshot_id,
+                    question=request.message,
+                    revision=revision,
+                    model_fingerprint=self._model_fingerprint,
+                )
+                if cached is not None:
+                    self._emit_cached_observation(cached.observation)
+                    return cached.response.model_copy(deep=True)
+                return await self._chat_serialized(
+                    request,
+                    client_key=client_key,
+                )
         except ChatServiceError:
             raise
-        except SessionStoreError:
+        except (
+            RequestProtectionError,
+            ResponseCacheError,
+            SessionStoreError,
+        ):
             raise ChatServiceError("chat service unavailable") from None
         except Exception:
             raise ChatServiceError("chat service unavailable") from None
 
-    async def _chat_serialized(self, request: ChatRequest) -> ChatResponse:
+    async def _chat_serialized(
+        self,
+        request: ChatRequest,
+        *,
+        client_key: str | None,
+    ) -> ChatResponse:
         if not isinstance(request, ChatRequest):
             raise ChatServiceError("chat request is invalid")
         basis_at = _aware_utc(self._utc_now())
@@ -214,6 +275,12 @@ class ChatService:
                 started_at=started_at,
                 call_budget=call_budget,
                 deadline_exhausted=deadline_exhausted,
+                client_key=client_key,
+                conversation_context=(
+                    self._session_store.conversation_context(
+                        request.session_id
+                    )
+                ),
             )
             deadline_exhausted = (
                 deadline_exhausted or self._deadline_reached(started_at)
@@ -233,6 +300,7 @@ class ChatService:
                 resolution_status=observed.resolution_status,
                 resolved_security_id=observed.security_id,
                 deadline_exhausted=deadline_exhausted,
+                live_llm_enabled=self._live_llm_enabled,
             )
             if self._deadline_reached(started_at):
                 deadline_exhausted = True
@@ -251,9 +319,15 @@ class ChatService:
                     resolution_status=observed.resolution_status,
                     resolved_security_id=observed.security_id,
                     deadline_exhausted=deadline_exhausted,
+                    live_llm_enabled=self._live_llm_enabled,
                 )
             self._save_session_context(request.session_id, plan)
-            self._emit_terminal_observation(
+            resulting_revision = self._record_session_exchange(
+                request=request,
+                response=response,
+                plan=plan,
+            )
+            observation = self._emit_terminal_observation(
                 plan=plan,
                 gateway=gateway,
                 pipeline=pipeline,
@@ -261,6 +335,16 @@ class ChatService:
                 call_budget=call_budget,
                 started_at=started_at,
             )
+            if resulting_revision is not None and observation is not None:
+                self._response_cache.put(
+                    session_id=request.session_id,
+                    snapshot_id=self._snapshot_id,
+                    question=request.message,
+                    resulting_revision=resulting_revision,
+                    model_fingerprint=self._model_fingerprint,
+                    response=response,
+                    observation=observation,
+                )
             return response
         except ChatServiceError:
             raise
@@ -332,6 +416,8 @@ class ChatService:
         started_at: float,
         call_budget: LLMCallBudget,
         deadline_exhausted: bool,
+        client_key: str | None,
+        conversation_context: str,
     ) -> CompositionResult:
         if (
             pipeline.decision.status not in {"complete", "partial"}
@@ -353,23 +439,49 @@ class ChatService:
                 plan=plan,
                 selected_evidence=pipeline.budget.evidence,
             )
-        remaining = self._remaining(started_at)
+        if not self._composer.llm_eligible(
+            plan=plan,
+            selected_evidence=pipeline.budget.evidence,
+            documents_by_id=pipeline.documents_by_id,
+        ):
+            return self._composer.compose_fixed(
+                plan=plan,
+                selected_evidence=pipeline.budget.evidence,
+            )
         try:
-            return await asyncio.wait_for(
-                self._composer.compose(
-                    question=request.message,
-                    plan=plan,
-                    selected_evidence=pipeline.budget.evidence,
-                    documents_by_id=pipeline.documents_by_id,
-                    timeout_seconds=remaining,
-                    call_budget=call_budget,
-                ),
-                timeout=remaining,
+            async with self._request_protector.admit(
+                client_key,
+                timeout_seconds=self._remaining(started_at),
+            ):
+                remaining = self._remaining(started_at)
+                return await asyncio.wait_for(
+                    self._composer.compose(
+                        question=request.message,
+                        plan=plan,
+                        selected_evidence=pipeline.budget.evidence,
+                        documents_by_id=pipeline.documents_by_id,
+                        timeout_seconds=remaining,
+                        call_budget=call_budget,
+                        conversation_context=conversation_context,
+                    ),
+                    timeout=remaining,
+                )
+        except RequestProtectionLimitError:
+            limited_result = create_llm_result(
+                status=LLMStatus.RATE_LIMITED,
+                model=APPROVED_LLM_MODEL,
+                provider="gemini",
+                latency_ms=0,
+            )
+            return self._composer.compose_fixed(
+                plan=plan,
+                selected_evidence=pipeline.budget.evidence,
+                llm_result=limited_result,
             )
         except TimeoutError:
             timeout_result = create_llm_result(
                 status=LLMStatus.TIMEOUT,
-                model="gemini/gemini-2.5-flash",
+                model=APPROVED_LLM_MODEL,
                 provider="gemini",
                 latency_ms=self._deadline_seconds * 1000,
             )
@@ -378,6 +490,34 @@ class ChatService:
                 selected_evidence=pipeline.budget.evidence,
                 llm_result=timeout_result,
             )
+
+    def _record_session_exchange(
+        self,
+        *,
+        request: ChatRequest,
+        response: ChatResponse,
+        plan: QueryPlan,
+    ) -> int | None:
+        try:
+            security_id = (
+                f"{plan.security.market}:{plan.security.ticker}"
+                if plan.security is not None
+                else None
+            )
+            return self._session_store.append_exchange(
+                request.session_id,
+                user_question=request.message,
+                assistant_public_text=_assistant_memory_text(response),
+                status=response.status,
+                security_id=security_id,
+                intent=plan.intent,
+                selected_evidence_ids=tuple(
+                    item.evidence_id for item in response.evidence
+                ),
+                snapshot_id=self._snapshot_id,
+            )
+        except SessionStoreError:
+            return None
 
     def _new_call_budget(self) -> LLMCallBudget:
         try:
@@ -425,7 +565,7 @@ class ChatService:
         composition: CompositionResult,
         call_budget: LLMCallBudget,
         started_at: float,
-    ) -> None:
+    ) -> RequestObservation | None:
         try:
             request_id = self._request_id_factory()
             security_id = (
@@ -460,7 +600,26 @@ class ChatService:
                     composition.generation_mode
                 ),
             )
+        except Exception:
+            return None
+        try:
             self._observation_sink.emit(observation)
+        except Exception:
+            pass
+        return observation
+
+    def _emit_cached_observation(
+        self,
+        observation: RequestObservation,
+    ) -> None:
+        try:
+            cached = replace(
+                observation,
+                request_id=self._request_id_factory(),
+                total_latency_ms=0.0,
+                llm_call_count=0,
+            )
+            self._observation_sink.emit(cached)
         except Exception:
             return
 
@@ -476,7 +635,7 @@ class ChatService:
             return composition
         timeout_result = create_llm_result(
             status=LLMStatus.TIMEOUT,
-            model="gemini/gemini-2.5-flash",
+            model=APPROVED_LLM_MODEL,
             provider="gemini",
             latency_ms=self._deadline_seconds * 1000,
         )
@@ -710,6 +869,7 @@ def _build_response(
     resolution_status: PublicResolutionStatus,
     resolved_security_id: str | None,
     deadline_exhausted: bool,
+    live_llm_enabled: bool,
 ) -> ChatResponse:
     warnings = [item.code for item in pipeline.decision.warnings]
     if deadline_exhausted:
@@ -726,6 +886,7 @@ def _build_response(
         composition=composition,
         resolution_status=resolution_status,
         resolved_security_id=resolved_security_id,
+        live_llm_enabled=live_llm_enabled,
     )
     response_status = pipeline.decision.status
     if response_status == "complete" and not composition.public_evidence:
@@ -752,6 +913,7 @@ def _build_process_summary(
     composition: CompositionResult,
     resolution_status: PublicResolutionStatus,
     resolved_security_id: str | None,
+    live_llm_enabled: bool,
 ) -> PublicProcessSummary:
     source_counts = {}
     for source in plan.required_sources:
@@ -828,9 +990,45 @@ def _build_process_summary(
             mode=composition.generation_mode,
             llm_status=llm_result.status if llm_result else None,
             model=llm_result.model if llm_result else None,
-            live_verified=False,
+            live_verified=(
+                live_llm_enabled
+                and composition.generation_mode == "llm"
+                and llm_result is not None
+                and llm_result.status == LLMStatus.OK
+            ),
         ),
     )
+
+
+def _assistant_memory_text(response: ChatResponse) -> str:
+    sections = response.answer_sections
+    ordered = (
+        sections.summary,
+        sections.facts,
+        sections.risk_factors,
+        sections.uncertainty,
+        sections.interpretation,
+        sections.inference,
+        sections.positive_factors,
+    )
+    output: list[str] = []
+    remaining = 2000
+    for values in ordered:
+        for value in values:
+            separator = "\n" if output else ""
+            available = remaining - len(separator)
+            if available <= 0:
+                return "".join(output)
+            fragment = value[:available]
+            if fragment:
+                output.append(f"{separator}{fragment}")
+                remaining -= len(separator) + len(fragment)
+            if len(fragment) < len(value) or remaining == 0:
+                return "".join(output)
+    text = "".join(output)
+    if not text:
+        raise ChatServiceError("chat response is invalid")
+    return text
 
 
 def _aware_utc(value: object) -> datetime:

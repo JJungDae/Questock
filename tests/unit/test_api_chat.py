@@ -64,7 +64,12 @@ def test_missing_required_field_is_sanitized() -> None:
 
 def test_service_error_maps_to_stable_503() -> None:
     class FailingService(ChatService):
-        async def chat(self, request):  # type: ignore[no-untyped-def]
+        async def chat(  # type: ignore[no-untyped-def]
+            self,
+            request,
+            *,
+            client_key=None,
+        ):
             raise ChatServiceError("sentinel raw failure")
 
     app.dependency_overrides[get_chat_service] = lambda: FailingService()
@@ -83,3 +88,41 @@ def test_service_error_maps_to_stable_503() -> None:
     assert response.status_code == 503
     assert response.json() == {"detail": "chat service unavailable"}
     assert "sentinel" not in response.text
+
+
+def test_client_key_header_is_internal_and_passed_outside_public_body() -> None:
+    key = "a" * 64
+
+    class CapturingService(ChatService):
+        def __init__(self) -> None:
+            super().__init__()
+            self.client_keys: list[str | None] = []
+
+        async def chat(  # type: ignore[override]
+            self,
+            request,
+            *,
+            client_key=None,
+        ):
+            self.client_keys.append(client_key)
+            return await super().chat(request)
+
+    service = CapturingService()
+    app.dependency_overrides[get_chat_service] = lambda: service
+    try:
+        with TestClient(app) as client:
+            response = client.post(
+                "/api/chat",
+                headers={"X-Questock-Client-Key": key},
+                json={
+                    "message": "삼성전자 최근 뉴스",
+                    "session_id": "api-client-key",
+                },
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert service.client_keys == [key]
+    assert key not in response.text
+    assert "client_key" not in response.text

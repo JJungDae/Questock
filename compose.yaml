@@ -20,6 +20,9 @@ x-questock-runtime: &questock-runtime
 services:
   api:
     <<: [*questock-image, *questock-runtime]
+    env_file:
+      - path: .env.runtime
+        required: false
     command:
       - uvicorn
       - app.api.main:app

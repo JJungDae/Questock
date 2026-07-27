@@ -24,6 +24,9 @@ from app.services.observability import (
     JsonLogObservationSink,
     ObservationSink,
 )
+from app.services.request_protection import RequestProtector
+from app.services.response_cache import ResponseCache
+from app.services.session_store import InMemorySessionStore
 from app.services.source_gateway import (
     SourceGatewayResult,
     SourceGatewayTimeoutDescriptor,
@@ -66,6 +69,40 @@ def news_document(
         },
         metadata={},
         ingestion_version="news-provider-m1-04-v1",
+    )
+
+
+def research_report_document(
+    *,
+    permission: bool = False,
+) -> FinancialDocument:
+    source_url = "https://research.example.test/report.pdf"
+    document_id = "document:research_report:permission-denied"
+    return FinancialDocument(
+        document_id=document_id,
+        source_type="research_report",
+        provider="manual_manifest",
+        primary_security_ids=[SECURITY_ID],
+        mentioned_security_ids=[],
+        title="\uc0bc\uc131\uc804\uc790 \ub9ac\ud3ec\ud2b8",
+        published_at=BASIS_AT - timedelta(days=1),
+        source_url=source_url,
+        text="\uc0bc\uc131\uc804\uc790 \ud22c\uc790\uc758\uacac\uc744 \uc720\uc9c0\ud588\ub2e4.",
+        locator={
+            "manifest_id": "samsung-report-unit",
+            "document_id": document_id,
+            "page": 1,
+            "page_basis": "pdf_1_based",
+            "section": "\ud22c\uc790\uc758\uacac",
+            "publisher": "Approved Research",
+            "source_url": source_url,
+            "source_asset_id": None,
+            "access_note": "approved fixture",
+        },
+        metadata={
+            "external_llm_processing_allowed": permission,
+        },
+        ingestion_version="report-manual-m1-06-v1",
     )
 
 
@@ -143,6 +180,7 @@ class ExtractiveLLM:
         self.delay = delay
         self.calls = 0
         self.cancel_count = 0
+        self.requests: list[LLMRequest] = []
 
     async def complete(
         self,
@@ -151,6 +189,7 @@ class ExtractiveLLM:
         timeout_seconds: float,
     ) -> LLMResult:
         self.calls += 1
+        self.requests.append(request.model_copy(deep=True))
         try:
             if self.delay:
                 await asyncio.sleep(self.delay)
@@ -179,7 +218,7 @@ class ExtractiveLLM:
         return create_llm_result(
             status=self.status,
             content=content if self.status == LLMStatus.OK else None,
-            model="gemini/gemini-2.5-flash",
+            model="gemini/gemini-3.5-flash",
             provider="gemini",
             latency_ms=1,
         )
@@ -194,6 +233,9 @@ def _service(
     call_budget_factory: Callable[[], LLMCallBudget] | None = None,
     observation_sink: ObservationSink | None = None,
     request_id_factory: Callable[[], str] | None = None,
+    request_protector: RequestProtector | None = None,
+    response_cache: ResponseCache | None = None,
+    session_store: InMemorySessionStore | None = None,
 ) -> ChatService:
     kwargs: dict[str, Any] = {
         "source_gateway": gateway,
@@ -205,6 +247,8 @@ def _service(
             if observation_sink is not None
             else InMemoryObservationSink()
         ),
+        "snapshot_id": "svc-20260724-1402",
+        "model_fingerprint": "a" * 64,
     }
     if monotonic is not None:
         kwargs["monotonic"] = monotonic
@@ -212,6 +256,12 @@ def _service(
         kwargs["call_budget_factory"] = call_budget_factory
     if request_id_factory is not None:
         kwargs["request_id_factory"] = request_id_factory
+    if request_protector is not None:
+        kwargs["request_protector"] = request_protector
+    if response_cache is not None:
+        kwargs["response_cache"] = response_cache
+    if session_store is not None:
+        kwargs["session_store"] = session_store
     return ChatService(
         **kwargs,
     )
@@ -1161,6 +1211,205 @@ def test_concurrent_same_session_waits_for_context_update() -> None:
         assert inherited.diagnostics_public.query_plan.intent == "recent_issue"
 
     asyncio.run(run())
+
+
+def test_immediate_duplicate_uses_resulting_revision_cache_without_new_turn() -> None:
+    gateway = FakeGateway((news_document(),))
+    llm = ExtractiveLLM()
+    sink = InMemoryObservationSink()
+    store = InMemorySessionStore()
+    service = _service(
+        gateway,
+        llm,
+        observation_sink=sink,
+        response_cache=ResponseCache(enabled=True),
+        session_store=store,
+    )
+
+    first = asyncio.run(service.chat(_request()))
+    first.warnings.append("caller-mutation")
+    second = asyncio.run(service.chat(_request()))
+
+    assert llm.calls == 1
+    assert gateway.calls == 1
+    assert store.revision("chat-service-unit") == 1
+    state = store.state("chat-service-unit")
+    assert state is not None
+    assert len(state.recent_exchanges) == 1
+    assert "caller-mutation" not in second.warnings
+    assert len(sink.observations) == 2
+    assert sink.observations[0].llm_call_count == 1
+    assert sink.observations[1].llm_call_count == 0
+
+
+def test_same_session_concurrent_duplicate_is_serialized_to_one_llm_call() -> None:
+    async def run() -> None:
+        gateway = FakeGateway((news_document(),))
+        llm = ExtractiveLLM(delay=0.01)
+        service = _service(
+            gateway,
+            llm,
+            response_cache=ResponseCache(enabled=True),
+        )
+
+        first, second = await asyncio.gather(
+            service.chat(_request()),
+            service.chat(_request()),
+        )
+
+        assert first == second
+        assert llm.calls == 1
+        assert gateway.calls == 1
+
+    asyncio.run(run())
+
+
+def test_cache_expiry_causes_new_llm_call_without_stale_return() -> None:
+    clock = MutableClock()
+    gateway = FakeGateway((news_document(),))
+    llm = ExtractiveLLM()
+    service = _service(
+        gateway,
+        llm,
+        response_cache=ResponseCache(
+            enabled=True,
+            monotonic=clock,
+        ),
+    )
+
+    asyncio.run(service.chat(_request()))
+    clock.advance(90)
+    asyncio.run(service.chat(_request()))
+
+    assert llm.calls == 2
+    assert gateway.calls == 2
+
+
+def test_request_protection_counts_attempts_and_uses_fixed_fallback() -> None:
+    gateway = FakeGateway((news_document(),))
+    llm = ExtractiveLLM()
+    protector = RequestProtector(enabled=True)
+    service = _service(
+        gateway,
+        llm,
+        request_protector=protector,
+    )
+    key = "a" * 64
+
+    responses = [
+        asyncio.run(service.chat(_request(), client_key=key))
+        for _ in range(11)
+    ]
+
+    assert llm.calls == 10
+    assert protector.snapshot().global_day_attempts == 10
+    assert responses[-1].status == "complete"
+    assert (
+        responses[-1].diagnostics_public.generation.llm_status
+        == "rate_limited"
+    )
+    assert "llm_generation_degraded" in responses[-1].warnings
+
+
+def test_blocked_request_does_not_consume_request_protection() -> None:
+    llm = ExtractiveLLM()
+    protector = RequestProtector(enabled=True)
+    service = _service(
+        FakeGateway(()),
+        llm,
+        request_protector=protector,
+    )
+
+    response = asyncio.run(
+        service.chat(
+            ChatRequest(
+                message="삼성전자 지금 매수해야 해?",
+                session_id="blocked-protection",
+            ),
+            client_key="b" * 64,
+        )
+    )
+
+    assert response.status == "blocked"
+    assert llm.calls == 0
+    assert protector.snapshot().global_day_attempts == 0
+
+
+def test_provider_failure_still_consumes_one_admitted_attempt() -> None:
+    llm = ExtractiveLLM(status=LLMStatus.TIMEOUT)
+    protector = RequestProtector(enabled=True)
+    service = _service(
+        FakeGateway((news_document(),)),
+        llm,
+        request_protector=protector,
+    )
+
+    response = asyncio.run(
+        service.chat(_request(), client_key="c" * 64)
+    )
+
+    assert response.status == "complete"
+    assert response.diagnostics_public.generation.llm_status == "timeout"
+    assert llm.calls == 1
+    assert protector.snapshot().global_day_attempts == 1
+
+
+def test_permission_fixed_only_report_does_not_consume_protection() -> None:
+    llm = ExtractiveLLM()
+    protector = RequestProtector(enabled=True)
+    service = _service(
+        FakeGateway((research_report_document(permission=False),)),
+        llm,
+        request_protector=protector,
+    )
+
+    response = asyncio.run(
+        service.chat(
+            ChatRequest(
+                message="\uc0bc\uc131\uc804\uc790 \ub9ac\ud3ec\ud2b8 \uc694\uc57d",
+                session_id="report-fixed-only",
+            ),
+            client_key="d" * 64,
+        )
+    )
+
+    assert response.status in {"complete", "partial"}
+    assert response.diagnostics_public.generation.mode == "fixed_template"
+    assert llm.calls == 0
+    assert protector.snapshot().global_day_attempts == 0
+
+
+def test_recent_conversation_is_bounded_context_and_never_evidence() -> None:
+    llm = ExtractiveLLM()
+    service = _service(
+        FakeGateway((news_document(),)),
+        llm,
+    )
+
+    asyncio.run(
+        service.chat(
+            ChatRequest(
+                message=QUESTION,
+                session_id="conversation-context",
+            )
+        )
+    )
+    asyncio.run(
+        service.chat(
+            ChatRequest(
+                message="삼성전자 반도체 투자 위험 요인",
+                session_id="conversation-context",
+            )
+        )
+    )
+
+    assert llm.calls == 2
+    second_messages = llm.requests[1].messages
+    rendered = "\n".join(item.content for item in second_messages)
+    assert QUESTION in rendered
+    assert "Prior conversation context (not evidence)" in rendered
+    assert "never evidence" in rendered
+    assert all(len(item.content) <= 16_000 for item in second_messages)
 
 
 def _track_budget(output: list[LLMCallBudget]) -> LLMCallBudget:

@@ -1,5 +1,10 @@
 LiteLLM+Gemini 채택 문서를 적용했습니다.
 
+> 역사 기록: 아래 내용은 최초 2.5 계약 도입 당시의 로컬 에이전트
+> 입력이다. 현재 normative contract는 `LLM_STACK_DECISION.md`의
+> `gemini/gemini-3.5-flash`, `litellm==1.84.1`,
+> `LLM_THINKING_LEVEL=minimal`이다.
+
 확인 파일:
 - docs/agent_handoff/LLM_STACK_DECISION.md
 - docs/agent_handoff/PROJECT_PLAN_FINAL_PASS.md

@@ -25,6 +25,7 @@ from app.answer.validators import (
     is_unsafe_answer_text,
     validate_answer_draft,
 )
+from app.config import APPROVED_LLM_MODEL
 from app.core.models import Evidence, FinancialDocument, QueryPlan
 from app.evidence.citations import (
     Citation,
@@ -133,12 +134,17 @@ class AnswerComposer:
                     "risk_factors, and missing confirmation in uncertainty. For "
                     "financial_term, map definition to summary, formula and "
                     "example to facts, why_it_matters to interpretation, and "
-                    "caution to uncertainty.\n"
+                    "caution to uncertainty. Prior conversation is context for "
+                    "intent and wording only, never evidence. Every fact, number, "
+                    "and company attribution must come from the currently eligible "
+                    "evidence.\n"
                     "{format_instructions}",
                 ),
                 (
                     "human",
-                    "Intent:\n{intent}\n\nQuestion:\n{question}\n\n"
+                    "Intent:\n{intent}\n\nPrior conversation context "
+                    "(not evidence):\n{conversation_context}\n\n"
+                    "Question:\n{question}\n\n"
                     "Eligible evidence:\n{evidence}",
                 ),
             ]
@@ -166,8 +172,12 @@ class AnswerComposer:
         documents_by_id: Mapping[str, FinancialDocument],
         timeout_seconds: float,
         call_budget: LLMCallBudget | None = None,
+        conversation_context: str = "",
     ) -> CompositionResult:
         canonical_question = _validate_question(question)
+        canonical_conversation_context = _validate_conversation_context(
+            conversation_context
+        )
         canonical_plan = _copy_plan(plan)
         canonical_evidence = _copy_evidence(selected_evidence)
         canonical_documents = _copy_documents(documents_by_id)
@@ -183,6 +193,7 @@ class AnswerComposer:
         payload = {
             "intent": canonical_plan.intent,
             "question": canonical_question,
+            "conversation_context": canonical_conversation_context,
             "evidence": _prompt_evidence(projected),
             "timeout_seconds": timeout_seconds,
         }
@@ -269,11 +280,27 @@ class AnswerComposer:
                 canonical_evidence,
                 llm_result=create_llm_result(
                     status=LLMStatus.INVALID_RESPONSE,
-                    model="gemini/gemini-2.5-flash",
+                    model=APPROVED_LLM_MODEL,
                     provider="gemini",
                     latency_ms=0.0,
                 ),
             )
+
+    def llm_eligible(
+        self,
+        *,
+        plan: QueryPlan,
+        selected_evidence: Sequence[Evidence],
+        documents_by_id: Mapping[str, FinancialDocument],
+    ) -> bool:
+        canonical_plan = _copy_plan(plan)
+        canonical_evidence = _copy_evidence(selected_evidence)
+        canonical_documents = _copy_documents(documents_by_id)
+        eligible = _external_processing_eligible(
+            canonical_evidence,
+            canonical_documents,
+        )
+        return bool(_project_m3_evidence(canonical_plan, eligible))
 
     def compose_fixed(
         self,
@@ -367,6 +394,17 @@ def _validate_question(value: object) -> str:
     if not isinstance(value, str) or not value.strip() or len(value) > 2000:
         raise AnswerCompositionError("question is invalid")
     return value.strip()
+
+
+def _validate_conversation_context(value: object) -> str:
+    if not isinstance(value, str) or len(value) > 4000:
+        raise AnswerCompositionError("conversation context is invalid")
+    canonical = value.strip()
+    if canonical and _unsafe_prompt_string(canonical):
+        raise AnswerCompositionError(
+            "conversation context failed safety validation"
+        )
+    return canonical or "(none)"
 
 
 def _call_budget(value: LLMCallBudget | None) -> LLMCallBudget:

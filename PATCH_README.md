@@ -1,5 +1,9 @@
 # LiteLLM + Gemini 2.5 Flash 무료 등급 문서 패치
 
+> 역사 기록: 이 파일은 최초 2.5 계약 도입 패치 설명이다. 현재 효력이
+> 있는 계약은 `docs/agent_handoff/LLM_STACK_DECISION.md`의
+> `gemini/gemini-3.5-flash` 및 `litellm==1.84.1` 결정이다.
+
 프로젝트 루트에서 압축 해제하면 `docs/` 아래 파일이 교체·추가된다.
 
 ## 교체
@@ -25,7 +29,8 @@
 
 M1-01은 LiteLLM 도입과 독립적인 core 계약이므로 재작업하지 않는다.
 
-기본 모델은 `gemini/gemini-2.5-flash` 무료 등급이며, 유료 모델 전환은 MVP 완성 이후 별도 결정한다.
+승인된 기본 모델은 `gemini/gemini-3.5-flash`이며, 다른 모델로 자동
+전환하지 않는다.
 
 
 ## 검수 후 추가 보완

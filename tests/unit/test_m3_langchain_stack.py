@@ -29,7 +29,7 @@ litellm.turn_off_message_logging = True
 
 
 ROOT = Path(__file__).resolve().parents[2]
-MODEL = "gemini/gemini-2.5-flash"
+MODEL = "gemini/gemini-3.5-flash"
 SAFE_TIMEOUT_MESSAGE = "Model operation timed out."
 HOSTILE_TRACING_ENV = {
     "LANGSMITH_TRACING": "true",
@@ -192,7 +192,7 @@ async def _invoke_mocked_gemini(post: AsyncMock) -> Any:
                     "strict": True,
                 },
             },
-            thinking={"type": "enabled", "budget_tokens": 1024},
+            reasoning_effort="minimal",
             num_retries=0,
             api_key="dummy",
             client=client,
@@ -215,18 +215,18 @@ def test_selected_dependencies_and_lock_are_exact() -> None:
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     direct = set(project["project"]["dependencies"])
     assert "langchain-core==1.5.1" in direct
-    assert "litellm==1.83.7" in direct
+    assert "litellm==1.84.1" in direct
     assert all(not item.startswith("langchain-litellm") for item in direct)
     assert all(item != "langchain" for item in direct)
     assert version("langchain-core") == "1.5.1"
-    assert version("litellm") == "1.83.7"
+    assert version("litellm") == "1.84.1"
 
     lock = tomllib.loads((ROOT / "uv.lock").read_text(encoding="utf-8"))
     locked_versions: dict[str, set[str]] = {}
     for package in lock["package"]:
         locked_versions.setdefault(package["name"], set()).add(package["version"])
     assert "1.5.1" in locked_versions["langchain-core"]
-    assert "1.83.7" in locked_versions["litellm"]
+    assert "1.84.1" in locked_versions["litellm"]
     assert "0.10.10" in locked_versions["langsmith"]
 
 
@@ -368,9 +368,10 @@ def test_litellm_gemini_transport_maps_exact_options_and_usage() -> None:
     generation_config = request_json["generationConfig"]
     assert generation_config["max_output_tokens"] == 256
     assert generation_config["thinkingConfig"] == {
-        "thinkingBudget": 1024,
+        "thinkingLevel": "minimal",
         "includeThoughts": True,
     }
+    assert "thinkingBudget" not in generation_config["thinkingConfig"]
     assert generation_config["response_mime_type"] == "application/json"
     assert generation_config["response_json_schema"] == _schema()
     assert response.choices[0].message.content == _valid_output()
