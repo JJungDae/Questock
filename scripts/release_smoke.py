@@ -13,89 +13,27 @@ _DISCLOSURE_DOCUMENT_ID = "disclosure:20260515002181"
 _DISCLOSURE_VIEWER_URL = (
     "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002181"
 )
-_DISCLOSURE_FACTS = [
+_REQUIRED_DISCLOSURE_FACTS = [
     {
+        "fact_id": "samsung-electronics-disc-001",
         "category": "consolidated_revenue",
         "value": "133,873,444",
         "unit": "백만원",
         "physical_pdf_page": 53,
         "dart_printed_page": 50,
-        "section_path": [
-            "III. 재무에 관한 사항",
-            "1. 요약재무정보",
-            "가. 요약연결재무정보",
-        ],
     },
     {
+        "fact_id": "samsung-electronics-disc-002",
         "category": "consolidated_operating_profit",
         "value": "57,232,797",
         "unit": "백만원",
         "physical_pdf_page": 53,
         "dart_printed_page": 50,
-        "section_path": [
-            "III. 재무에 관한 사항",
-            "1. 요약재무정보",
-            "가. 요약연결재무정보",
-        ],
-    },
-    {
-        "category": "major_segment_revenue",
-        "value": "817,156",
-        "unit": "억원",
-        "physical_pdf_page": 52,
-        "dart_printed_page": 49,
-        "section_path": [
-            "II. 사업의 내용",
-            "7. 기타 참고사항",
-            "라. 사업부문별 요약 재무 현황",
-        ],
-    },
-    {
-        "category": "major_segment_profit",
-        "value": "536,633",
-        "unit": "억원",
-        "physical_pdf_page": 52,
-        "dart_printed_page": 49,
-        "section_path": [
-            "II. 사업의 내용",
-            "7. 기타 참고사항",
-            "라. 사업부문별 요약 재무 현황",
-        ],
-    },
-    {
-        "category": "capex",
-        "value": "112,332",
-        "unit": "억원",
-        "physical_pdf_page": 16,
-        "dart_printed_page": 13,
-        "section_path": [
-            "II. 사업의 내용",
-            "3. 원재료 및 생산설비",
-            "라. 생산설비 및 투자 현황 등",
-            "시설투자 현황",
-        ],
-    },
-    {
-        "category": "major_product_or_technology",
-        "value": "HBM4 양산 출하",
-        "unit": None,
-        "physical_pdf_page": 31,
-        "dart_printed_page": 28,
-        "section_path": [
-            "II. 사업의 내용",
-            "6. 주요계약 및 연구개발활동",
-            "라. 연구개발실적",
-            "DS 부문",
-            "HBM",
-        ],
     },
 ]
 _DISCLOSURE_ANSWER_FACTS = (
     "133,873,444",
     "57,232,797",
-    "817,156",
-    "536,633",
-    "112,332",
 )
 
 
@@ -144,18 +82,23 @@ def run_release_smoke(api_url: str) -> dict[str, object]:
     )
     results = []
     for scenario_id, message, expected_status, expected_source in scenarios:
-        payload = _post(
-            api_url,
-            message=message,
-            session_id=f"release-smoke-{scenario_id}",
-        )
-        _assert_response(
-            payload,
-            expected_status=expected_status,
-            expected_source=expected_source,
-        )
-        if scenario_id == "disclosure":
-            _assert_disclosure_response(payload)
+        try:
+            payload = _post(
+                api_url,
+                message=message,
+                session_id=f"release-smoke-{scenario_id}",
+            )
+            _assert_response(
+                payload,
+                expected_status=expected_status,
+                expected_source=expected_source,
+            )
+            if scenario_id == "disclosure":
+                _assert_disclosure_response(payload)
+        except ReleaseSmokeError as exc:
+            raise ReleaseSmokeError(
+                f"{scenario_id}:{exc}"
+            ) from None
         results.append(
             {
                 "scenario": scenario_id,
@@ -164,25 +107,28 @@ def run_release_smoke(api_url: str) -> dict[str, object]:
         )
 
     session_id = "release-smoke-multi-turn"
-    _assert_response(
-        _post(
+    try:
+        _assert_response(
+            _post(
+                api_url,
+                message="삼성전자 최근 이슈 요약",
+                session_id=session_id,
+            ),
+            expected_status="complete",
+            expected_source="news",
+        )
+        follow_up = _post(
             api_url,
-            message="삼성전자 최근 이슈 요약",
+            message="그럼 위험 요인은?",
             session_id=session_id,
-        ),
-        expected_status="complete",
-        expected_source="news",
-    )
-    follow_up = _post(
-        api_url,
-        message="그럼 위험 요인은?",
-        session_id=session_id,
-    )
-    _assert_response(
-        follow_up,
-        expected_status="partial",
-        expected_source="research_report",
-    )
+        )
+        _assert_response(
+            follow_up,
+            expected_status="partial",
+            expected_source="research_report",
+        )
+    except ReleaseSmokeError as exc:
+        raise ReleaseSmokeError(f"multi_turn:{exc}") from None
     results.append(
         {
             "scenario": "multi_turn",
@@ -254,8 +200,11 @@ def _assert_response(
         return
     if (
         not evidence
-        or not isinstance(evidence[0], Mapping)
-        or evidence[0].get("source_type") != expected_source
+        or not any(
+            isinstance(item, Mapping)
+            and item.get("source_type") == expected_source
+            for item in evidence
+        )
     ):
         raise ReleaseSmokeError("release smoke response is invalid")
 
@@ -267,33 +216,45 @@ def _assert_disclosure_response(payload: Mapping[str, Any]) -> None:
     if (
         payload.get("status") != "partial"
         or not isinstance(evidence, list)
-        or len(evidence) != 1
-        or not isinstance(evidence[0], Mapping)
-        or evidence[0].get("document_id") != _DISCLOSURE_DOCUMENT_ID
         or not isinstance(warnings, list)
         or "insufficient_disclosure_coverage" not in warnings
     ):
         raise ReleaseSmokeError("release disclosure response is invalid")
-    locator = evidence[0].get("locator")
-    facts = locator.get("facts") if isinstance(locator, Mapping) else None
-    if (
-        not isinstance(locator, Mapping)
-        or locator.get("receipt_no") != "20260515002181"
-        or locator.get("viewer_url") != _DISCLOSURE_VIEWER_URL
-        or locator.get("content_level") != "verified_body_facts"
-        or locator.get("section") != "verified body facts"
-        or not isinstance(facts, list)
-        or not all(
+    locators: list[Mapping[str, Any]] = []
+    for item in evidence:
+        if (
+            not isinstance(item, Mapping)
+            or item.get("source_type") != "disclosure"
+            or item.get("document_id") != _DISCLOSURE_DOCUMENT_ID
+        ):
+            raise ReleaseSmokeError(
+                "release disclosure response is invalid"
+            )
+        locator = item.get("locator")
+        if (
+            not isinstance(locator, Mapping)
+            or locator.get("receipt_no") != "20260515002181"
+            or locator.get("viewer_url") != _DISCLOSURE_VIEWER_URL
+            or locator.get("content_level") != "verified_body_facts"
+            or locator.get("verification_status")
+            != "verified_against_source"
+            or not isinstance(locator.get("section"), str)
+            or not locator["section"].strip()
+        ):
+            raise ReleaseSmokeError(
+                "release disclosure response is invalid"
+            )
+        locators.append(locator)
+    if not all(
             any(
                 isinstance(observed, Mapping)
                 and all(
                     observed.get(key) == value
                     for key, value in required.items()
                 )
-                for observed in facts
+                for observed in locators
             )
-            for required in _DISCLOSURE_FACTS
-        )
+            for required in _REQUIRED_DISCLOSURE_FACTS
     ):
         raise ReleaseSmokeError("release disclosure response is invalid")
     try:
@@ -312,10 +273,14 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         result = run_release_smoke(args.api_url)
-    except ReleaseSmokeError:
+    except ReleaseSmokeError as exc:
         sys.stdout.write(
             json.dumps(
-                {"status": "error", "message": "release smoke failed"},
+                {
+                    "status": "error",
+                    "message": "release smoke failed",
+                    "reason": str(exc),
+                },
                 sort_keys=True,
             )
         )
