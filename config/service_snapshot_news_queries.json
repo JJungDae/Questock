@@ -1,0 +1,69 @@
+{
+  "schema_version": "service-news-queries-v2",
+  "snapshot_id": "svc-20260724-1402",
+  "endpoint": "https://naverapihub.apigw.ntruss.com/search/v1/news",
+  "display": 100,
+  "max_calls_per_security": 10,
+  "max_quality_queries_per_security": 3,
+  "max_calls_per_quality_query": 2,
+  "timeout_seconds": 15,
+  "securities": [
+    {
+      "security_id": "KRX:005930",
+      "query": "삼성전자 2026년 7월 24일",
+      "sort": "date",
+      "quality_queries": [
+        {
+          "query": "삼성전자 7월24일 실적 전망",
+          "sort": "sim"
+        },
+        {
+          "query": "삼성전자 7월24일 반도체 수요 공급",
+          "sort": "sim"
+        },
+        {
+          "query": "삼성전자 7월24일 HBM 투자",
+          "sort": "sim"
+        }
+      ]
+    },
+    {
+      "security_id": "KRX:000660",
+      "query": "SK하이닉스 7월24일",
+      "sort": "sim",
+      "quality_queries": [
+        {
+          "query": "SK하이닉스 7월24일 실적 전망",
+          "sort": "sim"
+        },
+        {
+          "query": "SK하이닉스 7월24일 HBM 수요 공급",
+          "sort": "sim"
+        },
+        {
+          "query": "SK하이닉스 7월24일 외국인 수급",
+          "sort": "sim"
+        }
+      ]
+    },
+    {
+      "security_id": "KRX:005380",
+      "query": "현대차 7월24일",
+      "sort": "date",
+      "quality_queries": [
+        {
+          "query": "현대차 2026년 7월 24일 실적 전망",
+          "sort": "date"
+        },
+        {
+          "query": "현대차 2026년 7월 24일 파업 생산",
+          "sort": "date"
+        },
+        {
+          "query": "현대차 2026년 7월 24일 전기차 판매",
+          "sort": "date"
+        }
+      ]
+    }
+  ]
+}

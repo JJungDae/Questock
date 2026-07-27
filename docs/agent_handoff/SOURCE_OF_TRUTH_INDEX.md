@@ -5,7 +5,7 @@
 > Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
 > Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
 > B9 planning base: `b9ddf7461306d16cf1da14634ce458050d78f7bc`
-> 상태: `B9 PASS / complete / M4 Gate PASS / next A15-M activation check`
+> 상태: `B9 PASS / M4 Gate PASS / FSC-1 PASS / complete; FSC-2 planning/preflight allowed`
 
 ## 1. 목적
 
@@ -23,11 +23,12 @@
 2. `docs/agent_handoff/PROJECT_PLAN_FINAL_PASS.md`
 3. `docs/agent_handoff/PROJECT_PLAN_FINAL_PASS_POST_M3_01_ADDENDUM.md`
 4. `docs/agent_handoff/POST_M3_01_EXECUTION_FLOW_DECISION_2026-07-25.md`
-5. 현재 bundle의 Task Card 또는 통합 계획
-6. `docs/agent_handoff/AGENT_WORKFLOW.md`
-7. `docs/agent_handoff/AGENT_WORKFLOW_POST_M3_01_ADDENDUM.md`
-8. 관련 도메인·위험·평가 문서
-9. 실제 최신 코드와 테스트
+5. `docs/agent_handoff/FIRST_SERVICE_COMPLETION_EXECUTION_DECISION_2026-07-27.md`
+6. 현재 bundle의 Task Card 또는 통합 계획
+7. `docs/agent_handoff/AGENT_WORKFLOW.md`
+8. `docs/agent_handoff/AGENT_WORKFLOW_POST_M3_01_ADDENDUM.md`
+9. 관련 도메인·위험·평가 문서
+10. 실제 최신 코드와 테스트
 
 ## 3. 문서 효력
 
@@ -50,7 +51,8 @@
 - bundle별 계획 검수와 구현 검수 경계
 - golden/Critical 평가 자산 확인 시점
 - Streamlit dependency governance
-- M4 이후 A15-M, Stretch M2-09, M5-01, P1 순서
+- M4 이후 First Service Completion 삽입과 bundle 순서
+- Service Completion Gate 이후 A15-M, Stretch M2-09, M5-01, P1 순서
 
 ## 4. 현재 상태 요약
 
@@ -63,6 +65,67 @@ Task Card 사실 동기화 완료, B6-0에서 상태 확인
 현재 완료 bundle:
 B9
 
+현재 공식 bundle:
+First Service Completion
+
+현재 checkpoint:
+FSC-2 / SC-05 planning and preflight
+
+FSC 실행 결정:
+docs/agent_handoff/FIRST_SERVICE_COMPLETION_EXECUTION_DECISION_2026-07-27.md
+
+FSC Task Card:
+docs/TASK_CARDS/FSC-first-service-completion.md
+
+FSC-0:
+PASS / complete - Human Owner confirmed 2026-07-27
+
+FSC-1:
+PASS / complete - SC-01~04 complete; Human Owner requested closure 2026-07-27
+
+SC-01 automatic result:
+initial broad canonical queries exhausted the 1,000-result ceiling before the
+cutoff; validated company/date query and per-security sort rerun returned
+16 / 48 / 14 normalized candidates and PASS; direct quality supplements revised
+the candidate pools to 24 / 48 / 14
+
+SC-01 quality result:
+5 documents per security; pre-market/intraday 2/3, 1/4, 2/3;
+PASS / complete - Human Owner confirmed 2026-07-27
+
+SC-02 result:
+PASS / complete; one document per fixed receipt; 18 / 21 / 20 facts;
+all required categories 10/10; official viewer rm 유 / 유 / 유;
+Human Owner confirmed 2026-07-27
+
+SC-03 report result:
+Human Owner approved the source and permission package on 2026-07-27;
+M1-06 corpus normalization produced 12 PDF-verified sections per security;
+source PDF/body/excerpt/raw text are excluded from runtime, Git, and Gemini;
+PASS / complete - Human Owner confirmed 2026-07-27
+
+SC-04 snapshot result:
+PASS / complete; snapshot `svc-20260724-1402`;
+fixed basis `2026-07-24T05:02:00Z`; 54 unique documents;
+news 15, disclosures 3 with 18 / 21 / 20 facts,
+research reports 3 manifests / 36 sections; two builds produced all six files
+byte-identically; targeted 41 passed; full regression 1946 passed;
+GitHub CI and independent pytest rerun NOT_RUN
+
+FSC-2:
+planning/preflight ALLOWED; implementation BLOCKED pending Gemini
+quota/billing confirmation, approved sanitized generation smoke, and separate
+approval
+
+FSC-3:
+BLOCKED by bundle order
+
+Service Completion Gate:
+NOT_RUN
+
+A15-M:
+BLOCKED until Service Completion Gate PASS
+
 B6 구현:
 PASS / complete
 
@@ -70,7 +133,7 @@ B6 완료 SHA:
 60e6203b265a967a8b6ba45da2ba3128e1e1bcfe
 
 다음 공식 checkpoint:
-A15-M activation check
+FSC-2 planning/preflight; implementation remains blocked by Gemini follow-up
 
 B9 계획:
 docs/TASK_CARDS/B9-release-deployment-traceability.md
@@ -153,7 +216,7 @@ PASS / complete
 M4 Gate:
 PASS
 next:
-A15-M activation check
+First Service Completion
 
 B8 구현:
 PASS WITH REQUIRED FOLLOW-UP / complete
@@ -184,8 +247,14 @@ docs/TASK_CARDS/B7-integrated-implementation-plan.md
 docs/TASK_CARDS/B8-quality-observability.md
 docs/TASK_CARDS/B9-release-deployment-traceability.md
 
-next activation check:
-A15-M
+current:
+docs/TASK_CARDS/FSC-first-service-completion.md
+
+current execution decision:
+docs/agent_handoff/FIRST_SERVICE_COMPLETION_EXECUTION_DECISION_2026-07-27.md
+
+blocked until Service Completion Gate PASS:
+A15-M activation check
 ```
 
 ## 6. 금지
@@ -197,6 +266,7 @@ A15-M
 - 승인 없이 Streamlit 또는 다른 dependency 추가
 - bundle 내부 checkpoint마다 임의 main push
 - Task Card 상태와 실제 Git 상태 불일치 방치
+- Service Completion Gate 전에 A15-M·Stretch M2-09·M5-01 진입
 
 ## 7. 향후 갱신
 
