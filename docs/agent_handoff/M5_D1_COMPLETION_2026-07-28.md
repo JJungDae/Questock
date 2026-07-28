@@ -149,3 +149,30 @@ File SHA-256:
   `NOT_RUN`
 
 These remain separate Human Owner-authorized stages.
+
+## Remote release closure
+
+The Human Owner later authorized publication and deployment.
+
+- implementation commit:
+  `95b98555bd588134148a9104f733d6f85f00480b`
+- PR:
+  `#26`
+- PR quality gate:
+  `30362235377`, `PASS`
+- merged-main release SHA:
+  `373ea00d4e06526a98898e9c38f4d4a7871b1a8f`
+- merged-main quality gate:
+  `30362397614`, `PASS`
+- GCE deployment:
+  `30362550006`, `PASS`
+- release image:
+  `sha256:e8480098951728eeb4c2a5cb83a36bc5c03c5ee9b40c9286a10d212713ee57b5`
+- API/UI/external UI health and recorded seven-scenario smoke:
+  `PASS`
+- rollback:
+  `NOT_RUN` because deployment passed
+- final status:
+  `PASS / DEPLOYED / COMPLETE`
+- deployment closure:
+  `docs/agent_handoff/M5_D1_DEPLOYMENT_CLOSURE_2026-07-28.md`

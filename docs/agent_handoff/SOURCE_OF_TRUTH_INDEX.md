@@ -1,11 +1,11 @@
 # QUESTOCK SOURCE OF TRUTH INDEX
 
 > 기준일: 2026-07-28
-> 기준 branch: canonical `main`; deployed runtime release `c96008229cae34c4c3243a4cbfe099c98cc594c5`
+> 기준 branch: canonical `main`; deployed runtime release `373ea00d4e06526a98898e9c38f4d4a7871b1a8f`
 > Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
 > Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
 > B9 planning base: `b9ddf7461306d16cf1da14634ce458050d78f7bc`
-> 상태: `B9 PASS / M4 Gate PASS / FSC-0~FSC-4 PASS / complete; M5-01 PASS / DEPLOYED / COMPLETE; M5-01-HR1 PASS / DEPLOYED / COMPLETE at c96008229cae34c4c3243a4cbfe099c98cc594c5; M5-D1 LOCAL PASS / REVIEW FINDINGS CLOSED / HUMAN OWNER CHECK READY`
+> 상태: `B9 PASS / M4 Gate PASS / FSC-0~FSC-4 PASS / complete; M5-01 PASS / DEPLOYED / COMPLETE; M5-01-HR1 PASS / DEPLOYED / COMPLETE; M5-D1 PASS / DEPLOYED / COMPLETE at 373ea00d4e06526a98898e9c38f4d4a7871b1a8f`
 
 ## 1. 목적
 
@@ -63,12 +63,11 @@ PASS / complete
 Task Card 사실 동기화 완료, B6-0에서 상태 확인
 
 현재 완료 bundle:
-B9, First Service Completion, M5-01, M5-01-HR1
+B9, First Service Completion, M5-01, M5-01-HR1, M5-D1
 
-현재 공식 bundle:
-M5-D1 Evidence Cross-check -
-M5-D1-0~M5-D1-5 `LOCAL PASS / REVIEW FINDINGS CLOSED`;
-Git publication and deployment `NOT_RUN`
+M5-D1 Evidence Cross-check:
+M5-D1-0~M5-D1-6 `PASS / DEPLOYED / COMPLETE`;
+release SHA `373ea00d4e06526a98898e9c38f4d4a7871b1a8f`
 
 현재 차별화 후보:
 동일 사건의 반복 보도를 독립 근거로 과장하지 않고,
@@ -76,10 +75,9 @@ Git publication and deployment `NOT_RUN`
 미확인·자료 부족을 초보자에게 설명하는 `근거 대조형 답변`
 
 현재 checkpoint:
-M5-D1 local implementation and bounded evaluation complete;
-Human Owner direct review required;
-implementation branch `feature/m5-d1-evidence-crosscheck`;
-commit, push, PR, merge, and deployment `NOT_RUN`
+M5-D1 publication and GCE deployment complete;
+Human Owner production UI review available;
+next implementation scope requires Human Owner direction
 
 M5-D1 실행 기준:
 docs/TASK_CARDS/M5-D1-evidence-crosscheck.md
@@ -346,7 +344,7 @@ current repository disclosure corpus is one fixed 2026 Q1 quarterly report per
 security;
 plan status `APPROVED / IMPLEMENTATION AUTHORIZED`;
 Human Owner implementation approval recorded 2026-07-28;
-M5-D1-0~M5-D1-5 `LOCAL PASS / REVIEW FINDINGS CLOSED / HUMAN OWNER CHECK READY`;
+M5-D1-0~M5-D1-6 `PASS / DEPLOYED / COMPLETE`;
 coverage result:
 `docs/agent_handoff/M5_D1_COLLECTION_COVERAGE_2026-07-28.md`;
 retained local source inventory:
@@ -367,6 +365,8 @@ completion record:
 `docs/agent_handoff/M5_D1_COMPLETION_2026-07-28.md`;
 accepted-review closure:
 `docs/agent_handoff/M5_D1_REVIEW_FIX_CLOSURE_2026-07-28.md`;
+deployment closure:
+`docs/agent_handoff/M5_D1_DEPLOYMENT_CLOSURE_2026-07-28.md`;
 direct-company event clusters `7`, clustered article instances `43`;
 description-only company matches remain indirect candidates and cannot enter
 direct event clusters;
@@ -378,7 +378,16 @@ focused M5-D1/report tests `18 passed`;
 affected regression `193 passed`; full regression `2189 passed, 2 warnings`;
 Gemini classifier calls `0`;
 OpenDART credential preflight `PASS`;
-commit, push, PR, merge, and deployment `NOT_RUN`
+implementation commit
+`95b98555bd588134148a9104f733d6f85f00480b`;
+PR `#26`;
+PR quality gate `30362235377` `PASS`;
+release SHA `373ea00d4e06526a98898e9c38f4d4a7871b1a8f`;
+merged-main quality gate `30362397614` `PASS`;
+GCE deployment `30362550006` `PASS`;
+release image
+`sha256:e8480098951728eeb4c2a5cb83a36bc5c03c5ee9b40c9286a10d212713ee57b5`;
+rollback `NOT_RUN` because deployment passed
 
 B6 구현:
 PASS / complete
@@ -387,8 +396,7 @@ B6 완료 SHA:
 60e6203b265a967a8b6ba45da2ba3128e1e1bcfe
 
 다음 공식 checkpoint:
-Human Owner M5-D1 review; publication and deployment remain separately
-authorized
+Human Owner production UI review or next-scope direction
 
 B9 계획:
 docs/TASK_CARDS/B9-release-deployment-traceability.md
@@ -503,12 +511,12 @@ docs/TASK_CARDS/B8-quality-observability.md
 docs/TASK_CARDS/B9-release-deployment-traceability.md
 docs/TASK_CARDS/M5-01-as-of-price-grounded-answer.md
 
-current:
+completed M5-D1:
 docs/TASK_CARDS/M5-D1-evidence-crosscheck.md
 
 current status:
-M5-D1-0~M5-D1-5 `LOCAL PASS / REVIEW FINDINGS CLOSED / HUMAN OWNER CHECK READY`;
-commit, push, PR, merge, and deployment `NOT_RUN`
+M5-D1-0~M5-D1-6 `PASS / DEPLOYED / COMPLETE`;
+release SHA `373ea00d4e06526a98898e9c38f4d4a7871b1a8f`
 
 completed M5 extension:
 docs/TASK_CARDS/M5-01-hybrid-intent-router.md
@@ -520,7 +528,7 @@ current execution decision:
 docs/agent_handoff/FIRST_SERVICE_COMPLETION_EXECUTION_DECISION_2026-07-27.md
 
 next:
-Human Owner M5-D1 review
+Human Owner production UI review or next-scope direction
 ```
 
 ## 6. 금지
