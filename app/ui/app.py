@@ -163,6 +163,7 @@ def _render_checkpoint_controls() -> datetime:
             index=3,
             format_func=lambda value: value.isoformat(),
             key="checkpoint_date",
+            on_change=_reset_checkpoint_conversation,
         )
     with second:
         selected_label = st.selectbox(
@@ -170,6 +171,7 @@ def _render_checkpoint_controls() -> datetime:
             tuple(label for label, _ in _CHECKPOINT_OPTIONS),
             index=2,
             key="checkpoint_time",
+            on_change=_reset_checkpoint_conversation,
         )
     checkpoint_time = dict(_CHECKPOINT_OPTIONS)[selected_label]
     return datetime.combine(
@@ -182,15 +184,17 @@ def _render_checkpoint_controls() -> datetime:
 def _apply_checkpoint_context(selected_as_of: datetime) -> None:
     checkpoint = selected_as_of.strftime("%Y%m%dT%H%MKST")
     previous = st.session_state.get("active_checkpoint_id")
-    changed = previous is not None and previous != checkpoint
-    if changed:
-        st.session_state.session_id = _new_session_id()
-        st.session_state.response = None
-        st.session_state.question = ""
-        st.session_state.transcript = ()
+    if previous is not None and previous != checkpoint:
+        _reset_checkpoint_conversation()
     st.session_state.active_checkpoint_id = checkpoint
-    if changed:
-        st.rerun()
+
+
+def _reset_checkpoint_conversation() -> None:
+    st.session_state.session_id = _new_session_id()
+    st.session_state.response = None
+    st.session_state.question = ""
+    st.session_state.transcript = ()
+    st.session_state.active_checkpoint_id = None
 
 
 def _append_transcript(
