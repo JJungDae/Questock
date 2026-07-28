@@ -1,127 +1,149 @@
-# Questock 유사 서비스·차별화 후보 검토
+# Questock 유사 서비스·차별화 후보 재검토
 
-> 조사일: `2026-07-28`
+> 최초 조사일: `2026-07-28`
+> 재검토일: `2026-07-28`
+> 상태: `REVIEWED / HUMAN OWNER DECISION REQUIRED`
 > 목적: 평가·LLM 모델 비교보다 먼저 수행할 차별화 기능 선택
-> 조사 범위: 로그인 없이 확인 가능한 공식 소개·도움말·앱 설명
+> 조사 범위: 로그인 없이 확인 가능한 공식 소개·도움말·개발 문서
 > 한계: 실제 유료 기능과 로그인 후 UX를 직접 비교한 결과가 아니며,
 > 시장 전체의 유일성을 증명하는 조사가 아니다.
 
-## 1. 공개 기능 비교
+## 0. 재검토로 변경된 결론
 
-| 서비스 | 공개된 핵심 기능 | Questock과 겹치는 부분 | Questock이 따라가기 어려운 부분 |
-|---|---|---|---|
-| 네이버페이 증권 | 국내외 시세·시장 흐름, 관심종목 가격·공시·리서치 알림, 보유주식 통합, 주문·토론방 | 시세, 뉴스·공시·리서치 접근 | 시장 전체 범위, 계좌·주문·관심종목 생태계 |
-| 토스증권 Open API | 실시간 호가·체결·캔들, 종목·시장 정보, 계좌·주문, 외부 AI와 연결한 대화형 포트폴리오 분석 예시 | 자연어 금융 질의와 시세 활용 | 실제 계좌·거래·포트폴리오 연결 |
-| Fiscal.ai | 금융·KPI 데이터, AI 리서치, 차트·대시보드, 비교, 관심종목·알림, 실적·공시·IR 자료와 출처 감사 | AI 질의, 재무·공시 근거, 출처 연결, 요약 | 글로벌 범위, 장기 정형 재무 데이터, 모델링·스크리닝 |
-| Perplexity Finance | 자연어 심층 조사, 공시·실적발표·실시간 가격·내부자·거시 데이터, 촉매 감시, 원문 링크 | 근거형 질의, 최신 뉴스·가격, 출처 링크 | 대규모 데이터·connector, 자동 심층 조사와 감시 |
-| AlphaSense | 대화형 금융 검색, 공시·transcript·리서치·재무 데이터, 인용·원문 excerpt, deep research, workflow·watchlist·alert | 멀티턴 질의, 리서치·공시 검색, 근거 확인 | 프리미엄 데이터 규모, 전문 분석 workflow·자동화 |
-| TipRanks | AI 종목 개요, 긍정·부정 요인, 재무·기술·위험 분석, peer 비교, 실적발표·기업 이벤트·sentiment | 종목 요약, 긍정·위험 구조, 가격변동 배경 | 광범위한 지표·peer·기술·sentiment·score |
+최초 검토에서 1순위로 제시했던 `As-of Replay / 시점 비교 답변`은
+Human Owner 피드백에 따라 차별화 후보에서 제외한다. 현재의 시점 선택은
+실시간 서비스를 구현하지 못한 데모 제약이며, 향후 실시간 서비스에서는
+없어질 수 있기 때문이다.
+
+또한 이번 재검토에서 다음 기능도 이미 다른 서비스의 공개 기능으로
+확인했다.
+
+- 같은 사건의 여러 기사를 한 묶음으로 보여주기:
+  Ground News, Google News
+- 여러 보도사의 관점과 고유 기사 수가 충분한지 구분하기:
+  Ground News
+- 조사 과정·인라인 인용·원문 이동:
+  AlphaSense, Perplexity Finance, Fiscal.ai
+- 긍정·부정 요인, 위험, 기업 이벤트 요약:
+  TipRanks
+
+따라서 `기사 묶기`, `출처 링크`, `호재·악재 요약`, `공시 연결` 중
+하나만 구현해서는 차별화라고 주장할 수 없다.
+
+## 1. 공식 공개 기능 재확인
+
+| 서비스 | 공식 페이지에서 확인한 기능 | Questock 단독 기능으로 주장할 수 없는 부분 |
+|---|---|---|
+| Perplexity Finance | 뉴스·데이터 피드의 촉매 추적, 공시·실적발표·리서치 종합, 답변에서 원 공시·transcript·데이터로 직접 연결 | 촉매 추적, 멀티소스 종합, 원문 연결 |
+| AlphaSense | 질의를 조사 계획으로 분해, 공시·transcript·리서치 등 대규모 자료 검색, 요약별 인라인 인용과 원문 해당 구절 확인, primary/secondary 문서 구분 | 조사 과정, 자료 유형 구분, 인라인 검증 |
+| TipRanks | 긍정·부정 요인, 재무·기술·위험, 실적발표, 기업 이벤트와 sentiment, 검증 데이터·다층 사실 검증·출처 표시 | 호재·악재·위험·이벤트 요약, 출처 표시 |
+| Fiscal.ai | 모든 숫자를 제출 문서의 정확한 페이지와 연결, 최근 뉴스·bull/bear 논점·변화 모니터링, 감사 가능한 데이터 흐름 | 공시 기반 수치 검증, 최근 뉴스와 상반 관점 |
+| Ground News | 서로 다른 보도사의 동일 사건 기사를 한 story로 병합, 여러 보도사의 headline·framing 비교, 충분한 고유 기사가 있을 때만 비교 요약 제공 | 사건 클러스터, 다수 보도사 관점 비교, 고유 기사 충분성 판단 |
+| Google News | 같은 story의 추가 출처·지역 보도·관점·시간 흐름을 Full Coverage로 제공 | 동일 사건의 다중 출처·타임라인 |
 
 확인한 공식 자료:
 
-- 네이버페이 앱 증권 기능:
-  <https://apps.apple.com/kr/app/id1554807824>
-- 토스증권 Open API:
-  <https://home.tossinvest.com/ko/open-api>
-- Fiscal.ai:
-  <https://fiscal.ai/>
-- Fiscal.ai source-linked analyst skills:
-  <https://docs.fiscal.ai/docs/guides/mcp-skills>
 - Perplexity Finance:
   <https://www.perplexity.ai/enterprise/use-cases/finance>
 - AlphaSense Generative Search:
-  <https://help.alpha-sense.com/hc/en-us/articles/42591266633875-Quick-Start-Guide-to-Generative-Search>
-- AlphaSense 2026 workflow·monitoring update:
-  <https://help.alpha-sense.com/hc/en-us/articles/52207495181203-AlphaSense-Product-Updates-May-2026>
+  <https://help.alpha-sense.com/hc/en-us/articles/41666587181203-Interacting-with-Generative-Search>
+- AlphaSense primary/secondary documents:
+  <https://help.alpha-sense.com/hc/en-us/articles/41711142211603-Searching-Primary-Secondary-Documents-Mentions>
 - TipRanks AI Stock Analysis:
   <https://www.tipranks.com/news/labs/introducing-stock-ai-analysis-smarter-insights-faster-decisions>
+- TipRanks AI Equity Research:
+  <https://www.tipranks.com/news/labs/tipranks-ai-equity-research-offers-next-generation-stock-analysis>
+- Fiscal.ai source-linked skills:
+  <https://docs.fiscal.ai/docs/guides/mcp-skills>
+- Ground News 소개:
+  <https://ground.news/about>
+- Ground News 동일 기사 비교:
+  <https://help.ground.news/en/articles/485057>
+- Ground News 고유 기사 충분성:
+  <https://help.ground.news/en/articles/3189505>
+- Google Full Coverage:
+  <https://support.google.com/websearch/answer/11127743?hl=en>
 
-## 2. 기존 기능·초기 아이디어 판정
+## 2. 공개 자료로 확인되지 않은 조합
 
-### 단독으로는 차별화하기 어려움
+이번 공식 공개 자료에서는 아래 전체 흐름을 금융 초보자용 답변의 한
+기능으로 제공한다고 명시한 대표 서비스를 확인하지 못했다.
 
-- 근거가 붙은 자연어 종목 질의
-- 뉴스·공시·리서치 요약
-- 긍정·위험·불확실성 구분
-- 재무 추세·차트·KPI
-- 종목·peer 비교
-- 관심종목·알림·portfolio
-- 시장 screening
-- 긴 리서치 보고서와 자동 slide
-- AI model 선택
+1. 국내 종목 뉴스를 사건 단위로 묶는다.
+2. 재배포·동일 원출처 가능성을 별도로 표시하여 보도사 개수를 곧바로
+   독립 근거 개수로 세지 않는다.
+3. 같은 사건에서 여러 기사에 공통으로 확인된 사실과 서로 다른 해석을
+   구분한다.
+4. DART 공시는 가격변동의 직접 원인으로 자동 단정하지 않고
+   `공식 확인`, `배경 근거`, `상충`, `연결 없음`으로 역할을 구분한다.
+5. 확인되지 않은 내용과 현재 자료로 알 수 없는 내용을 초보자에게
+   명시한다.
+6. 위 결과를 자료 목록이 아니라 자연스러운 근거 기반 답변으로 제공한다.
 
-위 기능은 현재 서비스 중 하나 이상과 겹친다. 구현 범위와 데이터가 더
-작은 Questock이 같은 기능 수로 경쟁하는 방향은 적절하지 않다.
+이 조합은 Questock의 **차별화 목표 후보**로는 타당하다. 다만 이는
+공식 공개 페이지에서 동일한 전체 조합을 확인하지 못했다는 뜻일 뿐이다.
+로그인 후 기능, 유료 기능, 비공개 기업용 기능까지 포함해 시장에 전혀
+없다는 증거는 아니다. 따라서 발표와 문서에서는 다음 표현을 사용한다.
 
-### 차별화 가능성이 남은 현재 조합
+허용:
 
-Questock의 개별 요소도 완전히 새로운 것은 아니지만, 아래 조합은 이번
-공개 자료 조사에서 대표 기능으로 직접 확인하지 못했다.
+> Questock은 동일 사건을 반복 보도 건수로 과장하지 않고, 뉴스 사이의
+> 공통 사실·다른 해석과 DART 공식 근거의 역할, 아직 확인되지 않은
+> 부분을 초보자에게 함께 설명하는 것을 차별화 목표로 한다.
 
-1. 심사자가 과거 날짜와 장 전·장 중·애프터마켓·장 마감 시점을 선택
-2. 선택 시점 이후에 공개된 뉴스·공시·가격을 hard filter로 배제
-3. 해당 시점에서 확인 가능했던 가격과 근거만으로 답변
-4. 필요한 자료가 부족하면 source별 누락과 보류 상태를 공개
-5. 국내 주식 초보자가 일상 표현으로 같은 과정을 질문
+금지:
 
-이는 단순한 “최신 AI 종목 분석”보다 **당시 알 수 있었던 정보만으로
-답변을 재현하고 검증하는 서비스**로 설명할 수 있다.
+- 업계 최초
+- 국내 유일
+- 다른 서비스에는 없는 기능
+- 독립 근거 개수를 완전히 판별한다
+- 공시가 뉴스의 인과관계를 증명한다
 
-## 3. 권장 차별화 기능
+## 3. 차별화 경계
 
-### 1순위 — As-of Replay / 시점 비교 답변
+### 차별화의 중심
 
-같은 종목·같은 질문을 두 기준 시점에 실행해 다음만 비교한다.
+`근거 대조형 답변 / Evidence Cross-check`
 
-- 당시 가격과 시장 상태
-- 그 시점까지 공개된 근거
-- 새로 추가되거나 사라진 핵심 요인
-- 답변 상태와 근거 충분성 변화
-- 미래 정보 사용 건수 `0`
+- 사건 중심 뉴스 묶음
+- 보수적인 원출처·재배포 관계 표시
+- 공통 사실과 다른 해석 분리
+- DART 공식 자료의 역할 구분
+- 미확인·자료 부족 공개
+- 초보자 친화적인 자연어 답변
 
-회사 간 우열 비교, 가격 예측, 매수·매도 추천은 포함하지 않는다.
+### 차별화가 아닌 품질 계약
 
-장점:
+- 선택 시점 이후 자료를 사용하지 않는 temporal cutoff
+- 인용 링크
+- 근거 기반 답변
+- 보안·개인정보·투자조언 제한
 
-- 현재 M5 시점 선택·temporal filter·가격 snapshot을 재사용할 수 있음
-- 교수·심사자가 직접 미래 정보 누출 여부를 확인 가능
-- “왜 답이 달라졌는가”를 근거 시간순으로 설명 가능
-- 일반적인 최신 요약 서비스와 발표상 차이를 한 화면에서 보여주기 쉬움
+위 항목은 반드시 유지하지만 차별화 기능으로 홍보하지 않는다. 특히
+현재의 시점 선택 UI는 데모와 정확성 검증을 위한 임시 제약으로 취급한다.
 
-### 2순위 — 근거 타임라인
+### 이번 단계에서 제외
 
-선택 시점까지의 가격 snapshot, 뉴스, 공시, 리포트를 공개 시각순으로
-보여주고 다음을 구분한다.
+- 리서치 리포트 추가 수집·가공·대조
+- 실시간 뉴스·가격 서비스로 전환
+- 보도사 신뢰도나 정치적 성향 평가
+- 회사 간 투자 매력도 순위
+- 매수·매도·보유 추천과 주가 예측
 
-- 가격 관측 이전에 존재한 근거
-- 가격 관측 이후라 원인 근거로 사용할 수 없는 자료
-- 직접 원인 기사
-- 당일 호재·악재에 해당하지만 직접 원인으로 단정할 수 없는 자료
+리서치 리포트 원문은 Human Owner가 작업 에이전트의 전처리를 허용했지만,
+수집·가공 시간이 필요하므로 후속 단계로 둔다. 1단계는 뉴스와 DART
+공시만으로 차별화 흐름을 검증한다.
 
-### 3순위 — 독립 원출처·상충 관점 표시
+## 4. 판정
 
-재배포 기사를 여러 독립 근거로 세지 않고, 같은 사건에 대한 뉴스·공시·
-리포트의 공통 사실과 다른 관점을 묶어 표시한다. 초기 아이디어 `E05`와
-기존 `A05-M`을 개선하는 방향이다.
+- `기사 클러스터링` 자체: `NOT DIFFERENTIATED`
+- `출처 링크·인용` 자체: `NOT DIFFERENTIATED`
+- `긍정·부정·위험 요약` 자체: `NOT DIFFERENTIATED`
+- `공시 연결` 자체: `NOT DIFFERENTIATED`
+- 위 요소를 결합한 `근거 대조형 답변`:
+  `PLAUSIBLE DIFFERENTIATION TARGET / NOT MARKET-EXCLUSIVITY PROOF`
 
-## 4. 다음 작업 순서 제안
-
-```text
-M5-01-HR1 배포·사용자 확인
-→ 1순위 As-of Replay의 최소 범위와 시연 화면 확정
-→ 차별화 기능 구현·시간 누출 테스트
-→ golden set과 범용 평가 지표 확립
-→ 시간이 남으면 LLM 모델 비교
-```
-
-## 5. 결론
-
-- 기존 기능과 초기 아이디어의 **개별 기능 대부분은 유사 서비스와
-  겹친다**.
-- 따라서 알림·portfolio·screening·기술지표를 하나 더 붙이는 것으로는
-  차별화하기 어렵다.
-- 그러나 현재 구현된 `기준 시점 선택 + 이후 정보 강제 배제 + 근거 부족
-  보류`를 `같은 질문의 시점별 재현·비교`로 강화하는 방향은 차별화
-  후보로 남아 있다.
-- 이 결론은 공개 자료 기반의 빠른 제품 검토이며 “시장에 동일 기능이
-  전혀 없다”는 주장은 아니다.
+구현 전 기준은
+`docs/TASK_CARDS/M5-D1-evidence-crosscheck.md`로 분리한다. 구현 후에는
+작은 수작업 정답셋으로 사건 묶음, 원출처 관계 주장, 공시 역할, 인용
+지지 여부를 검증해야 차별화 기능이 실제로 성립했다고 말할 수 있다.

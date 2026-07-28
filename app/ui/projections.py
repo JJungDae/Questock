@@ -3,9 +3,14 @@ from __future__ import annotations
 import re
 import unicodedata
 from dataclasses import dataclass
+from datetime import datetime
 from urllib.parse import parse_qsl, unquote_plus, urlsplit
 
-from app.api.schemas import ChatResponse, PublicProcessSummary
+from app.api.schemas import (
+    ChatResponse,
+    PublicEvidenceComparison,
+    PublicProcessSummary,
+)
 from app.core.models import Evidence
 
 _HIDDEN_TEXT = "안전하게 표시할 수 없는 내용입니다."
@@ -198,6 +203,34 @@ class ProcessStageView:
     fields: tuple[ProcessField, ...]
 
 
+@dataclass(frozen=True)
+class ComparisonSourceView:
+    title: str
+    publisher: str
+    source_type: str
+    published_at: str
+    link_url: str | None
+
+
+@dataclass(frozen=True)
+class ComparisonItemView:
+    text: str
+    source: ComparisonSourceView | None
+    source_locator: str | None
+
+
+@dataclass(frozen=True)
+class EvidenceComparisonView:
+    event_label: str
+    lineage_text: str
+    article_count_text: str | None
+    articles: tuple[ComparisonSourceView, ...]
+    common_facts: tuple[ComparisonItemView, ...]
+    perspectives: tuple[ComparisonItemView, ...]
+    disclosures: tuple[ComparisonItemView, ...]
+    limitations: tuple[str, ...]
+
+
 def project_baseline_answer(response: ChatResponse) -> BaselineAnswerView:
     if not isinstance(response, ChatResponse):
         raise ProjectionError("응답을 화면에 표시할 수 없습니다.")
@@ -263,6 +296,110 @@ def _project_warnings(response: ChatResponse) -> tuple[str, ...]:
             )
         )
     return tuple(output)
+
+
+def project_evidence_comparison(
+    comparison: PublicEvidenceComparison | None,
+) -> EvidenceComparisonView | None:
+    if comparison is None:
+        return None
+    if not isinstance(comparison, PublicEvidenceComparison):
+        raise ProjectionError("근거 대조를 화면에 표시할 수 없습니다.")
+    lineage = comparison.source_lineage_summary
+    articles = tuple(
+        _project_comparison_source(item)
+        for item in comparison.article_sources
+    )
+    source_by_id = {
+        item.source_id: _project_comparison_source(item)
+        for item in comparison.article_sources
+    }
+    common_facts = tuple(
+        ComparisonItemView(
+            text=_safe_text(item.text),
+            source=next(
+                (
+                    source_by_id[source_id]
+                    for source_id in item.source_ids
+                    if source_id in source_by_id
+                ),
+                None,
+            ),
+            source_locator=None,
+        )
+        for item in comparison.common_facts
+    )
+    perspectives = tuple(
+        ComparisonItemView(
+            text=_safe_text(item.text),
+            source=_project_comparison_source(item.source),
+            source_locator=_safe_text(item.source_locator),
+        )
+        for item in comparison.different_interpretations
+    )
+    disclosures = tuple(
+        ComparisonItemView(
+            text=_safe_text(item.text),
+            source=(
+                _project_comparison_source(item.source)
+                if item.source is not None
+                else None
+            ),
+            source_locator=(
+                _safe_text(item.source_locator)
+                if item.source_locator is not None
+                else None
+            ),
+        )
+        for item in comparison.disclosure_links
+    )
+    return EvidenceComparisonView(
+        event_label=_safe_text(comparison.event_label),
+        lineage_text=(
+            "확인된 독립 근거 "
+            f"{lineage.confirmed_independent_count}건 · "
+            "재배포 확인 "
+            f"{lineage.confirmed_republication_count}건 · "
+            "원출처 관계 미확인 "
+            f"{lineage.unknown_count}건"
+        ),
+        article_count_text=(
+            (
+                f"전체 {comparison.article_total_count}건 중 "
+                f"{comparison.article_displayed_count}건 표시"
+            )
+            if comparison.article_total_count
+            > comparison.article_displayed_count
+            else None
+        ),
+        articles=articles,
+        common_facts=common_facts,
+        perspectives=perspectives,
+        disclosures=disclosures,
+        limitations=tuple(
+            _safe_text(item)
+            for item in (
+                comparison.unconfirmed_claims
+                + comparison.missing_evidence
+            )
+        ),
+    )
+
+
+def _project_comparison_source(source: object) -> ComparisonSourceView:
+    source_type = getattr(source, "source_type", None)
+    published_at = getattr(source, "published_at", None)
+    return ComparisonSourceView(
+        title=_safe_text(getattr(source, "title", None)),
+        publisher=_safe_text(getattr(source, "publisher", None)),
+        source_type=_SOURCE_LABELS.get(source_type, "자료"),
+        published_at=(
+            published_at.isoformat(timespec="minutes")
+            if isinstance(published_at, datetime)
+            else ""
+        ),
+        link_url=_safe_http_url(getattr(source, "source_url", None)),
+    )
 
 
 def project_baseline_sources(
@@ -621,10 +758,14 @@ __all__ = [
     "AnswerCardView",
     "BaselineAnswerView",
     "BaselineSourceView",
+    "ComparisonItemView",
+    "ComparisonSourceView",
+    "EvidenceComparisonView",
     "ProcessField",
     "ProcessStageView",
     "ProjectionError",
     "project_baseline_answer",
     "project_baseline_sources",
+    "project_evidence_comparison",
     "project_process_stages",
 ]

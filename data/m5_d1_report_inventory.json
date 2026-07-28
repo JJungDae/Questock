@@ -1,0 +1,1016 @@
+{
+  "coverage": {
+    "discovered_count": 15,
+    "excluded_count": 0,
+    "extraction_status_counts": {
+      "image_only_visual_review_required": 2,
+      "partial_text_extracted": 4,
+      "text_extracted": 9
+    },
+    "runtime_ready_count": 0,
+    "selected_by_publisher": {
+      "미래에셋증권": 6,
+      "삼성증권": 6,
+      "키움증권": 3
+    },
+    "selected_by_security": {
+      "KRX:000660": 5,
+      "KRX:005380": 5,
+      "KRX:005930": 5
+    },
+    "selected_count": 15,
+    "visual_review_confirmed": true
+  },
+  "permissions": {
+    "corpus_ingest_allowed": false,
+    "external_llm_processing_allowed": false,
+    "local_preprocessing_allowed": true,
+    "runtime_evidence_excerpt_allowed": false,
+    "runtime_raw_text_allowed": false,
+    "runtime_source_pdf_allowed": false
+  },
+  "prepared_at": "2026-07-28T12:19:13.035080Z",
+  "reports": [
+    {
+      "analyst": "이종욱",
+      "available_from": "2026-06-25T14:59:59Z",
+      "extracted_character_count": 9699,
+      "extracted_nonempty_page_count": 5,
+      "extraction_status": "text_extracted",
+      "identity_verification_status": "filename_source_map_pdf_text_and_visual_review",
+      "page_text_checksums": [
+        {
+          "extracted_character_count": 1985,
+          "page": 1,
+          "text_sha256": "d34bc3509913c9cdc18ab8bdf4fd4c284475a40b718cba23539f9d9aef87d946"
+        },
+        {
+          "extracted_character_count": 1755,
+          "page": 2,
+          "text_sha256": "04ea361c50c76d4214386d8d2fe36776487658bdf5da56575f61955481dc8cf4"
+        },
+        {
+          "extracted_character_count": 4104,
+          "page": 3,
+          "text_sha256": "142fddd70dfd1b595f35aa670025c2356a5dd6dd37a64bcddc8e4992e8748317"
+        },
+        {
+          "extracted_character_count": 1723,
+          "page": 4,
+          "text_sha256": "59d6a794a6f87e29ff6e323bea697c751eff675fbbc2715812996c6079b76d07"
+        },
+        {
+          "extracted_character_count": 132,
+          "page": 5,
+          "text_sha256": "7a5fdb6e34a3eb7607b0b373c597f6186b5e850d8a9af3464d3911822fae373e"
+        }
+      ],
+      "pdf_page_count": 5,
+      "pdf_sha256": "530b44720352e48bbed7eeb4e16d20ec720a340e3f9edf9c55b64d38e0a297e2",
+      "permissions": {
+        "corpus_ingest_allowed": false,
+        "external_llm_processing_allowed": false,
+        "local_preprocessing_allowed": true,
+        "runtime_evidence_excerpt_allowed": false,
+        "runtime_raw_text_allowed": false,
+        "runtime_source_pdf_allowed": false
+      },
+      "preprocessing_status": "metadata_and_local_text_ready",
+      "published_at_precision": "date",
+      "published_date": "2026-06-25",
+      "publisher": "삼성증권",
+      "report_id": "report:1b48d268a21fc90f0633435dde5bb07937b31b8b3f5ed0dee4633dd9970f9757",
+      "report_scope": "company_specific",
+      "security_id": "KRX:000660",
+      "security_name": "SK하이닉스",
+      "selection_status": "selected_for_m5_d1",
+      "source_url": "https://www.samsungpop.com/common.do?cmd=down&contentType=application/pdf&inlineYn=Y&saveKey=research.pdf&fileName=2010/2026062507153736K_02_02.pdf",
+      "ticker": "000660",
+      "title": "SK하이닉스(000660_BUY)-SK하이닉스 ADR, 7월 나스닥 입성"
+    },
+    {
+      "analyst": "김석환",
+      "available_from": "2026-07-13T14:59:59Z",
+      "extracted_character_count": 0,
+      "extracted_nonempty_page_count": 0,
+      "extraction_status": "image_only_visual_review_required",
+      "identity_verification_status": "filename_source_map_and_visual_review",
+      "page_text_checksums": [],
+      "pdf_page_count": 3,
+      "pdf_sha256": "9813b8f1c4fe720bc7d2216d561b0356bab2177e52f01338ddd532cbd022efdb",
+      "permissions": {
+        "corpus_ingest_allowed": false,
+        "external_llm_processing_allowed": false,
+        "local_preprocessing_allowed": true,
+        "runtime_evidence_excerpt_allowed": false,
+        "runtime_raw_text_allowed": false,
+        "runtime_source_pdf_allowed": false
+      },
+      "preprocessing_status": "metadata_and_visual_review_ready",
+      "published_at_precision": "date",
+      "published_date": "2026-07-13",
+      "publisher": "미래에셋증권",
+      "report_id": "report:543d4870086a0ba0516c1151f1df1b8d6eb61724be20d9e84671ec41c41a6086",
+      "report_scope": "company_specific",
+      "security_id": "KRX:000660",
+      "security_name": "SK하이닉스",
+      "selection_status": "selected_for_m5_d1",
+      "source_url": "https://securities.miraeasset.com/bbs/download/2145820.pdf?attachmentId=2145820",
+      "ticker": "000660",
+      "title": "Market Issue-SK하이닉스 급락 코멘트"
+    },
+    {
+      "analyst": "한수진",
+      "available_from": "2026-07-13T14:59:59Z",
+      "extracted_character_count": 32016,
+      "extracted_nonempty_page_count": 15,
+      "extraction_status": "text_extracted",
+      "identity_verification_status": "filename_source_map_pdf_text_and_visual_review",
+      "page_text_checksums": [
+        {
+          "extracted_character_count": 1846,
+          "page": 1,
+          "text_sha256": "43f25156398c8be447b3a949dad598359f4eaf30a25cd8a673c276ae99574a62"
+        },
+        {
+          "extracted_character_count": 3101,
+          "page": 2,
+          "text_sha256": "19b06d8bfe2add4ff976651d91f07322afca32a4869351a0e4d5071dc15f46d1"
+        },
+        {
+          "extracted_character_count": 2496,
+          "page": 3,
+          "text_sha256": "23e7b3a219a7a2a923f421bf79df96c2b3245fe6885c4dfcb4a7f52b488b95b6"
+        },
+        {
+          "extracted_character_count": 3057,
+          "page": 4,
+          "text_sha256": "7485a897a119fd5e023cd11b85a4df5df243d824f946ee7ca02bed5ed394cbee"
+        },
+        {
+          "extracted_character_count": 2529,
+          "page": 5,
+          "text_sha256": "45d5d7b7830a8fe44fbeb9dfab3cb73e60bf636119788cf6feacf88e39d81960"
+        },
+        {
+          "extracted_character_count": 2202,
+          "page": 6,
+          "text_sha256": "c323ac5c91230af4988aa18b8f9611922237e6279e5dd2fa8c5dff4c2d858fb2"
+        },
+        {
+          "extracted_character_count": 1970,
+          "page": 7,
+          "text_sha256": "ca2072b01f06260020008689e14002a69b09585906f06e1f2626289b2511b05b"
+        },
+        {
+          "extracted_character_count": 3076,
+          "page": 8,
+          "text_sha256": "d9b903d59fd73a7c5b1be89c5567649897e7284c4a55050b8cd21d496733c6aa"
+        },
+        {
+          "extracted_character_count": 2709,
+          "page": 9,
+          "text_sha256": "4f96c56da06247ec29909f9ddc0702ac19b9bd8c7785be90bc4bac4a52d602d5"
+        },
+        {
+          "extracted_character_count": 1963,
+          "page": 10,
+          "text_sha256": "f43891864a4f0baf1de3c6fae0d122f82f722048d237f50179f0fc94f65639a0"
+        },
+        {
+          "extracted_character_count": 2612,
+          "page": 11,
+          "text_sha256": "d2393972090e4ac46d897c8be42bb4f0520060dd449bfbf601b1347157f6de79"
+        },
+        {
+          "extracted_character_count": 1922,
+          "page": 12,
+          "text_sha256": "58618d4654a28a7b937d8de12924e8e6e57515b79aa3b338a2e6a3c03672a77e"
+        },
+        {
+          "extracted_character_count": 1982,
+          "page": 13,
+          "text_sha256": "84b2fc654e8e994dee67f8f64f927f192bec9db3f53b33cd9e8186ebfb8e066a"
+        },
+        {
+          "extracted_character_count": 419,
+          "page": 14,
+          "text_sha256": "cc6b9241b399a017c07260ba48c91612f9f51e5c14d5e52aaea9b276f0194462"
+        },
+        {
+          "extracted_character_count": 132,
+          "page": 15,
+          "text_sha256": "7a5fdb6e34a3eb7607b0b373c597f6186b5e850d8a9af3464d3911822fae373e"
+        }
+      ],
+      "pdf_page_count": 15,
+      "pdf_sha256": "038132c73307dc0ec234959f2d6cf97a68908a3100aed5ebc11a84571e86e38a",
+      "permissions": {
+        "corpus_ingest_allowed": false,
+        "external_llm_processing_allowed": false,
+        "local_preprocessing_allowed": true,
+        "runtime_evidence_excerpt_allowed": false,
+        "runtime_raw_text_allowed": false,
+        "runtime_source_pdf_allowed": false
+      },
+      "preprocessing_status": "metadata_and_local_text_ready",
+      "published_at_precision": "date",
+      "published_date": "2026-07-13",
+      "publisher": "삼성증권",
+      "report_id": "report:7d2241456d4a057ee8e3797958fffc5015a46da397bb4a18c28f0045d489bb40",
+      "report_scope": "market_strategy_with_company_focus",
+      "security_id": "KRX:000660",
+      "security_name": "SK하이닉스",
+      "selection_status": "selected_for_m5_d1",
+      "source_url": "https://www.samsungpop.com/common.do?cmd=down&contentType=application/pdf&inlineYn=Y&saveKey=research.pdf&fileName=3020/2026071313282859K_02_02.pdf",
+      "ticker": "000660",
+      "title": "ETP Weekly Insight-SK하이닉스 ADR 단일종목 레버리지 ETF, 미국 상장 대기 중"
+    },
+    {
+      "analyst": "김영건",
+      "available_from": "2026-07-14T14:59:59Z",
+      "extracted_character_count": 144,
+      "extracted_nonempty_page_count": 3,
+      "extraction_status": "partial_text_extracted",
+      "identity_verification_status": "filename_source_map_pdf_text_and_visual_review",
+      "page_text_checksums": [
+        {
+          "extracted_character_count": 64,
+          "page": 1,
+          "text_sha256": "ce280f5011f70288084337286c07d7f044997c01f6428662386b8e425691752d"
+        },
+        {
+          "extracted_character_count": 1,
+          "page": 2,
+          "text_sha256": "d03502c43d74a30b936740a9517dc4ea2b2ad7168caa0a774cefe793ce0b33e7"
+        },
+        {
+          "extracted_character_count": 79,
+          "page": 9,
+          "text_sha256": "419bc748650fe174155aca6b05c49fb4b01a223ace90b84f93f4ac59b06da5bd"
+        }
+      ],
+      "pdf_page_count": 9,
+      "pdf_sha256": "418e9cff7d4cd9632ebfb74e818922c575d76fa975ac0fa39108635136e46926",
+      "permissions": {
+        "corpus_ingest_allowed": false,
+        "external_llm_processing_allowed": false,
+        "local_preprocessing_allowed": true,
+        "runtime_evidence_excerpt_allowed": false,
+        "runtime_raw_text_allowed": false,
+        "runtime_source_pdf_allowed": false
+      },
+      "preprocessing_status": "metadata_and_local_text_ready",
+      "published_at_precision": "date",
+      "published_date": "2026-07-14",
+      "publisher": "미래에셋증권",
+      "report_id": "report:507b5c97d586446073e68b28a6c7f1c283fad61420377db3ba9b3eb7e700d9a3",
+      "report_scope": "company_specific",
+      "security_id": "KRX:000660",
+      "security_name": "SK하이닉스",
+      "selection_status": "selected_for_m5_d1",
+      "source_url": "https://securities.miraeasset.com/bbs/download/2145830.pdf?attachmentId=2145830",
+      "ticker": "000660",
+      "title": "SK하이닉스(000660_매수)-시선을 약간만 아래로"
+    },
+    {
+      "analyst": "김동영",
+      "available_from": "2026-07-21T14:59:59Z",
+      "extracted_character_count": 7743,
+      "extracted_nonempty_page_count": 6,
+      "extraction_status": "text_extracted",
+      "identity_verification_status": "filename_source_map_pdf_text_and_visual_review",
+      "page_text_checksums": [
+        {
+          "extracted_character_count": 1669,
+          "page": 1,
+          "text_sha256": "2be8af7f89a2c6807cdabe78361ca4a342c71372505df6ded9eb1556608f31aa"
+        },
+        {
+          "extracted_character_count": 1520,
+          "page": 2,
+          "text_sha256": "37c471a9ee0166aaabf7ae29a2e6a49d06e1aeb1c9072b25050f800fb243866c"
+        },
+        {
+          "extracted_character_count": 2064,
+          "page": 3,
+          "text_sha256": "717b270adc7b8c7530deab0d005b08e2b9de353206df2ab3305110a112331823"
+        },
+        {
+          "extracted_character_count": 1869,
+          "page": 4,
+          "text_sha256": "400b280aca199fb079b402f9406d803dabc436745179b88bc849de0b065aa055"
+        },
+        {
+          "extracted_character_count": 489,
+          "page": 5,
+          "text_sha256": "42ffb90708af590cb17260c18b630f348733a75520c1d76838f5b2af515e350b"
+        },
+        {
+          "extracted_character_count": 132,
+          "page": 6,
+          "text_sha256": "7a5fdb6e34a3eb7607b0b373c597f6186b5e850d8a9af3464d3911822fae373e"
+        }
+      ],
+      "pdf_page_count": 6,
+      "pdf_sha256": "7605748b725624c355a1914836276b29452dcefb481dcb01dfa86a14caf034f0",
+      "permissions": {
+        "corpus_ingest_allowed": false,
+        "external_llm_processing_allowed": false,
+        "local_preprocessing_allowed": true,
+        "runtime_evidence_excerpt_allowed": false,
+        "runtime_raw_text_allowed": false,
+        "runtime_source_pdf_allowed": false
+      },
+      "preprocessing_status": "metadata_and_local_text_ready",
+      "published_at_precision": "date",
+      "published_date": "2026-07-21",
+      "publisher": "삼성증권",
+      "report_id": "report:4337ee748a70f2a746121f109c01d46bfb633cc8c07874851a0a7bdb825385e9",
+      "report_scope": "market_strategy_with_company_focus",
+      "security_id": "KRX:000660",
+      "security_name": "SK하이닉스",
+      "selection_status": "selected_for_m5_d1",
+      "source_url": "https://www.samsungpop.com/common.do?cmd=down&contentType=application/pdf&inlineYn=Y&saveKey=research.pdf&fileName=1010/2026072116033003K_02_02.pdf",
+      "ticker": "000660",
+      "title": "MSCI 2026년 8월 정기 리뷰 전망-편입 불가 규정의 완화 및 SK하이닉스 ADR 이슈"
+    },
+    {
+      "analyst": "신윤철",
+      "available_from": "2026-07-08T14:59:59Z",
+      "extracted_character_count": 17854,
+      "extracted_nonempty_page_count": 10,
+      "extraction_status": "text_extracted",
+      "identity_verification_status": "filename_source_map_pdf_text_and_visual_review",
+      "page_text_checksums": [
+        {
+          "extracted_character_count": 2750,
+          "page": 1,
+          "text_sha256": "950f90d9c2a58f27bd0956b90e64a96bb278ddd4ed814605ac1eb5e496808fd6"
+        },
+        {
+          "extracted_character_count": 1767,
+          "page": 2,
+          "text_sha256": "561fdea0059898a4cd66c75b513ed9fed98439c785b216369a4de59ec8bb50a7"
+        },
+        {
+          "extracted_character_count": 853,
+          "page": 3,
+          "text_sha256": "9c2fd2c63e4062ebcfea17a17ced1f5149c7df3c38da078dc301b109651b8c0f"
+        },
+        {
+          "extracted_character_count": 1120,
+          "page": 4,
+          "text_sha256": "4054a9be5a9be0747b1b88ee8d4e87309a340408d464d4c61276098ceafa7629"
+        },
+        {
+          "extracted_character_count": 482,
+          "page": 5,
+          "text_sha256": "0ed8b24a03b67bae04dfd6c41abd4827a1e6ac0f1b163be75955210589bce815"
+        },
+        {
+          "extracted_character_count": 593,
+          "page": 6,
+          "text_sha256": "c972c4f48b5d3450272fb86fc8ca0f10e40b70ab73f605747710e56856d7a679"
+        },
+        {
+          "extracted_character_count": 208,
+          "page": 7,
+          "text_sha256": "e42f87cf10db0110b58659e8e101789dbe44fecbb831f4721eb89a10bcb3953e"
+        },
+        {
+          "extracted_character_count": 5824,
+          "page": 8,
+          "text_sha256": "1cbc27f74185c0c95fd2dcfa68a63e94e1da8ec71453dedde0cfb04011cf7913"
+        },
+        {
+          "extracted_character_count": 2602,
+          "page": 9,
+          "text_sha256": "a806d79df55ae6bbd1b369804b410c1f214d5aaeb10fa7c5fac26a62fa0806a3"
+        },
+        {
+          "extracted_character_count": 1655,
+          "page": 10,
+          "text_sha256": "caefa0043f14de3cd134c9eec20efa522776e2edba907f204f5d41ca95256beb"
+        }
+      ],
+      "pdf_page_count": 10,
+      "pdf_sha256": "28d8282ab2bd5cc33e0159edc2eba2d8fba9fa8a48dccb895957ab68e08ff901",
+      "permissions": {
+        "corpus_ingest_allowed": false,
+        "external_llm_processing_allowed": false,
+        "local_preprocessing_allowed": true,
+        "runtime_evidence_excerpt_allowed": false,
+        "runtime_raw_text_allowed": false,
+        "runtime_source_pdf_allowed": false
+      },
+      "preprocessing_status": "metadata_and_local_text_ready",
+      "published_at_precision": "date",
+      "published_date": "2026-07-08",
+      "publisher": "키움증권",
+      "report_id": "report:28233cfaf594ad11cfbf93189b4dc0bc2f4f07e029790b467f1345e1c4611a3c",
+      "report_scope": "company_specific",
+      "security_id": "KRX:005380",
+      "security_name": "현대차",
+      "selection_status": "selected_for_m5_d1",
+      "source_url": "https://bbn.kiwoom.com/rfCR12175",
+      "ticker": "005380",
+      "title": "현대차(005380_BUY)-내러티브보다는 펀더멘털 회복 가능성에 주목"
+    },
+    {
+      "analyst": "김진석",
+      "available_from": "2026-07-20T14:59:59Z",
+      "extracted_character_count": 687,
+      "extracted_nonempty_page_count": 7,
+      "extraction_status": "partial_text_extracted",
+      "identity_verification_status": "filename_source_map_pdf_text_and_visual_review",
+      "page_text_checksums": [
+        {
+          "extracted_character_count": 57,
+          "page": 1,
+          "text_sha256": "dd98b3a86afb3ffdda26dd23cf7b1e6dbc21cf9f04fd49ef8d0628e4fd5b38d9"
+        },
+        {
+          "extracted_character_count": 1,
+          "page": 2,
+          "text_sha256": "d4f85d36757c12f0c6dab57721287f327efbfc46ea8c0f820301067f8627fc0f"
+        },
+        {
+          "extracted_character_count": 550,
+          "page": 3,
+          "text_sha256": "a2234daeb139d02768c7d425523557ef5b20c7c6ac0adcceb0bffee04c1344dc"
+        },
+        {
+          "extracted_character_count": 1,
+          "page": 6,
+          "text_sha256": "d4f85d36757c12f0c6dab57721287f327efbfc46ea8c0f820301067f8627fc0f"
+        },
+        {
+          "extracted_character_count": 1,
+          "page": 10,
+          "text_sha256": "2596eacb74ac073a17c7c1169bb1a0d731ec3391a8858229acc0b488c6d00802"
+        },
+        {
+          "extracted_character_count": 9,
+          "page": 14,
+          "text_sha256": "c9d7fb8e6248a14c59ea950303e0f002c0bbbc68d7e331cc3999725bb3fbdce8"
+        },
+        {
+          "extracted_character_count": 68,
+          "page": 15,
+          "text_sha256": "4c33ca7653072bba703b7b783839cef67470edb0c0ee96b2cbd2829558a97bae"
+        }
+      ],
+      "pdf_page_count": 15,
+      "pdf_sha256": "a26bb97f5b163de8c7b187bc42e35c744c4c3fbceae1cadb21468188063594c9",
+      "permissions": {
+        "corpus_ingest_allowed": false,
+        "external_llm_processing_allowed": false,
+        "local_preprocessing_allowed": true,
+        "runtime_evidence_excerpt_allowed": false,
+        "runtime_raw_text_allowed": false,
+        "runtime_source_pdf_allowed": false
+      },
+      "preprocessing_status": "metadata_and_local_text_ready",
+      "published_at_precision": "date",
+      "published_date": "2026-07-20",
+      "publisher": "미래에셋증권",
+      "report_id": "report:232633ccf070f8efcbc6971630ce43a95ef36280b76a6dd52512d21083b75939",
+      "report_scope": "company_specific",
+      "security_id": "KRX:005380",
+      "security_name": "현대차",
+      "selection_status": "selected_for_m5_d1",
+      "source_url": "https://securities.miraeasset.com/bbs/download/2145958.pdf?attachmentId=2145958",
+      "ticker": "005380",
+      "title": "현대차(005380_매수)-2Q26 프리뷰. 우려를 넘어 로봇 모멘텀 주목"
+    },
+    {
+      "analyst": "임은영",
+      "available_from": "2026-07-23T14:59:59Z",
+      "extracted_character_count": 13975,
+      "extracted_nonempty_page_count": 8,
+      "extraction_status": "text_extracted",
+      "identity_verification_status": "filename_source_map_pdf_text_and_visual_review",
+      "page_text_checksums": [
+        {
+          "extracted_character_count": 2159,
+          "page": 1,
+          "text_sha256": "bbe8d83a003f9405a7e56e59120f06cefcb47b49cb811a31d6cd38da0c68dd92"
+        },
+        {
+          "extracted_character_count": 2045,
+          "page": 2,
+          "text_sha256": "0f89054208c6b3f08523473cf26b247533638827d48aaa8602f0bb8a9ee3829a"
+        },
+        {
+          "extracted_character_count": 407,
+          "page": 3,
+          "text_sha256": "6e28420c54a781d38082e52fff920cd0603afe187de430bb99b9365d578632c6"
+        },
+        {
+          "extracted_character_count": 1196,
+          "page": 4,
+          "text_sha256": "eacec1b75fa7ee3592cd87457c52c29023aedb334168ee7c24dcd1547a4c14d0"
+        },
+        {
+          "extracted_character_count": 2199,
+          "page": 5,
+          "text_sha256": "97125bbc385086743e3e496d23ab35d8b9a2b650f749a5cc9e068ba40643b028"
+        },
+        {
+          "extracted_character_count": 4018,
+          "page": 6,
+          "text_sha256": "d36da148f9caa87cb257a5b88af28f746dfe1450ddf3861967159900250f860d"
+        },
+        {
+          "extracted_character_count": 1819,
+          "page": 7,
+          "text_sha256": "28cb27f4e2604759f9d53744b6285529dd2bac18a7ee4e2023eeeeed552eac06"
+        },
+        {
+          "extracted_character_count": 132,
+          "page": 8,
+          "text_sha256": "7a5fdb6e34a3eb7607b0b373c597f6186b5e850d8a9af3464d3911822fae373e"
+        }
+      ],
+      "pdf_page_count": 8,
+      "pdf_sha256": "8d56856d6bec7672152644ff54f0da6305f12e2a95df838b1ecf5d847e96845c",
+      "permissions": {
+        "corpus_ingest_allowed": false,
+        "external_llm_processing_allowed": false,
+        "local_preprocessing_allowed": true,
+        "runtime_evidence_excerpt_allowed": false,
+        "runtime_raw_text_allowed": false,
+        "runtime_source_pdf_allowed": false
+      },
+      "preprocessing_status": "metadata_and_local_text_ready",
+      "published_at_precision": "date",
+      "published_date": "2026-07-23",
+      "publisher": "삼성증권",
+      "report_id": "report:a24a1b105d1d9c36ef1f1eb20fda3dab194b51fd9b4f8e745d57f6d995f9ab7e",
+      "report_scope": "company_specific",
+      "security_id": "KRX:005380",
+      "security_name": "현대차",
+      "selection_status": "selected_for_m5_d1",
+      "source_url": "https://www.samsungpop.com/common.do?cmd=down&contentType=application/pdf&inlineYn=Y&saveKey=research.pdf&fileName=2010/2026072218341956K_02_07.pdf",
+      "ticker": "005380",
+      "title": "현대차(005380_BUY)-2Q26 Review 살아남는 자가 강한 자"
+    },
+    {
+      "analyst": "신윤철",
+      "available_from": "2026-07-24T14:59:59Z",
+      "extracted_character_count": 18325,
+      "extracted_nonempty_page_count": 12,
+      "extraction_status": "text_extracted",
+      "identity_verification_status": "filename_source_map_pdf_text_and_visual_review",
+      "page_text_checksums": [
+        {
+          "extracted_character_count": 2699,
+          "page": 1,
+          "text_sha256": "6f10eb4538f911649c73d2ea6c01cc1939b4dc96a0caf02e77cff2f079cce9d2"
+        },
+        {
+          "extracted_character_count": 1771,
+          "page": 2,
+          "text_sha256": "fde4d07ef14f25beb1d59e54c9dfcdf64d02b761f4ecf32d989213bd05c8628f"
+        },
+        {
+          "extracted_character_count": 838,
+          "page": 3,
+          "text_sha256": "0c5dd407eae989f54bd3b463a3ed1a3ce77631a483df13a181560eb016c69776"
+        },
+        {
+          "extracted_character_count": 502,
+          "page": 4,
+          "text_sha256": "dfb8c059b41b1a1ee5fea51585a8e81303e344ae0d845bcf507231b562322ac7"
+        },
+        {
+          "extracted_character_count": 1109,
+          "page": 5,
+          "text_sha256": "c629a30ef02b92e41cabb42bc89dc9e7c55e3596954ac9d102f35a8e79751108"
+        },
+        {
+          "extracted_character_count": 853,
+          "page": 6,
+          "text_sha256": "89d8164792b2ea2bdc9b9184fd0c26abae0a250f7075835c8d7b1ba347699f06"
+        },
+        {
+          "extracted_character_count": 167,
+          "page": 7,
+          "text_sha256": "2004f09d4107b527db406c8159a5d433bf4d54c37c83b652a76c639a703ec255"
+        },
+        {
+          "extracted_character_count": 171,
+          "page": 8,
+          "text_sha256": "9325e3c293a5aad6f09583d848a55b26b10f27ef006689c67d5b6c6348b6246d"
+        },
+        {
+          "extracted_character_count": 127,
+          "page": 9,
+          "text_sha256": "481fbd705f06d86929951c7d581f5ae59ae8a3020409d36c09129e2e696ec2cd"
+        },
+        {
+          "extracted_character_count": 5831,
+          "page": 10,
+          "text_sha256": "4e3f20e12819bb6765b015b703f81ce5f510b30713591f9c4d85a2f1b072d2ca"
+        },
+        {
+          "extracted_character_count": 2602,
+          "page": 11,
+          "text_sha256": "523b343b9c8683b13f2ce8542be03d899ed7df60643d7055868f9c8bf0c6daae"
+        },
+        {
+          "extracted_character_count": 1655,
+          "page": 12,
+          "text_sha256": "d0a769c87f20dbc25096318f6b490218d2f2bf12b1a447eb0602b272ddca8502"
+        }
+      ],
+      "pdf_page_count": 12,
+      "pdf_sha256": "4a17008aaa795f2c3a851b9e525088b3f0e5d7c40cb33b3eaafd59c5b026ac8f",
+      "permissions": {
+        "corpus_ingest_allowed": false,
+        "external_llm_processing_allowed": false,
+        "local_preprocessing_allowed": true,
+        "runtime_evidence_excerpt_allowed": false,
+        "runtime_raw_text_allowed": false,
+        "runtime_source_pdf_allowed": false
+      },
+      "preprocessing_status": "metadata_and_local_text_ready",
+      "published_at_precision": "date",
+      "published_date": "2026-07-24",
+      "publisher": "키움증권",
+      "report_id": "report:55e4a93871b030e1891ced97b8bbbaa4b3f6b8f7f1b7e3114e280b85ac4ef09a",
+      "report_scope": "company_specific",
+      "security_id": "KRX:005380",
+      "security_name": "현대차",
+      "selection_status": "selected_for_m5_d1",
+      "source_url": "https://bbn.kiwoom.com/rfCR12216",
+      "ticker": "005380",
+      "title": "현대차(005380_BUY)-상반기의 부진을 딛고 수익성 가이던스 유지"
+    },
+    {
+      "analyst": "김진석",
+      "available_from": "2026-07-24T14:59:59Z",
+      "extracted_character_count": 137,
+      "extracted_nonempty_page_count": 6,
+      "extraction_status": "partial_text_extracted",
+      "identity_verification_status": "filename_source_map_pdf_text_and_visual_review",
+      "page_text_checksums": [
+        {
+          "extracted_character_count": 57,
+          "page": 1,
+          "text_sha256": "dd98b3a86afb3ffdda26dd23cf7b1e6dbc21cf9f04fd49ef8d0628e4fd5b38d9"
+        },
+        {
+          "extracted_character_count": 1,
+          "page": 2,
+          "text_sha256": "d4f85d36757c12f0c6dab57721287f327efbfc46ea8c0f820301067f8627fc0f"
+        },
+        {
+          "extracted_character_count": 1,
+          "page": 7,
+          "text_sha256": "d4f85d36757c12f0c6dab57721287f327efbfc46ea8c0f820301067f8627fc0f"
+        },
+        {
+          "extracted_character_count": 1,
+          "page": 8,
+          "text_sha256": "2596eacb74ac073a17c7c1169bb1a0d731ec3391a8858229acc0b488c6d00802"
+        },
+        {
+          "extracted_character_count": 9,
+          "page": 11,
+          "text_sha256": "c9d7fb8e6248a14c59ea950303e0f002c0bbbc68d7e331cc3999725bb3fbdce8"
+        },
+        {
+          "extracted_character_count": 68,
+          "page": 12,
+          "text_sha256": "4c33ca7653072bba703b7b783839cef67470edb0c0ee96b2cbd2829558a97bae"
+        }
+      ],
+      "pdf_page_count": 12,
+      "pdf_sha256": "65e415b51b057712ebd2c0dac97413060c7f317bcca8297590e9ebf2560d97b7",
+      "permissions": {
+        "corpus_ingest_allowed": false,
+        "external_llm_processing_allowed": false,
+        "local_preprocessing_allowed": true,
+        "runtime_evidence_excerpt_allowed": false,
+        "runtime_raw_text_allowed": false,
+        "runtime_source_pdf_allowed": false
+      },
+      "preprocessing_status": "metadata_and_local_text_ready",
+      "published_at_precision": "date",
+      "published_date": "2026-07-24",
+      "publisher": "미래에셋증권",
+      "report_id": "report:fee68cb8d78876950a68f2cece67327edb4d9a7bc7883d093726db8300cff80e",
+      "report_scope": "company_specific",
+      "security_id": "KRX:005380",
+      "security_name": "현대차",
+      "selection_status": "selected_for_m5_d1",
+      "source_url": "https://securities.miraeasset.com/bbs/download/2146110.pdf?attachmentId=2146110",
+      "ticker": "005380",
+      "title": "현대차(005380_매수)-2Q26 리뷰. 우려 대비 양호, 로봇 모멘텀 주목"
+    },
+    {
+      "analyst": "이종욱",
+      "available_from": "2026-07-06T14:59:59Z",
+      "extracted_character_count": 13692,
+      "extracted_nonempty_page_count": 7,
+      "extraction_status": "text_extracted",
+      "identity_verification_status": "filename_source_map_pdf_text_and_visual_review",
+      "page_text_checksums": [
+        {
+          "extracted_character_count": 2002,
+          "page": 1,
+          "text_sha256": "2543f8e72b8f408ac7bb148a2972b66d8ed9084ca58a5b7d5f2e9fc3533fb87b"
+        },
+        {
+          "extracted_character_count": 1263,
+          "page": 2,
+          "text_sha256": "a182f3689e16333294a0ed380aeaf4b9f257b1fcac1cbf812573eebb11ebfd51"
+        },
+        {
+          "extracted_character_count": 1640,
+          "page": 3,
+          "text_sha256": "594b476356e9178a0f09d62881081d999d08ba59ee1beb016d1986fe66c994ef"
+        },
+        {
+          "extracted_character_count": 2683,
+          "page": 4,
+          "text_sha256": "ceb0d577e8cbe971edbac06e5a9a7c92ad88b5b254d5e0f9a76e5ad153768425"
+        },
+        {
+          "extracted_character_count": 4219,
+          "page": 5,
+          "text_sha256": "0ee35f580fc55ca085ca509c8d51bbc3df612437b37d302f30006581775cd2f8"
+        },
+        {
+          "extracted_character_count": 1753,
+          "page": 6,
+          "text_sha256": "cf7851369511f98ed9253c19f580e355c2f27c6f2136ae1f9755c52eb68acb34"
+        },
+        {
+          "extracted_character_count": 132,
+          "page": 7,
+          "text_sha256": "7a5fdb6e34a3eb7607b0b373c597f6186b5e850d8a9af3464d3911822fae373e"
+        }
+      ],
+      "pdf_page_count": 7,
+      "pdf_sha256": "4f30a6b202a05b0c41ba98bb6d521268d886efe2bfd063cb78b30aafadf15562",
+      "permissions": {
+        "corpus_ingest_allowed": false,
+        "external_llm_processing_allowed": false,
+        "local_preprocessing_allowed": true,
+        "runtime_evidence_excerpt_allowed": false,
+        "runtime_raw_text_allowed": false,
+        "runtime_source_pdf_allowed": false
+      },
+      "preprocessing_status": "metadata_and_local_text_ready",
+      "published_at_precision": "date",
+      "published_date": "2026-07-06",
+      "publisher": "삼성증권",
+      "report_id": "report:9e5f151160a51f37be0436c1b42a9b5b3e854bc91c377f50faec60310f34c512",
+      "report_scope": "company_specific",
+      "security_id": "KRX:005930",
+      "security_name": "삼성전자",
+      "selection_status": "selected_for_m5_d1",
+      "source_url": "https://www.samsungpop.com/common.do?cmd=down&contentType=application/pdf&inlineYn=Y&saveKey=research.pdf&fileName=2010/2026070308030148K_02_01.pdf",
+      "ticker": "005930",
+      "title": "삼성전자(005930_BUY)-변동성을 극복하면 사이클이 보인다"
+    },
+    {
+      "analyst": "김석환",
+      "available_from": "2026-07-07T14:59:59Z",
+      "extracted_character_count": 0,
+      "extracted_nonempty_page_count": 0,
+      "extraction_status": "image_only_visual_review_required",
+      "identity_verification_status": "filename_source_map_and_visual_review",
+      "page_text_checksums": [],
+      "pdf_page_count": 2,
+      "pdf_sha256": "f077e045bc01057c7a281edf1f5561c7bf04f8a442c49ccf6dad46421c5ad718",
+      "permissions": {
+        "corpus_ingest_allowed": false,
+        "external_llm_processing_allowed": false,
+        "local_preprocessing_allowed": true,
+        "runtime_evidence_excerpt_allowed": false,
+        "runtime_raw_text_allowed": false,
+        "runtime_source_pdf_allowed": false
+      },
+      "preprocessing_status": "metadata_and_visual_review_ready",
+      "published_at_precision": "date",
+      "published_date": "2026-07-07",
+      "publisher": "미래에셋증권",
+      "report_id": "report:3f8083c29fc6bdea08c5bff01dbeb79a1216f2fc3001f24b09a252c19ee09a57",
+      "report_scope": "company_specific",
+      "security_id": "KRX:005930",
+      "security_name": "삼성전자",
+      "selection_status": "selected_for_m5_d1",
+      "source_url": "https://securities.miraeasset.com/bbs/download/2145721.pdf?attachmentId=2145721",
+      "ticker": "005930",
+      "title": "Market Issue-삼성전자 하락 코멘트"
+    },
+    {
+      "analyst": "김영건",
+      "available_from": "2026-07-07T14:59:59Z",
+      "extracted_character_count": 133,
+      "extracted_nonempty_page_count": 2,
+      "extraction_status": "partial_text_extracted",
+      "identity_verification_status": "filename_source_map_pdf_text_and_visual_review",
+      "page_text_checksums": [
+        {
+          "extracted_character_count": 58,
+          "page": 1,
+          "text_sha256": "affbcb2c10452640ad2e7e2750dcc9b877c13465a882858ececeff8d012fc2c3"
+        },
+        {
+          "extracted_character_count": 75,
+          "page": 8,
+          "text_sha256": "8ef5d7a6f2674480480dc8ce18caf81ffa15739cf29ae6621927cf0c65a44833"
+        }
+      ],
+      "pdf_page_count": 8,
+      "pdf_sha256": "23846dcb0c45932b97297ebb7dc4c3a4a798e09732c0a3e4a3c4c248a366d3d0",
+      "permissions": {
+        "corpus_ingest_allowed": false,
+        "external_llm_processing_allowed": false,
+        "local_preprocessing_allowed": true,
+        "runtime_evidence_excerpt_allowed": false,
+        "runtime_raw_text_allowed": false,
+        "runtime_source_pdf_allowed": false
+      },
+      "preprocessing_status": "metadata_and_local_text_ready",
+      "published_at_precision": "date",
+      "published_date": "2026-07-07",
+      "publisher": "미래에셋증권",
+      "report_id": "report:98227e66f1a37cb44fb0b6e41ace572806335af9b328c0e0b13a9d6737ec0b7b",
+      "report_scope": "company_specific",
+      "security_id": "KRX:005930",
+      "security_name": "삼성전자",
+      "selection_status": "selected_for_m5_d1",
+      "source_url": "https://securities.miraeasset.com/bbs/download/2145729.pdf?attachmentId=2145729",
+      "ticker": "005930",
+      "title": "삼성전자(005930_매수)-과격한 주가 반응에 뇌동하지 말자"
+    },
+    {
+      "analyst": "박유악",
+      "available_from": "2026-07-08T14:59:59Z",
+      "extracted_character_count": 24585,
+      "extracted_nonempty_page_count": 11,
+      "extraction_status": "text_extracted",
+      "identity_verification_status": "filename_source_map_pdf_text_and_visual_review",
+      "page_text_checksums": [
+        {
+          "extracted_character_count": 2555,
+          "page": 1,
+          "text_sha256": "f083e8d2de4a174d2c183ba81507ba23d98253bcd7a5457d2035017fbffbccc8"
+        },
+        {
+          "extracted_character_count": 679,
+          "page": 2,
+          "text_sha256": "8020d7b847b26613d533c9f2d12930b1c64b73c42787782d390bd0212e0e362a"
+        },
+        {
+          "extracted_character_count": 1036,
+          "page": 3,
+          "text_sha256": "d1d1b71ae35fb3eec7e427869734744907039b4d37cdbd0ff77ebbe51ada3a4b"
+        },
+        {
+          "extracted_character_count": 3137,
+          "page": 4,
+          "text_sha256": "8d9f9fed2bfa33869f8d2a90ac6add676a08397a9ce175145fb4deda4a3f0db1"
+        },
+        {
+          "extracted_character_count": 3041,
+          "page": 5,
+          "text_sha256": "0f263b2fdf93fc7a0ac0dc34d318e4227a33e26e611d70e79631a3702c223a41"
+        },
+        {
+          "extracted_character_count": 2348,
+          "page": 6,
+          "text_sha256": "e6041b758c964af053db75c5235805c93cd66f571d12067ac276db8f867e3131"
+        },
+        {
+          "extracted_character_count": 1041,
+          "page": 7,
+          "text_sha256": "ede66478007e60568a5635877900c050a1d989d84737d554f514f83c95c2b4ac"
+        },
+        {
+          "extracted_character_count": 5203,
+          "page": 8,
+          "text_sha256": "f6374b937a7fcd78b06d8fdc0f29a4617299744cb7f8d0adce5575329d0bc2b7"
+        },
+        {
+          "extracted_character_count": 3073,
+          "page": 9,
+          "text_sha256": "3a3eeab0501f1b25dbed91ddae41433d2994f5612fd6a2cbf346e50ac04a8291"
+        },
+        {
+          "extracted_character_count": 444,
+          "page": 10,
+          "text_sha256": "ce34c9f9146628d5b96d50559fe93458d5c908f956fc0242a3431e781989bece"
+        },
+        {
+          "extracted_character_count": 2028,
+          "page": 11,
+          "text_sha256": "f721a78f2cef73d48b1feea6d4844cf1e125c2d52d759a504772614657ade9e0"
+        }
+      ],
+      "pdf_page_count": 11,
+      "pdf_sha256": "34272e156a99b6b7f85feb9ec53e1a928d5948183bc2830f2f01bf32e12a1463",
+      "permissions": {
+        "corpus_ingest_allowed": false,
+        "external_llm_processing_allowed": false,
+        "local_preprocessing_allowed": true,
+        "runtime_evidence_excerpt_allowed": false,
+        "runtime_raw_text_allowed": false,
+        "runtime_source_pdf_allowed": false
+      },
+      "preprocessing_status": "metadata_and_local_text_ready",
+      "published_at_precision": "date",
+      "published_date": "2026-07-08",
+      "publisher": "키움증권",
+      "report_id": "report:56facd21eb6687d71f61667b0487e01a0fd66436638a4b521170820095cb03f9",
+      "report_scope": "company_specific",
+      "security_id": "KRX:005930",
+      "security_name": "삼성전자",
+      "selection_status": "selected_for_m5_d1",
+      "source_url": "https://bbn.kiwoom.com/rfCR12174",
+      "ticker": "005930",
+      "title": "삼성전자(005930_BUY)-하반기, EPS 성장률 둔화 예상"
+    },
+    {
+      "analyst": "이종욱",
+      "available_from": "2026-07-08T14:59:59Z",
+      "extracted_character_count": 14924,
+      "extracted_nonempty_page_count": 8,
+      "extraction_status": "text_extracted",
+      "identity_verification_status": "filename_source_map_pdf_text_and_visual_review",
+      "page_text_checksums": [
+        {
+          "extracted_character_count": 1817,
+          "page": 1,
+          "text_sha256": "02bf5ec9c8f4e407a2f796c5cd901892abb83db6044d18e87770369d4ddbfbc7"
+        },
+        {
+          "extracted_character_count": 2106,
+          "page": 2,
+          "text_sha256": "9e4aba51bf8308c7b36c477cfed8dad09a47a2f1853a76528b04c34db25e0f52"
+        },
+        {
+          "extracted_character_count": 1073,
+          "page": 3,
+          "text_sha256": "527958bfc805fa5ae60a5c01876c291dc97aa3ea455b4da708371510cb403aeb"
+        },
+        {
+          "extracted_character_count": 1133,
+          "page": 4,
+          "text_sha256": "a284b2dde59c73cbf39fdd36bf131952a4c4f830507c63e21cd0f79b4d16a296"
+        },
+        {
+          "extracted_character_count": 2707,
+          "page": 5,
+          "text_sha256": "101fa5b0b54ab4395e474863f8a04b1fa25f0e2ed4e07e744971e88746ecf8fa"
+        },
+        {
+          "extracted_character_count": 4203,
+          "page": 6,
+          "text_sha256": "b0d9dc321cf8ee93009a3814ddfe33ec31981ae43f53fd341a981c3cab1983cd"
+        },
+        {
+          "extracted_character_count": 1753,
+          "page": 7,
+          "text_sha256": "f3fb5c8763d634e5198bfdfa4758306e715526bc73294b8ff2da05cde13e6c36"
+        },
+        {
+          "extracted_character_count": 132,
+          "page": 8,
+          "text_sha256": "7a5fdb6e34a3eb7607b0b373c597f6186b5e850d8a9af3464d3911822fae373e"
+        }
+      ],
+      "pdf_page_count": 8,
+      "pdf_sha256": "367178a6142595ff6d4ebe5c448002f11226f4487e59ccd60d14f976c17888ff",
+      "permissions": {
+        "corpus_ingest_allowed": false,
+        "external_llm_processing_allowed": false,
+        "local_preprocessing_allowed": true,
+        "runtime_evidence_excerpt_allowed": false,
+        "runtime_raw_text_allowed": false,
+        "runtime_source_pdf_allowed": false
+      },
+      "preprocessing_status": "metadata_and_local_text_ready",
+      "published_at_precision": "date",
+      "published_date": "2026-07-08",
+      "publisher": "삼성증권",
+      "report_id": "report:c9b13bbdf5d2d69f017008e5ef52c58e4d04404fde359259c6445ef9005dff1f",
+      "report_scope": "company_specific",
+      "security_id": "KRX:005930",
+      "security_name": "삼성전자",
+      "selection_status": "selected_for_m5_d1",
+      "source_url": "https://www.samsungpop.com/common.do?cmd=down&contentType=application/pdf&inlineYn=Y&saveKey=research.pdf&fileName=2010/2026070713183238K_02_02.pdf",
+      "ticker": "005930",
+      "title": "삼성전자(005930_BUY)-과격한 조정, 그러나 사이클은 전반전"
+    }
+  ],
+  "schema_version": "m5-d1-report-inventory-v2",
+  "selection_rule": "supplied_verified_reports_through_2026_07_27",
+  "source_sha256": "a6de59840104c49554fc4686f1907504727576e8cb1335b76cfc0578961ebe62"
+}

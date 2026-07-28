@@ -5,7 +5,7 @@
 > Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
 > Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
 > B9 planning base: `b9ddf7461306d16cf1da14634ce458050d78f7bc`
-> 상태: `B9 PASS / M4 Gate PASS / FSC-0~FSC-4 PASS / complete; M5-01 PASS / DEPLOYED / COMPLETE; M5-01-HR1 PASS / DEPLOYED / COMPLETE at c96008229cae34c4c3243a4cbfe099c98cc594c5`
+> 상태: `B9 PASS / M4 Gate PASS / FSC-0~FSC-4 PASS / complete; M5-01 PASS / DEPLOYED / COMPLETE; M5-01-HR1 PASS / DEPLOYED / COMPLETE at c96008229cae34c4c3243a4cbfe099c98cc594c5; M5-D1 LOCAL PASS / REVIEW FINDINGS CLOSED / HUMAN OWNER CHECK READY`
 
 ## 1. 목적
 
@@ -66,14 +66,23 @@ Task Card 사실 동기화 완료, B6-0에서 상태 확인
 B9, First Service Completion, M5-01, M5-01-HR1
 
 현재 공식 bundle:
-Human Owner differentiation decision -
-candidate: `As-of Replay / 시점 비교 답변`
+M5-D1 Evidence Cross-check -
+M5-D1-0~M5-D1-5 `LOCAL PASS / REVIEW FINDINGS CLOSED`;
+Git publication and deployment `NOT_RUN`
+
+현재 차별화 후보:
+동일 사건의 반복 보도를 독립 근거로 과장하지 않고,
+뉴스의 공통 사실·다른 해석과 DART 공식 자료의 역할,
+미확인·자료 부족을 초보자에게 설명하는 `근거 대조형 답변`
 
 현재 checkpoint:
-M5-01-HR1 Hybrid Intent Router
-PASS / DEPLOYED / COMPLETE;
-production browser verification PASS;
-Human Owner 직접 확인 가능
+M5-D1 local implementation and bounded evaluation complete;
+Human Owner direct review required;
+implementation branch `feature/m5-d1-evidence-crosscheck`;
+commit, push, PR, merge, and deployment `NOT_RUN`
+
+M5-D1 실행 기준:
+docs/TASK_CARDS/M5-D1-evidence-crosscheck.md
 
 M5-01 실행 기준:
 docs/TASK_CARDS/M5-01-as-of-price-grounded-answer.md
@@ -315,12 +324,61 @@ M5-01-HR1 `PASS / DEPLOYED / COMPLETE`
 
 Competitive differentiation review:
 `docs/agent_handoff/COMPETITIVE_DIFFERENTIATION_REVIEW_2026-07-28.md`;
-standalone Q&A, citations, positive/risk summaries, charts, watchlists, alerts,
-screening, and portfolio ideas overlap with current services;
-the leading candidate is an `As-of Replay` extension of the implemented
-selected-time hard boundary and zero-future-evidence contract;
-the next sequence is differentiation decision/implementation, evaluation
-metrics, then optional LLM model comparison
+official public pages confirm overlap in story clustering, source navigation,
+research plans, positive/risk/event summaries, filing audit links, and
+cross-publisher views;
+`As-of Replay` is superseded as a differentiation candidate because the
+selected-time UI is a temporary demo constraint, while temporal filtering
+remains a correctness contract;
+the current candidate is the combined `근거 대조형 답변`: event clusters,
+conservative source lineage, DART confirmation/background roles,
+common facts, different interpretations, unconfirmed/missing evidence, and a
+beginner-facing answer;
+this is a plausible differentiation target, not proof of market exclusivity
+
+M5-D1 planning and implementation:
+`docs/TASK_CARDS/M5-D1-evidence-crosscheck.md`;
+phase 1 uses news, DART disclosures, and short verified report perspectives;
+Human Owner reported `OPENDART_API_KEY` ready locally;
+research-report originals and extracted text remain Git-ignored and excluded
+from ordinary runtime evidence and external LLM input;
+current repository disclosure corpus is one fixed 2026 Q1 quarterly report per
+security;
+plan status `APPROVED / IMPLEMENTATION AUTHORIZED`;
+Human Owner implementation approval recorded 2026-07-28;
+M5-D1-0~M5-D1-5 `LOCAL PASS / REVIEW FINDINGS CLOSED / HUMAN OWNER CHECK READY`;
+coverage result:
+`docs/agent_handoff/M5_D1_COLLECTION_COVERAGE_2026-07-28.md`;
+retained local source inventory:
+news `300`, OpenDART disclosures `205`;
+SK hynix news coverage repair:
+`8` to `54` retained candidates from existing raw responses;
+`41` description-assisted candidates remain explicitly labeled for later
+event-membership validation; second provider `NOT_ADDED`;
+multi-publisher report preparation:
+`docs/agent_handoff/M5_D1_REPORT_FIRST_PASS_2026-07-28.md`;
+15 PDFs selected; Samsung Securities `6`, Mirae Asset Securities `6`, Kiwoom
+Securities `3`; five per security; all first pages visually verified;
+raw report runtime-ready `0`; Questock-authored comparison perspectives `15`;
+implementation review:
+`docs/agent_handoff/M5_D1_IMPLEMENTATION_REVIEW_2026-07-28.md`;
+bounded M5-D1-1 and M5-D1-1R scope `PASS`;
+completion record:
+`docs/agent_handoff/M5_D1_COMPLETION_2026-07-28.md`;
+accepted-review closure:
+`docs/agent_handoff/M5_D1_REVIEW_FIX_CLOSURE_2026-07-28.md`;
+direct-company event clusters `7`, clustered article instances `43`;
+description-only company matches remain indirect candidates and cannot enter
+direct event clusters;
+confirmed independent and confirmed republication counts remain `0`;
+DART background records `34`;
+report and DART display links require event-specific topic overlap;
+held-out event-pair evaluation `8`, precision `1.00`, recall `1.00`;
+focused M5-D1/report tests `18 passed`;
+affected regression `193 passed`; full regression `2189 passed, 2 warnings`;
+Gemini classifier calls `0`;
+OpenDART credential preflight `PASS`;
+commit, push, PR, merge, and deployment `NOT_RUN`
 
 B6 구현:
 PASS / complete
@@ -329,9 +387,8 @@ B6 완료 SHA:
 60e6203b265a967a8b6ba45da2ba3128e1e1bcfe
 
 다음 공식 checkpoint:
-Human Owner differentiation decision;
-leading candidate `As-of Replay / 시점 비교 답변`;
-new implementation checkpoint not declared
+Human Owner M5-D1 review; publication and deployment remain separately
+authorized
 
 B9 계획:
 docs/TASK_CARDS/B9-release-deployment-traceability.md
@@ -447,7 +504,11 @@ docs/TASK_CARDS/B9-release-deployment-traceability.md
 docs/TASK_CARDS/M5-01-as-of-price-grounded-answer.md
 
 current:
-Human Owner differentiation decision
+docs/TASK_CARDS/M5-D1-evidence-crosscheck.md
+
+current status:
+M5-D1-0~M5-D1-5 `LOCAL PASS / REVIEW FINDINGS CLOSED / HUMAN OWNER CHECK READY`;
+commit, push, PR, merge, and deployment `NOT_RUN`
 
 completed M5 extension:
 docs/TASK_CARDS/M5-01-hybrid-intent-router.md
@@ -459,8 +520,7 @@ current execution decision:
 docs/agent_handoff/FIRST_SERVICE_COMPLETION_EXECUTION_DECISION_2026-07-27.md
 
 next:
-Human Owner selects the differentiation scope;
-then create its bounded Task Card before implementation
+Human Owner M5-D1 review
 ```
 
 ## 6. 금지

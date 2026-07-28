@@ -60,6 +60,9 @@ from app.services.hybrid_intent_router import (
     HybridRoutingResult,
 )
 from app.services.market_snapshot_schema import checkpoint_id
+from app.services.m5_d1_evidence_comparison import (
+    M5D1EvidenceComparisonStore,
+)
 from app.services.market_snapshot_store import (
     MarketSnapshotStoreError,
     RecordedMarketSnapshotStore,
@@ -179,6 +182,7 @@ class ChatService:
         live_llm_enabled: bool = False,
         market_snapshot_store: RecordedMarketSnapshotStore | None = None,
         intent_router: HybridIntentRouter | None = None,
+        evidence_comparison_store: M5D1EvidenceComparisonStore | None = None,
     ) -> None:
         if (
             type(deadline_seconds) not in {int, float}
@@ -236,6 +240,7 @@ class ChatService:
         self._live_llm_enabled = live_llm_enabled
         self._market_snapshot_store = market_snapshot_store
         self._intent_router = intent_router or HybridIntentRouter()
+        self._evidence_comparison_store = evidence_comparison_store
 
     async def chat(
         self,
@@ -409,6 +414,12 @@ class ChatService:
                 live_llm_enabled=self._live_llm_enabled,
                 market_snapshot=market_snapshot,
             )
+            response = self._attach_evidence_comparison(
+                response=response,
+                query=request.message,
+                plan=plan,
+                basis_at=basis_at,
+            )
             if self._deadline_reached(started_at):
                 deadline_exhausted = True
                 composition = self._deadline_safe_composition(
@@ -428,6 +439,12 @@ class ChatService:
                     deadline_exhausted=deadline_exhausted,
                     live_llm_enabled=self._live_llm_enabled,
                     market_snapshot=market_snapshot,
+                )
+                response = self._attach_evidence_comparison(
+                    response=response,
+                    query=request.message,
+                    plan=plan,
+                    basis_at=basis_at,
                 )
             self._save_session_context(session_id, plan)
             resulting_revision = self._record_session_exchange(
@@ -461,6 +478,42 @@ class ChatService:
             raise
         except Exception:
             raise ChatServiceError("chat service unavailable") from None
+
+    def _attach_evidence_comparison(
+        self,
+        *,
+        response: ChatResponse,
+        query: str,
+        plan: QueryPlan,
+        basis_at: datetime,
+    ) -> ChatResponse:
+        store = self._evidence_comparison_store
+        if (
+            store is None
+            or plan.security is None
+            or plan.requires_clarification
+            or plan.intent
+            in {
+                "financial_term",
+                "price",
+                "prohibited_advice",
+                "out_of_scope",
+            }
+        ):
+            return response
+        comparison = store.select(
+            query=query,
+            security_id=(
+                f"{plan.security.market}:{plan.security.ticker}"
+            ),
+            as_of=basis_at,
+        )
+        if comparison is None:
+            return response
+        return response.model_copy(
+            update={"evidence_comparison": comparison},
+            deep=True,
+        )
 
     async def _route_intent(
         self,

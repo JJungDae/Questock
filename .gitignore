@@ -13,3 +13,5 @@ dist/
 build/
 *.egg-info/
 var/service_completion/
+docs/questock_reports/**/*.pdf
+docs/questock_reports/**/sources.txt

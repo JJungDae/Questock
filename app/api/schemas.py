@@ -213,6 +213,71 @@ class PublicMarketSnapshot(PublicModel):
     currency: Literal["KRW"]
 
 
+class PublicComparisonSource(PublicModel):
+    source_id: str = Field(min_length=1, max_length=128)
+    source_type: Literal["news", "disclosure", "research_report"]
+    title: str = Field(min_length=1, max_length=500)
+    publisher: str = Field(min_length=1, max_length=120)
+    published_at: datetime
+    source_url: str = Field(min_length=1, max_length=2000)
+
+
+class PublicComparisonLineageSummary(PublicModel):
+    confirmed_independent_count: int = Field(ge=0)
+    confirmed_republication_count: int = Field(ge=0)
+    unknown_count: int = Field(ge=0)
+
+
+class PublicComparisonClaim(PublicModel):
+    text: str = Field(min_length=1, max_length=1000)
+    source_ids: list[str] = Field(min_length=1, max_length=20)
+    corroboration_status: Literal[
+        "independently_corroborated",
+        "same_lineage_repeated",
+        "lineage_unknown",
+    ]
+
+
+class PublicComparisonPerspective(PublicModel):
+    text: str = Field(min_length=1, max_length=1000)
+    source: PublicComparisonSource
+    source_locator: str = Field(min_length=1, max_length=300)
+    actual_or_estimate: Literal["actual", "estimate", "interpretation"]
+
+
+class PublicDisclosureLink(PublicModel):
+    role: Literal[
+        "official_confirmation",
+        "official_background",
+        "official_conflict",
+        "no_link",
+    ]
+    text: str = Field(min_length=1, max_length=1000)
+    source: PublicComparisonSource | None = None
+    source_locator: str | None = Field(default=None, max_length=300)
+
+
+class PublicEvidenceComparison(PublicModel):
+    comparison_status: Literal[
+        "coverage_only",
+        "background_linked",
+        "not_applicable",
+    ]
+    event_id: str = Field(min_length=1, max_length=128)
+    event_label: str = Field(min_length=1, max_length=500)
+    article_sources: list[PublicComparisonSource] = Field(max_length=20)
+    article_total_count: int = Field(ge=2)
+    article_displayed_count: int = Field(ge=2, le=20)
+    source_lineage_summary: PublicComparisonLineageSummary
+    common_facts: list[PublicComparisonClaim] = Field(max_length=20)
+    different_interpretations: list[PublicComparisonPerspective] = Field(
+        max_length=20
+    )
+    unconfirmed_claims: list[str] = Field(max_length=20)
+    missing_evidence: list[str] = Field(max_length=20)
+    disclosure_links: list[PublicDisclosureLink] = Field(max_length=20)
+
+
 class PublicProcessSummary(PublicModel):
     trace_version: Literal["m3-01-v1"] = "m3-01-v1"
     data_mode: Literal["recorded", "live", "mixed", "unconfigured"]
@@ -233,6 +298,7 @@ class ChatResponse(PublicModel):
     basis_date: date
     basis_at: datetime | None = None
     market_snapshot: PublicMarketSnapshot | None = None
+    evidence_comparison: PublicEvidenceComparison | None = None
     answer_sections: AnswerSections
     evidence: list[Evidence]
     warnings: list[str]
@@ -246,9 +312,15 @@ __all__ = [
     "PublicCitationSummary",
     "PublicContextBudgetSummary",
     "PublicDecisionSummary",
+    "PublicDisclosureLink",
+    "PublicEvidenceComparison",
     "PublicEvidencePipelineSummary",
     "PublicGenerationSummary",
     "PublicMarketSnapshot",
+    "PublicComparisonClaim",
+    "PublicComparisonLineageSummary",
+    "PublicComparisonPerspective",
+    "PublicComparisonSource",
     "PublicProcessSummary",
     "PublicQueryPlanSummary",
     "PublicSecuritySummary",
