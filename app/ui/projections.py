@@ -52,6 +52,8 @@ _INTENT_LABELS = {
     "risk_factors": "위험 요인",
     "financial_term": "금융 용어",
     "multi_source_summary": "통합 요약",
+    "price": "선택 시점 가격",
+    "price_move": "가격 변동 배경",
     "prohibited_advice": "제공 제한 질문",
     "out_of_scope": "지원 범위 밖 질문",
 }
@@ -92,6 +94,7 @@ _GENERATION_LABELS = {
 _CONTENT_ORIGIN_LABELS = {
     "synthetic_project_owned": "Questock 작성 요약",
     "verified_public_recorded": "검증된 공개 기록",
+    "source_title_only": "원문 제목",
 }
 _LLM_LABELS = {
     "ok": "AI 정리 완료",

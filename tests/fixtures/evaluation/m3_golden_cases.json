@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "m3_12_status": "NOT_ACTIVATED",
+  "m3_12_status": "ACTIVATED_IN_M5",
   "migration_map": {
     "B0-01": "B0-01",
     "B0-02": "B0-02",
@@ -169,7 +169,7 @@
       "taxonomy": ["stale_data", "abstention"], "capabilities": ["SAFE01"],
       "turns": ["오늘 현대자동차가 왜 올랐어?"], "scenario_id": "ok",
       "coverage": null,
-      "expected": {"resolution_status": "resolved", "intent": "out_of_scope", "required_sources": [], "status": "no_evidence", "security_id": "KRX:005380", "evidence_source_types": [], "forbidden_security_ids": [], "forbidden_evidence_source_types": [], "provider_statuses": {}, "retrieval_status": "empty", "generation_mode": "fixed_template", "warnings": [], "fallback_required": true},
+      "expected": {"resolution_status": "resolved", "intent": "price_move", "required_sources": ["news", "disclosure", "research_report"], "status": "no_evidence", "security_id": "KRX:005380", "evidence_source_types": [], "forbidden_security_ids": [], "forbidden_evidence_source_types": [], "provider_statuses": {"news": "ok", "disclosure": "ok", "research_report": "ok"}, "retrieval_status": "empty", "generation_mode": "fixed_template", "warnings": [], "fallback_required": true},
       "critical": true
     },
     {

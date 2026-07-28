@@ -35,6 +35,8 @@ _SECURITY_REQUIRED_INTENTS = frozenset(
         "research_report_summary",
         "risk_factors",
         "multi_source_summary",
+        "price",
+        "price_move",
     }
 )
 _PLAN_MATRIX: dict[str, tuple[tuple[str, ...], tuple[str, ...], bool]] = {
@@ -48,6 +50,12 @@ _PLAN_MATRIX: dict[str, tuple[tuple[str, ...], tuple[str, ...], bool]] = {
         True,
     ),
     "multi_source_summary": (
+        ("news", "disclosure", "research_report"),
+        ("recent_news", "disclosure", "research_report"),
+        True,
+    ),
+    "price": ((), (), True),
+    "price_move": (
         ("news", "disclosure", "research_report"),
         ("recent_news", "disclosure", "research_report"),
         True,

@@ -32,9 +32,17 @@ _SUPPORTED_INTENTS = frozenset(
         "research_report_summary",
         "risk_factors",
         "multi_source_summary",
+        "price_move",
     }
 )
-_CLARIFICATION_INTENTS = frozenset({*_SUPPORTED_INTENTS, "prohibited_advice", "out_of_scope"})
+_CLARIFICATION_INTENTS = frozenset(
+    {
+        *_SUPPORTED_INTENTS,
+        "price",
+        "prohibited_advice",
+        "out_of_scope",
+    }
+)
 _SUPPORTED_SOURCES = frozenset({"news", "disclosure", "research_report", "glossary"})
 _SUPPORTED_SECURITY_IDS = frozenset({"KRX:005930", "KRX:000660", "KRX:005380"})
 _PAGE_BASES = frozenset({"pdf_1_based", "printed_page", "source_section_only"})

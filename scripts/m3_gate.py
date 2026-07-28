@@ -272,7 +272,7 @@ def load_golden_cases(
             "cases",
         }
         or payload["schema_version"] != 1
-        or payload["m3_12_status"] != "NOT_ACTIVATED"
+        or payload["m3_12_status"] != "ACTIVATED_IN_M5"
         or not isinstance(payload["cases"], list)
     ):
         raise M3GateFixtureError("M3 gate fixture is invalid")
@@ -763,10 +763,11 @@ def _evaluate_case(
         ):
             failures.append("a17_report_structure")
     if case.origin == "B0-18" and (
-        process.query_plan.intent != "out_of_scope"
+        process.query_plan.intent != "price_move"
         or process.query_plan.required_sources
+        != ["news", "disclosure", "research_report"]
     ):
-        failures.append("m3_12_activated")
+        failures.append("m5_price_move_inactive")
     failures.extend(
         _evaluate_capability_behavior(case, responses)
     )
@@ -1135,7 +1136,7 @@ def _build_report(results: tuple[CaseResult, ...]) -> GateReport:
             and critical_percentage == 100.0
             and exposure_count == 0
         ),
-        m3_12_status="NOT_ACTIVATED",
+        m3_12_status="ACTIVATED_IN_M5",
     )
 
 

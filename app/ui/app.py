@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import secrets
 from dataclasses import dataclass
+from datetime import date, datetime, time
 from functools import cache
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 import streamlit as st
 from pydantic import ValidationError
@@ -27,8 +29,21 @@ from app.ui.transport import (
 _INPUT_FAILURE = "질문을 한 글자 이상 입력해 주세요."
 _PROJECTION_FAILURE = "응답을 화면에 표시할 수 없습니다."
 _MAX_UI_TRANSCRIPT_ENTRIES = 4
-_SNAPSHOT_BASIS_LABEL = "2026-07-24 14:02 KST"
-_NEWS_COLLECTION_LABEL = "2026-07-24 00:00~14:00 KST"
+SEOUL_TZ = ZoneInfo("Asia/Seoul")
+_CHECKPOINT_DATES = (
+    date(2026, 7, 24),
+    date(2026, 7, 25),
+    date(2026, 7, 26),
+    date(2026, 7, 27),
+)
+_CHECKPOINT_OPTIONS = (
+    ("장 전·프리마켓 (08:30)", time(8, 30)),
+    ("장중 (10:00)", time(10, 0)),
+    ("장중 (14:00)", time(14, 0)),
+    ("애프터마켓 (19:00)", time(19, 0)),
+    ("전체 장 종료 후 (21:00)", time(21, 0)),
+)
+_NEWS_COLLECTION_LABEL = "2026-07-24 00:00~2026-07-27 23:59 KST"
 
 
 @dataclass(frozen=True)
@@ -47,8 +62,16 @@ def run(transport: ChatTransport | None = None) -> None:
     _initialize_state()
     _clear_chat_input_if_requested()
 
+    st.title("Questock")
+    st.caption("근거 기반 국내 종목 질의")
+    st.warning(
+        "계좌번호, 인증정보, 거래내역 등 개인 금융정보를 입력하지 마세요."
+    )
+    selected_as_of = _render_checkpoint_controls()
+    _apply_checkpoint_context(selected_as_of)
+
     st.sidebar.title("Questock")
-    _render_snapshot_status()
+    _render_snapshot_status(selected_as_of)
     st.sidebar.caption(f"세션: {st.session_state.session_id}")
     if st.sidebar.button("새 세션", key="reset_session"):
         st.session_state.session_id = _new_session_id()
@@ -56,12 +79,6 @@ def run(transport: ChatTransport | None = None) -> None:
         st.session_state.question = ""
         st.session_state.question_input = None
         st.session_state.transcript = ()
-
-    st.title("Questock")
-    st.caption("근거 기반 국내 종목 질의")
-    st.warning(
-        "계좌번호, 인증정보, 거래내역 등 개인 금융정보를 입력하지 마세요."
-    )
 
     submitted_question = st.chat_input(
         "종목에 대해 궁금한 점을 물어보세요",
@@ -74,6 +91,7 @@ def run(transport: ChatTransport | None = None) -> None:
             request = ChatRequest(
                 message=submitted_question,
                 session_id=st.session_state.session_id,
+                as_of=selected_as_of,
             )
         except ValidationError:
             st.error(_INPUT_FAILURE)
@@ -134,6 +152,42 @@ def _initialize_state() -> None:
 def _clear_chat_input_if_requested() -> None:
     if st.session_state.pop("clear_question_input", False):
         st.session_state.question_input = None
+
+
+def _render_checkpoint_controls() -> datetime:
+    first, second = st.columns(2)
+    with first:
+        selected_date = st.selectbox(
+            "기준 날짜",
+            _CHECKPOINT_DATES,
+            index=3,
+            format_func=lambda value: value.isoformat(),
+            key="checkpoint_date",
+        )
+    with second:
+        selected_label = st.selectbox(
+            "기준 시점",
+            tuple(label for label, _ in _CHECKPOINT_OPTIONS),
+            index=2,
+            key="checkpoint_time",
+        )
+    checkpoint_time = dict(_CHECKPOINT_OPTIONS)[selected_label]
+    return datetime.combine(
+        selected_date,
+        checkpoint_time,
+        tzinfo=SEOUL_TZ,
+    )
+
+
+def _apply_checkpoint_context(selected_as_of: datetime) -> None:
+    checkpoint = selected_as_of.strftime("%Y%m%dT%H%MKST")
+    previous = st.session_state.get("active_checkpoint_id")
+    if previous is not None and previous != checkpoint:
+        st.session_state.session_id = _new_session_id()
+        st.session_state.response = None
+        st.session_state.question = ""
+        st.session_state.transcript = ()
+    st.session_state.active_checkpoint_id = checkpoint
 
 
 def _append_transcript(
@@ -198,10 +252,13 @@ def _transport_timeout(transport: ChatTransport | None) -> float:
     return load_ui_config().timeout_seconds
 
 
-def _render_snapshot_status() -> None:
+def _render_snapshot_status(selected_as_of: datetime) -> None:
     st.sidebar.markdown("**고정 스냅샷**")
     st.sidebar.caption(f"Snapshot ID: {SERVICE_SNAPSHOT_ID}")
-    st.sidebar.caption(f"기준 시점: {_SNAPSHOT_BASIS_LABEL}")
+    st.sidebar.caption(
+        "선택 기준 시점: "
+        f"{selected_as_of.strftime('%Y-%m-%d %H:%M KST')}"
+    )
     st.sidebar.caption(f"뉴스 수집 범위: {_NEWS_COLLECTION_LABEL}")
     st.sidebar.caption("자료 모드: recorded")
     st.sidebar.caption(
@@ -244,6 +301,24 @@ def _render_sidebar_status(response: ChatResponse) -> None:
 
 def _render_response(response: ChatResponse) -> None:
     answer = project_baseline_answer(response)
+    if response.market_snapshot is not None:
+        market = response.market_snapshot
+        market_status = (
+            "장 운영 중"
+            if market.market_status == "open"
+            else "장 종료·휴장"
+            if market.market_status == "closed"
+            else "체결 전"
+            if market.market_status == "no_trade_yet"
+            else "가격 자료 없음"
+        )
+        st.caption(
+            "기준 시점 "
+            f"{market.requested_as_of.astimezone(SEOUL_TZ):%Y-%m-%d %H:%M KST}"
+            f" · 시장 상태 {market_status}"
+            " · 가격 관측 "
+            f"{market.observed_at.astimezone(SEOUL_TZ):%Y-%m-%d %H:%M KST}"
+        )
     for card in answer.cards:
         st.markdown(f"**{card.title}**")
         if card.emphasis == "error":
@@ -258,7 +333,14 @@ def _render_response(response: ChatResponse) -> None:
     status_parts = []
     if answer.security_name is not None:
         status_parts.append(answer.security_name)
-    status_parts.append(f"{answer.basis_date} 기준")
+    if response.basis_at is not None:
+        status_parts.append(
+            response.basis_at.astimezone(SEOUL_TZ).strftime(
+                "%Y-%m-%d %H:%M KST 기준"
+            )
+        )
+    else:
+        status_parts.append(f"{answer.basis_date} 기준")
     status_parts.append(answer.status_label)
     st.caption(" · ".join(status_parts))
 

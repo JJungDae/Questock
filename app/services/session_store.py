@@ -47,6 +47,8 @@ _INTENTS = frozenset(
         "risk_factors",
         "financial_term",
         "multi_source_summary",
+        "price",
+        "price_move",
     }
 )
 _EXCHANGE_INTENTS = _INTENTS | frozenset(

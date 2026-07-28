@@ -1,0 +1,202 @@
+{
+  "collected_at": "2026-07-28T03:18:49.290238Z",
+  "collection_end": "2026-07-27T23:59:59+09:00",
+  "collection_start": "2026-07-24T14:00:00+09:00",
+  "counts_by_security": {
+    "KRX:000660": 1,
+    "KRX:005380": 2,
+    "KRX:005930": 4
+  },
+  "documents": [
+    {
+      "document_id": "m5-news:b3b66e4719922810e17b6f93cf6ddcf1f22f50b448ee207532be0a9294cf2b52",
+      "ingestion_version": "m5-news-title-ingest-v1",
+      "locator": {
+        "content_level": "source_title_only",
+        "provider": "naver_api_hub_news",
+        "published_at": "2026-07-26T02:21:00+00:00",
+        "source_url": "https://www.edaily.co.kr/news/newspath.asp?newsid=01521926645518456"
+      },
+      "mentioned_security_ids": [],
+      "metadata": {
+        "content_origin": "source_title_only",
+        "document_type": "article",
+        "external_llm_processing_allowed": true,
+        "security_name": "SK하이닉스"
+      },
+      "primary_security_ids": [
+        "KRX:000660"
+      ],
+      "provider": "naver_api_hub_news",
+      "published_at": "2026-07-26T02:21:00Z",
+      "source_type": "news",
+      "source_url": "https://www.edaily.co.kr/news/newspath.asp?newsid=01521926645518456",
+      "text": "기사 제목에서 확인되는 내용: SK하이닉스, 키옥시아 최대주주 되나…베인 엑시트·도시바 지분 축소",
+      "title": "SK하이닉스, 키옥시아 최대주주 되나…베인 엑시트·도시바 지분 축소"
+    },
+    {
+      "document_id": "m5-news:47ac7c0febaca8e5f8e72a10d848591719c2d30d20d8a01756399073a81a2f60",
+      "ingestion_version": "m5-news-title-ingest-v1",
+      "locator": {
+        "content_level": "source_title_only",
+        "provider": "naver_api_hub_news",
+        "published_at": "2026-07-24T07:40:00+00:00",
+        "source_url": "https://www.huffingtonpost.kr/article/258992"
+      },
+      "mentioned_security_ids": [],
+      "metadata": {
+        "content_origin": "source_title_only",
+        "document_type": "article",
+        "external_llm_processing_allowed": true,
+        "security_name": "현대자동차"
+      },
+      "primary_security_ids": [
+        "KRX:005380"
+      ],
+      "provider": "naver_api_hub_news",
+      "published_at": "2026-07-24T07:40:00Z",
+      "source_type": "news",
+      "source_url": "https://www.huffingtonpost.kr/article/258992",
+      "text": "기사 제목에서 확인되는 내용: 현대차 하반기 영업이익률 7% 회복의 조건은 유럽 : 호세 무뇨스 일회성...",
+      "title": "현대차 하반기 영업이익률 7% 회복의 조건은 유럽 : 호세 무뇨스 일회성..."
+    },
+    {
+      "document_id": "m5-news:c8320ad3001a7162cbd4489d6f7aa85fb4316741e15dff69889bb86c8e2ef56b",
+      "ingestion_version": "m5-news-title-ingest-v1",
+      "locator": {
+        "content_level": "source_title_only",
+        "provider": "naver_api_hub_news",
+        "published_at": "2026-07-25T05:40:00+00:00",
+        "source_url": "http://www.4th.kr/news/articleView.html?idxno=2115254"
+      },
+      "mentioned_security_ids": [],
+      "metadata": {
+        "content_origin": "source_title_only",
+        "document_type": "article",
+        "external_llm_processing_allowed": true,
+        "security_name": "현대자동차"
+      },
+      "primary_security_ids": [
+        "KRX:005380"
+      ],
+      "provider": "naver_api_hub_news",
+      "published_at": "2026-07-25T05:40:00Z",
+      "source_type": "news",
+      "source_url": "http://www.4th.kr/news/articleView.html?idxno=2115254",
+      "text": "기사 제목에서 확인되는 내용: [샌프란 AI써밋] 현대차그룹, 엔비디아·웨이모·구글과 피지컬 AI 동맹...",
+      "title": "[샌프란 AI써밋] 현대차그룹, 엔비디아·웨이모·구글과 피지컬 AI 동맹..."
+    },
+    {
+      "document_id": "m5-news:a6d382a419a99fbdee0c37ff69e42ced8daf031bf7ce2003d1a06d97b5a72464",
+      "ingestion_version": "m5-news-title-ingest-v1",
+      "locator": {
+        "content_level": "source_title_only",
+        "provider": "naver_api_hub_news",
+        "published_at": "2026-07-25T05:24:00+00:00",
+        "source_url": "http://www.4th.kr/news/articleView.html?idxno=2115252"
+      },
+      "mentioned_security_ids": [],
+      "metadata": {
+        "content_origin": "source_title_only",
+        "document_type": "article",
+        "external_llm_processing_allowed": true,
+        "security_name": "삼성전자"
+      },
+      "primary_security_ids": [
+        "KRX:005930"
+      ],
+      "provider": "naver_api_hub_news",
+      "published_at": "2026-07-25T05:24:00Z",
+      "source_type": "news",
+      "source_url": "http://www.4th.kr/news/articleView.html?idxno=2115252",
+      "text": "기사 제목에서 확인되는 내용: [샌프란 AI써밋] 삼성전자·브로드컴, AI 반도체 전방위 동맹…2030년까...",
+      "title": "[샌프란 AI써밋] 삼성전자·브로드컴, AI 반도체 전방위 동맹…2030년까..."
+    },
+    {
+      "document_id": "m5-news:a2b494fa8084ad5ef62546e6aac0fdf40f18799f4325135ecb8b359f18b4de62",
+      "ingestion_version": "m5-news-title-ingest-v1",
+      "locator": {
+        "content_level": "source_title_only",
+        "provider": "naver_api_hub_news",
+        "published_at": "2026-07-27T00:38:00+00:00",
+        "source_url": "http://www.thebigdata.co.kr/view.php?ud=2026072709273287050ecbf9426b_23"
+      },
+      "mentioned_security_ids": [],
+      "metadata": {
+        "content_origin": "source_title_only",
+        "document_type": "article",
+        "external_llm_processing_allowed": true,
+        "security_name": "삼성전자"
+      },
+      "primary_security_ids": [
+        "KRX:005930"
+      ],
+      "provider": "naver_api_hub_news",
+      "published_at": "2026-07-27T00:38:00Z",
+      "source_type": "news",
+      "source_url": "http://www.thebigdata.co.kr/view.php?ud=2026072709273287050ecbf9426b_23",
+      "text": "기사 제목에서 확인되는 내용: 삼성전자, 갤럭시Z 폴드8·플립8 사전 판매…소비자 관심도 급증",
+      "title": "삼성전자, 갤럭시Z 폴드8·플립8 사전 판매…소비자 관심도 급증"
+    },
+    {
+      "document_id": "m5-news:a355c37506be9b8b0b2c3b08a57ca2eacdf5a7438d0a5678517517609aaa2d56",
+      "ingestion_version": "m5-news-title-ingest-v1",
+      "locator": {
+        "content_level": "source_title_only",
+        "provider": "naver_api_hub_news",
+        "published_at": "2026-07-27T02:16:00+00:00",
+        "source_url": "https://www.huffingtonpost.kr/article/259016"
+      },
+      "mentioned_security_ids": [],
+      "metadata": {
+        "content_origin": "source_title_only",
+        "document_type": "article",
+        "external_llm_processing_allowed": true,
+        "security_name": "삼성전자"
+      },
+      "primary_security_ids": [
+        "KRX:005930"
+      ],
+      "provider": "naver_api_hub_news",
+      "published_at": "2026-07-27T02:16:00Z",
+      "source_type": "news",
+      "source_url": "https://www.huffingtonpost.kr/article/259016",
+      "text": "기사 제목에서 확인되는 내용: 삼성전자 파운드리 HBM5에 최선단 2나노 공정 적용한다, 기술개발실장 ...",
+      "title": "삼성전자 파운드리 HBM5에 최선단 2나노 공정 적용한다, 기술개발실장 ..."
+    },
+    {
+      "document_id": "m5-news:59dd98bc56bd8177a7a019109dae44b5629eced125a8deb1b912bd8b9a210941",
+      "ingestion_version": "m5-news-title-ingest-v1",
+      "locator": {
+        "content_level": "source_title_only",
+        "provider": "naver_api_hub_news",
+        "published_at": "2026-07-27T07:44:00+00:00",
+        "source_url": "https://www.kfenews.co.kr/news/articleView.html?idxno=661287"
+      },
+      "mentioned_security_ids": [],
+      "metadata": {
+        "content_origin": "source_title_only",
+        "document_type": "article",
+        "external_llm_processing_allowed": true,
+        "security_name": "삼성전자"
+      },
+      "primary_security_ids": [
+        "KRX:005930"
+      ],
+      "provider": "naver_api_hub_news",
+      "published_at": "2026-07-27T07:44:00Z",
+      "source_type": "news",
+      "source_url": "https://www.kfenews.co.kr/news/articleView.html?idxno=661287",
+      "text": "기사 제목에서 확인되는 내용: [기획] 삼성전자, 292조 브로드컴 동맹…'세계 유일 원스톱 턴키' 통했다",
+      "title": "[기획] 삼성전자, 292조 브로드컴 동맹…'세계 유일 원스톱 턴키' 통했다"
+    }
+  ],
+  "documents_sha256": "c963ba0d909b0866185169eccf165bea0b50b449d32a935ed8170f64b8cc1a90",
+  "schema_version": "m5-news-title-corpus-v1",
+  "selection_policy": {
+    "content_level": "source_title_only",
+    "daily_cap": 15,
+    "irrelevant_quota_fill": false,
+    "period_cap": 60
+  }
+}

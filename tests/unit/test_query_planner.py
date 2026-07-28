@@ -12,6 +12,7 @@ from app.planning.query_planner import (
     MULTI_SOURCE_SUMMARY,
     OUT_OF_SCOPE,
     PROHIBITED_ADVICE,
+    PRICE_MOVE,
     QueryPlanner,
     RECENT_ISSUE,
     RESEARCH_REPORT_SUMMARY,
@@ -124,7 +125,6 @@ def test_type_errors_are_sanitized_and_do_not_call_resolver():
     [
         ("   ", OUT_OF_SCOPE),
         (f"{SAMSUNG} \ub0b4\uc77c \uc624\ub97c\uae4c", PROHIBITED_ADVICE),
-        (f"{SAMSUNG} {TODAY} \uc65c \uc62c\ub790\uc5b4", OUT_OF_SCOPE),
     ],
 )
 def test_early_return_paths_do_not_call_resolver(query, intent):
@@ -384,13 +384,31 @@ def test_benign_financial_wording_is_not_prohibited(query, intent, sources, evid
         (f"{SAMSUNG} \uc190\uc808 \uc2dc\uc810 \uc54c\ub824\uc918", PROHIBITED_ADVICE),
         (f"{SAMSUNG} \uc775\uc808\ud560\uae4c?", PROHIBITED_ADVICE),
         (f"{SAMSUNG} \uc775\uc808 \uc2dc\uc810 \uc54c\ub824\uc918", PROHIBITED_ADVICE),
-        (f"{SAMSUNG} {TODAY} \uc65c \uc62c\ub790\uc5b4?", OUT_OF_SCOPE),
     ],
 )
 def test_prohibited_and_inactive_price_move_plans_are_non_retrievable(query, intent):
     result = planner().plan(query)
 
     assert_clarification(result, intent)
+
+
+def test_price_move_question_is_retrievable_in_m5() -> None:
+    result = planner().plan(
+        f"{SAMSUNG} {TODAY} \uc65c \uc62c\ub790\uc5b4?"
+    )
+
+    assert_success(
+        result,
+        security_id=SAMSUNG_ID,
+        intent=PRICE_MOVE,
+        sources=["news", "disclosure", "research_report"],
+        evidence=["recent_news", "disclosure", "research_report"],
+        date_range=DateRange(
+            start=date(2026, 7, 23),
+            end=date(2026, 7, 23),
+        ),
+        answer_focus="price_move",
+    )
 
 
 def test_benign_historical_probability_word_is_not_prohibited_by_itself():

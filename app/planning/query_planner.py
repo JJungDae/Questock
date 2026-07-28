@@ -18,6 +18,8 @@ Intent = Literal[
     "risk_factors",
     "financial_term",
     "multi_source_summary",
+    "price",
+    "price_move",
     "prohibited_advice",
     "out_of_scope",
 ]
@@ -35,6 +37,8 @@ FINANCIAL_TERM = "financial_term"
 MULTI_SOURCE_SUMMARY = "multi_source_summary"
 PROHIBITED_ADVICE = "prohibited_advice"
 OUT_OF_SCOPE = "out_of_scope"
+PRICE = "price"
+PRICE_MOVE = "price_move"
 
 SECURITY_REQUIRED_INTENTS = frozenset(
     {
@@ -43,6 +47,8 @@ SECURITY_REQUIRED_INTENTS = frozenset(
         RESEARCH_REPORT_SUMMARY,
         RISK_FACTORS,
         MULTI_SOURCE_SUMMARY,
+        PRICE,
+        PRICE_MOVE,
     }
 )
 
@@ -60,6 +66,8 @@ AnswerFocus = Literal[
     "research_view",
     "balanced",
     "term",
+    "price",
+    "price_move",
 ]
 
 SOURCE_EVIDENCE_MATRIX: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
@@ -72,6 +80,11 @@ SOURCE_EVIDENCE_MATRIX: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
         ("risk", "recent_news", "disclosure", "research_report"),
     ),
     MULTI_SOURCE_SUMMARY: (
+        (NEWS_SOURCE, DISCLOSURE_SOURCE, RESEARCH_REPORT_SOURCE),
+        ("recent_news", "disclosure", "research_report"),
+    ),
+    PRICE: ((), ()),
+    PRICE_MOVE: (
         (NEWS_SOURCE, DISCLOSURE_SOURCE, RESEARCH_REPORT_SOURCE),
         ("recent_news", "disclosure", "research_report"),
     ),
@@ -140,10 +153,21 @@ PRICE_MOVE_PATTERNS = (
     "\uc8fc\uac00 \ubc30\uacbd",
     "\uc0c1\uc2b9 \ubc30\uacbd",
     "\ud558\ub77d \ubc30\uacbd",
+)
+DIRECT_PRICE_PATTERNS = (
     "\ud604\uc7ac \uc8fc\uac00",
     "\uc9c0\uae08 \uc8fc\uac00",
     "\uc8fc\uac00 \uc54c\ub824",
     "\uc8fc\uac00 \uc5bc\ub9c8",
+    "\uc8fc\uac00",
+    "\uac00\uaca9",
+    "\uc5bc\ub9c8",
+    "\uc62c\ub790\uc5b4",
+    "\ub0b4\ub838\uc5b4",
+    "\uc0c1\uc2b9\ud588",
+    "\ud558\ub77d\ud588",
+)
+UNSUPPORTED_MARKET_ANALYSIS_PATTERNS = (
     "\uc8fc\uac00 \ucd94\uc774",
     "\uac00\uaca9 \ucd94\uc774",
     "\uc218\uc775\ub960",
@@ -377,8 +401,6 @@ class QueryPlanner:
             return _clarification_plan(OUT_OF_SCOPE)
         if _contains_bounded_phrase(intent_query, PROHIBITED_PATTERNS):
             return _clarification_plan(PROHIBITED_ADVICE)
-        if _contains_any(intent_query, PRICE_MOVE_PATTERNS):
-            return _clarification_plan(OUT_OF_SCOPE)
 
         intent = _classify_intent(intent_query)
         period = _parse_period(intent_query, self._basis_date)
@@ -391,6 +413,17 @@ class QueryPlanner:
         security = extraction.security
         if intent == OUT_OF_SCOPE:
             intent = _session_follow_up_intent(intent_query, session)
+        if (
+            intent == OUT_OF_SCOPE
+            and _contains_any(
+                intent_query,
+                UNSUPPORTED_MARKET_ANALYSIS_PATTERNS,
+            )
+        ):
+            return _clarification_plan(
+                OUT_OF_SCOPE,
+                date_range=period.date_range,
+            )
         if (
             intent == OUT_OF_SCOPE
             and security is not None
@@ -465,6 +498,15 @@ class QueryPlanner:
 
 
 def _classify_intent(normalized_query: str) -> Intent:
+    if _contains_any(
+        normalized_query,
+        UNSUPPORTED_MARKET_ANALYSIS_PATTERNS,
+    ):
+        return OUT_OF_SCOPE
+    if _contains_any(normalized_query, PRICE_MOVE_PATTERNS):
+        return PRICE_MOVE
+    if _contains_any(normalized_query, DIRECT_PRICE_PATTERNS):
+        return PRICE
     if _contains_any(normalized_query, FINANCIAL_TERM_CUES) and _contains_any(normalized_query, FINANCIAL_TERM_MARKERS):
         return FINANCIAL_TERM
     if _contains_any(normalized_query, RISK_PATTERNS):
@@ -495,6 +537,10 @@ def _classify_answer_focus(
 ) -> AnswerFocus:
     if intent == FINANCIAL_TERM:
         return "term"
+    if intent == PRICE:
+        return "price"
+    if intent == PRICE_MOVE:
+        return "price_move"
     if _contains_any(normalized_query, EXPLICIT_BALANCED_PATTERNS):
         return "balanced"
     if _contains_any(normalized_query, OUTLOOK_PATTERNS):

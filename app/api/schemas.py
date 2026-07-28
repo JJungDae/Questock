@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, time
 from typing import Literal
+from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.answer.models import AnswerSections
 from app.core.models import Evidence, SecurityIdentifier
+
+SEOUL_TZ = ZoneInfo("Asia/Seoul")
 
 ProviderStatusValue = Literal[
     "ok",
@@ -39,6 +42,8 @@ IntentValue = Literal[
     "risk_factors",
     "financial_term",
     "multi_source_summary",
+    "price",
+    "price_move",
     "prohibited_advice",
     "out_of_scope",
 ]
@@ -71,6 +76,7 @@ class PublicModel(BaseModel):
 class ChatRequest(PublicModel):
     message: str = Field(min_length=1, max_length=2000)
     session_id: str = Field(min_length=1, max_length=128)
+    as_of: datetime | None = None
 
     @field_validator("message", "session_id")
     @classmethod
@@ -79,6 +85,37 @@ class ChatRequest(PublicModel):
         if not output:
             raise ValueError("value must not be blank")
         return output
+
+    @field_validator("as_of")
+    @classmethod
+    def validate_as_of(
+        cls,
+        value: datetime | None,
+    ) -> datetime | None:
+        if value is None:
+            return None
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("as_of must be timezone-aware")
+        local = value.astimezone(SEOUL_TZ)
+        if (
+            local.date()
+            not in {
+                date(2026, 7, 24),
+                date(2026, 7, 25),
+                date(2026, 7, 26),
+                date(2026, 7, 27),
+            }
+            or local.time().replace(tzinfo=None)
+            not in {
+                time(8, 30),
+                time(10, 0),
+                time(14, 0),
+                time(19, 0),
+                time(21, 0),
+            }
+        ):
+            raise ValueError("as_of is not a supported checkpoint")
+        return value
 
 
 class PublicSecuritySummary(PublicModel):
@@ -150,6 +187,32 @@ class PublicGenerationSummary(PublicModel):
     live_verified: bool
 
 
+class PublicMarketSnapshot(PublicModel):
+    checkpoint_id: str
+    requested_as_of: datetime
+    observed_at: datetime
+    price: float
+    previous_close: float
+    change: float
+    change_percent: float
+    volume: int | None
+    market_code: Literal["J", "NX", "UN"]
+    market_session: Literal[
+        "pre_market",
+        "regular",
+        "after_market",
+        "after_close",
+        "closed",
+    ]
+    market_status: Literal[
+        "open",
+        "closed",
+        "no_trade_yet",
+        "no_data",
+    ]
+    currency: Literal["KRW"]
+
+
 class PublicProcessSummary(PublicModel):
     trace_version: Literal["m3-01-v1"] = "m3-01-v1"
     data_mode: Literal["recorded", "live", "mixed", "unconfigured"]
@@ -168,6 +231,8 @@ class ChatResponse(PublicModel):
     status: EvidenceDecisionStatusValue
     security: SecurityIdentifier | None
     basis_date: date
+    basis_at: datetime | None = None
+    market_snapshot: PublicMarketSnapshot | None = None
     answer_sections: AnswerSections
     evidence: list[Evidence]
     warnings: list[str]
@@ -183,6 +248,7 @@ __all__ = [
     "PublicDecisionSummary",
     "PublicEvidencePipelineSummary",
     "PublicGenerationSummary",
+    "PublicMarketSnapshot",
     "PublicProcessSummary",
     "PublicQueryPlanSummary",
     "PublicSecuritySummary",

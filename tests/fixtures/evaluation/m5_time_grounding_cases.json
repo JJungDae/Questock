@@ -1,0 +1,85 @@
+{
+  "schema_version": "m5-time-grounding-golden-v1",
+  "cases": [
+    {
+      "case_id": "samsung-pre-market-price",
+      "question": "삼성전자 현재 주가 얼마야?",
+      "as_of": "2026-07-24T08:30:00+09:00",
+      "expected_security_id": "KRX:005930",
+      "expected_intent": "price",
+      "expected_price": 267000,
+      "expected_observed_at": "2026-07-24T08:30:00+09:00",
+      "expected_market_status": "open"
+    },
+    {
+      "case_id": "hynix-intraday-price",
+      "question": "SK하이닉스 주가 알려줘",
+      "as_of": "2026-07-24T14:00:00+09:00",
+      "expected_security_id": "KRX:000660",
+      "expected_intent": "price",
+      "expected_price": 1775000,
+      "expected_observed_at": "2026-07-24T14:00:00+09:00",
+      "expected_market_status": "open"
+    },
+    {
+      "case_id": "hyundai-after-market-price",
+      "question": "현대차 가격 얼마야?",
+      "as_of": "2026-07-27T19:00:00+09:00",
+      "expected_security_id": "KRX:005380",
+      "expected_intent": "price",
+      "expected_price": 403500,
+      "expected_observed_at": "2026-07-27T19:00:00+09:00",
+      "expected_market_status": "open"
+    },
+    {
+      "case_id": "samsung-after-close-price",
+      "question": "삼성전자 지금 주가 알려줘",
+      "as_of": "2026-07-27T21:00:00+09:00",
+      "expected_security_id": "KRX:005930",
+      "expected_intent": "price",
+      "expected_price": 255000,
+      "expected_observed_at": "2026-07-27T19:59:00+09:00",
+      "expected_market_status": "closed"
+    },
+    {
+      "case_id": "samsung-weekend-price",
+      "question": "삼성전자 현재 주가 얼마야?",
+      "as_of": "2026-07-25T10:00:00+09:00",
+      "expected_security_id": "KRX:005930",
+      "expected_intent": "price",
+      "expected_price": 252500,
+      "expected_observed_at": "2026-07-24T19:59:00+09:00",
+      "expected_market_status": "closed"
+    },
+    {
+      "case_id": "hynix-price-move",
+      "question": "SK하이닉스 오늘 왜 올랐어?",
+      "as_of": "2026-07-27T14:00:00+09:00",
+      "expected_security_id": "KRX:000660",
+      "expected_intent": "price_move",
+      "expected_price": 1781000,
+      "expected_observed_at": "2026-07-27T14:00:00+09:00",
+      "expected_market_status": "open"
+    },
+    {
+      "case_id": "samsung-price-move",
+      "question": "삼성전자 오늘 왜 올랐어?",
+      "as_of": "2026-07-27T14:00:00+09:00",
+      "expected_security_id": "KRX:005930",
+      "expected_intent": "price_move",
+      "expected_price": 251500,
+      "expected_observed_at": "2026-07-27T14:00:00+09:00",
+      "expected_market_status": "open"
+    },
+    {
+      "case_id": "general-question-no-forced-price",
+      "question": "삼성전자 최근 이슈 요약해줘",
+      "as_of": "2026-07-27T14:00:00+09:00",
+      "expected_security_id": "KRX:005930",
+      "expected_intent": "recent_issue",
+      "expected_price": null,
+      "expected_observed_at": null,
+      "expected_market_status": null
+    }
+  ]
+}

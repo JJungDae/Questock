@@ -96,7 +96,7 @@ class HttpChatTransport:
         except (TypeError, ValueError):
             raise ChatTransportError(_CONFIGURATION_FAILURE) from None
         payload = json.dumps(
-            request.model_dump(mode="json"),
+            request.model_dump(mode="json", exclude_none=True),
             ensure_ascii=False,
             separators=(",", ":"),
         ).encode("utf-8")

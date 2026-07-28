@@ -5,7 +5,7 @@
 > Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
 > Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
 > B9 planning base: `b9ddf7461306d16cf1da14634ce458050d78f7bc`
-> 상태: `B9 PASS / M4 Gate PASS / FSC-0~FSC-4 PASS / complete; FSC-4 deployed at 136271ea80802a39f1981e539f183d544d95e23a; M5-01 PLAN READY / API PREFLIGHT PENDING / IMPLEMENTATION NOT_STARTED`
+> 상태: `B9 PASS / M4 Gate PASS / FSC-0~FSC-4 PASS / complete; FSC-4 deployed at 136271ea80802a39f1981e539f183d544d95e23a; PR #18 MERGED at 6f50ee922c2a1c74278ead2f679472ba3e19bc8b; M5-01 LOCAL IMPLEMENTATION PASS / RELEASE NOT_STARTED`
 
 ## 1. 목적
 
@@ -66,11 +66,11 @@ Task Card 사실 동기화 완료, B6-0에서 상태 확인
 B9, First Service Completion
 
 현재 공식 bundle:
-FSC-4 beginner grounded chat stabilization - PASS / deployed / complete
+M5-01 as-of price-grounded answer
 
 현재 checkpoint:
-M5-01 as-of price-grounded answer - PLAN READY /
-API PREFLIGHT PENDING / IMPLEMENTATION NOT_STARTED
+M5-01 local implementation - PASS /
+implementation commit, push, PR, deployment NOT_STARTED
 
 M5-01 실행 기준:
 docs/TASK_CARDS/M5-01-as-of-price-grounded-answer.md
@@ -173,10 +173,11 @@ initial deployment smoke failure auto-rollback PASS to
 
 FSC-4 post-deployment answer-presentation follow-up:
 local PASS; implementation commit `edb46ae`; remote branch pushed;
-draft PR #18 OPEN
+PR #18 MERGED
 <https://github.com/JJungDae/Questock/pull/18>;
-focused publish-preflight `85 passed, 2 warnings`; PR CI NOT_REPORTED;
-merge and deployment NOT_STARTED
+merge SHA `6f50ee922c2a1c74278ead2f679472ba3e19bc8b`;
+focused publish-preflight `85 passed, 2 warnings`;
+quality-gate run `30323480083` PASS; deployment NOT_STARTED
 
 SC-06 verification:
 live acceptance PASS; cumulative LLM success 10/12; Critical 3/3 with zero
@@ -235,8 +236,8 @@ Service Completion Gate:
 PASS / complete
 
 A15-M:
-activation prerequisites reviewed; M5-01 plan ready /
-API preflight pending / implementation NOT_STARTED
+activation prerequisites reviewed; M5-01 local implementation PASS /
+release integration NOT_STARTED
 
 B6 구현:
 PASS / complete
@@ -245,7 +246,7 @@ B6 완료 SHA:
 60e6203b265a967a8b6ba45da2ba3128e1e1bcfe
 
 다음 공식 checkpoint:
-M5-01 API preflight - PENDING
+M5-01 release integration - NOT_STARTED
 
 B9 계획:
 docs/TASK_CARDS/B9-release-deployment-traceability.md
@@ -360,16 +361,16 @@ docs/TASK_CARDS/B8-quality-observability.md
 docs/TASK_CARDS/B9-release-deployment-traceability.md
 
 current:
-docs/TASK_CARDS/FSC-4-beginner-grounded-chat.md
-
-next execution standard:
 docs/TASK_CARDS/M5-01-as-of-price-grounded-answer.md
+
+completed FSC execution standard:
+docs/TASK_CARDS/FSC-4-beginner-grounded-chat.md
 
 current execution decision:
 docs/agent_handoff/FIRST_SERVICE_COMPLETION_EXECUTION_DECISION_2026-07-27.md
 
 next:
-M5-01 API preflight - PENDING; implementation NOT_STARTED
+M5-01 implementation commit, push, PR, deployment - NOT_STARTED
 ```
 
 ## 6. 금지
