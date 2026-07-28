@@ -78,15 +78,17 @@ def run(transport: ChatTransport | None = None) -> None:
         except ValidationError:
             st.error(_INPUT_FAILURE)
         else:
+            loading_placeholder = st.empty()
             try:
                 active_transport = transport or _default_transport(
                     st.session_state.session_id
                 )
-                with st.spinner("답변을 확인하고 있습니다."):
-                    response = active_transport.send(
-                        request,
-                        _transport_timeout(transport),
-                    )
+                with loading_placeholder.container():
+                    with st.spinner("답변을 확인하고 있습니다."):
+                        response = active_transport.send(
+                            request,
+                            _transport_timeout(transport),
+                        )
                 st.session_state.response = response
                 st.session_state.question = ""
                 st.session_state.transcript = _append_transcript(
@@ -99,6 +101,8 @@ def run(transport: ChatTransport | None = None) -> None:
             except ChatTransportError as exc:
                 st.session_state.response = None
                 st.error(str(exc))
+            finally:
+                loading_placeholder.empty()
 
     response = st.session_state.response
     if isinstance(response, ChatResponse):
@@ -241,36 +245,44 @@ def _render_sidebar_status(response: ChatResponse) -> None:
 def _render_response(response: ChatResponse) -> None:
     answer = project_baseline_answer(response)
     for card in answer.cards:
-        with st.container(border=True):
-            st.markdown(f"**{card.title}**")
+        st.markdown(f"**{card.title}**")
+        if card.emphasis == "error":
             for item in card.items:
-                if card.emphasis == "error":
-                    st.error(item)
-                else:
-                    st.text(item)
-    status_parts = [f"상태: {answer.status_label}"]
+                st.error(item)
+        elif len(card.items) == 1:
+            st.markdown(_escape_markdown_text(card.items[0]))
+        else:
+            for item in card.items:
+                st.markdown(f"- {_escape_markdown_text(item)}")
+
+    status_parts = []
     if answer.security_name is not None:
-        status_parts.append(f"종목: {answer.security_name}")
-    status_parts.append(f"기준일: {answer.basis_date}")
+        status_parts.append(answer.security_name)
+    status_parts.append(f"{answer.basis_date} 기준")
+    status_parts.append(answer.status_label)
     st.caption(" · ".join(status_parts))
-    for warning in answer.warnings:
-        st.warning(warning)
+
+    notices = list(answer.warnings)
     if answer.missing_sources:
-        st.warning(f"누락 자료: {', '.join(answer.missing_sources)}")
+        notices.append(
+            f"확인하지 못한 자료: {', '.join(answer.missing_sources)}"
+        )
+    if notices:
+        st.info(f"참고: {' · '.join(notices)}")
 
     sources = project_baseline_sources(response)
     if sources:
-        st.caption("근거")
+        st.caption("참고한 자료")
         for source in _compact_sources(sources):
             title = _compact_source_title(source)
             label = f"{source.source_label} · {title}"
             if source.link_url is None:
-                st.text(label)
+                st.markdown(f"- {_escape_markdown_text(label)}")
             else:
                 safe_label = _escape_markdown_label(label)
-                st.markdown(f"[{safe_label}]({source.link_url})")
+                st.markdown(f"- [{safe_label}]({source.link_url})")
 
-    with st.expander("분석 과정 보기", expanded=False):
+    with st.expander("답변이 만들어진 과정", expanded=False):
         for stage in project_process_stages(response.diagnostics_public):
             st.markdown(f"**{stage.title}**")
             for field in stage.fields:
@@ -306,6 +318,13 @@ def _compact_source_title(source: object) -> str:
 def _escape_markdown_label(value: str) -> str:
     escaped = value.replace("\\", "\\\\")
     for character in ("`", "*", "_", "{", "}", "[", "]", "<", ">", "#"):
+        escaped = escaped.replace(character, f"\\{character}")
+    return escaped
+
+
+def _escape_markdown_text(value: str) -> str:
+    escaped = _escape_markdown_label(value)
+    for character in ("|", "~"):
         escaped = escaped.replace(character, f"\\{character}")
     return escaped
 

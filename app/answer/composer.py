@@ -145,10 +145,15 @@ class AnswerComposer:
                     "claim, while a broad question may use several. The first and "
                     "only summary claim must answer the question directly. Keep "
                     "each claim to one or two focused sentences. For a broad "
-                    "company question, aim for roughly 400 to 1,000 Korean "
+                    "company question, aim for roughly 500 to 1,200 Korean "
                     "characters in total when the Evidence supports that much; "
-                    "simple questions may be shorter. "
-                    "later useful claims in this order: facts, interpretation, "
+                    "simple questions may be shorter. Write one connected, "
+                    "beginner-friendly explanation rather than a source inventory "
+                    "or a series of pasted evidence snippets. Do not repeat the "
+                    "summary in later sections. Start each later claim with its "
+                    "takeaway and then explain why it matters. Translate analyst "
+                    "shorthand into ordinary Korean and identify it as an analyst "
+                    "estimate or view. Order later useful claims as: facts, interpretation, "
                     "inference, positive_factors, risk_factors, uncertainty. Omit "
                     "irrelevant or unsupported sections. You may paraphrase and "
                     "combine evidence, but every claim must cite all Evidence IDs "
@@ -866,9 +871,10 @@ def _merge_fixed_report_evidence(
             or is_unsafe_answer_text(item.snippet, intent=plan.intent)
         ):
             continue
+        public_claim_text = _beginner_report_claim_text(item.snippet)
         claim = CitationClaim(
             claim_id=f"fixed-report-{index}",
-            text=item.snippet,
+            text=public_claim_text,
             evidence_ids=(item.evidence_id,),
         )
         try:
@@ -881,7 +887,7 @@ def _merge_fixed_report_evidence(
             continue
         claims.append(claim)
         citations.extend(validation.citations)
-        getattr(sections, section).append(item.snippet)
+        getattr(sections, section).append(public_claim_text)
         public_evidence.append(item.model_copy(deep=True))
         accepted_ids.add(item.evidence_id)
 
@@ -902,6 +908,27 @@ def _merge_fixed_report_evidence(
         public_evidence=tuple(public_evidence),
         citation_rejection_count=rejection_count,
     )
+
+
+def _beginner_report_claim_text(snippet: str) -> str:
+    canonical = snippet.strip()
+    if not canonical:
+        return canonical
+    for original, replacement in (
+        ("추정했다.", "추정했습니다."),
+        ("전망했다.", "전망했습니다."),
+        ("제시했다.", "제시했습니다."),
+        ("분석했다.", "분석했습니다."),
+        ("평가했다.", "평가했습니다."),
+        ("이라고 봤다.", "이라고 분석했습니다."),
+        ("라고 봤다.", "라고 분석했습니다."),
+    ):
+        if canonical.endswith(original):
+            canonical = f"{canonical[:-len(original)]}{replacement}"
+            break
+    if canonical.startswith(("리포트는 ", "보고서는 ", "증권사 리포트")):
+        return canonical
+    return f"증권사 리포트 기준으로는 {canonical}"
 
 
 def _fixed_glossary_result(

@@ -5,7 +5,7 @@
 > Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
 > Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
 > B9 planning base: `b9ddf7461306d16cf1da14634ce458050d78f7bc`
-> 상태: `B9 PASS / M4 Gate PASS / FSC-0~FSC-4 PASS / complete; FSC-4 deployed at 136271ea80802a39f1981e539f183d544d95e23a; A15-M activation check READY / NOT_STARTED`
+> 상태: `B9 PASS / M4 Gate PASS / FSC-0~FSC-4 PASS / complete; FSC-4 deployed at 136271ea80802a39f1981e539f183d544d95e23a; M5-01 PLAN READY / API PREFLIGHT PENDING / IMPLEMENTATION NOT_STARTED`
 
 ## 1. 목적
 
@@ -69,7 +69,11 @@ B9, First Service Completion
 FSC-4 beginner grounded chat stabilization - PASS / deployed / complete
 
 현재 checkpoint:
-A15-M activation check - READY / NOT_STARTED
+M5-01 as-of price-grounded answer - PLAN READY /
+API PREFLIGHT PENDING / IMPLEMENTATION NOT_STARTED
+
+M5-01 실행 기준:
+docs/TASK_CARDS/M5-01-as-of-price-grounded-answer.md
 
 FSC 실행 결정:
 docs/agent_handoff/FIRST_SERVICE_COMPLETION_EXECUTION_DECISION_2026-07-27.md
@@ -167,6 +171,13 @@ API/UI health and 7-scenario release smoke PASS;
 initial deployment smoke failure auto-rollback PASS to
 2adcc787a803996d4a181a6cd3faa3158602660a
 
+FSC-4 post-deployment answer-presentation follow-up:
+local PASS; implementation commit `edb46ae`; remote branch pushed;
+draft PR #18 OPEN
+<https://github.com/JJungDae/Questock/pull/18>;
+focused publish-preflight `85 passed, 2 warnings`; PR CI NOT_REPORTED;
+merge and deployment NOT_STARTED
+
 SC-06 verification:
 live acceptance PASS; cumulative LLM success 10/12; Critical 3/3 with zero
 Gemini calls; actual provider attempts 26/30; all 15 public validations PASS;
@@ -224,7 +235,8 @@ Service Completion Gate:
 PASS / complete
 
 A15-M:
-activation and entry READY / implementation NOT_STARTED
+activation prerequisites reviewed; M5-01 plan ready /
+API preflight pending / implementation NOT_STARTED
 
 B6 구현:
 PASS / complete
@@ -233,7 +245,7 @@ B6 완료 SHA:
 60e6203b265a967a8b6ba45da2ba3128e1e1bcfe
 
 다음 공식 checkpoint:
-A15-M activation check - READY / implementation NOT_STARTED
+M5-01 API preflight - PENDING
 
 B9 계획:
 docs/TASK_CARDS/B9-release-deployment-traceability.md
@@ -350,11 +362,14 @@ docs/TASK_CARDS/B9-release-deployment-traceability.md
 current:
 docs/TASK_CARDS/FSC-4-beginner-grounded-chat.md
 
+next execution standard:
+docs/TASK_CARDS/M5-01-as-of-price-grounded-answer.md
+
 current execution decision:
 docs/agent_handoff/FIRST_SERVICE_COMPLETION_EXECUTION_DECISION_2026-07-27.md
 
 next:
-A15-M activation check - implementation NOT_STARTED
+M5-01 API preflight - PENDING; implementation NOT_STARTED
 ```
 
 ## 6. 금지

@@ -107,7 +107,8 @@ def test_app_submit_uses_injected_transport_and_renders_process() -> None:
     assert transport.requests[0].session_id.startswith("anonymous-")
     assert transport.timeouts == [35.0]
     assert app.chat_input[0].value in {None, ""}
-    assert any(item.label == "분석 과정 보기" for item in app.expander)
+    assert not app.get("spinner")
+    assert any(item.label == "답변이 만들어진 과정" for item in app.expander)
     visible_text = "\n".join(item.value for item in app.text)
     for stage in (
         "상태:",
@@ -136,27 +137,30 @@ def test_app_renders_glossary_cards_source_detail_and_fixed_fallback() -> None:
     assert not app.exception
     labels = "\n".join(item.value for item in app.markdown)
     for label in (
-        "한 줄 요약",
+        "핵심 요약",
         "왜 중요한가",
-        "더 확인할 것",
+        "앞으로 확인할 점",
     ):
         assert label in labels
     for hidden in (
-        "긍정 요인",
-        "확인된 위험",
-        "AI 정리·추론",
+        "긍정적으로 볼 점",
+        "주의해서 볼 점",
+        "근거를 바탕으로 보면",
     ):
         assert hidden not in labels
+    visible_output = "\n".join(
+        [*(item.value for item in app.text), *(item.value for item in app.markdown)]
+    )
+    assert "금융 용어 ·" in visible_output
     visible_text = "\n".join(item.value for item in app.text)
-    assert "금융 용어 ·" in visible_text
     assert "항목 ID:" not in visible_text
     assert "버전:" not in visible_text
     assert "구간:" not in visible_text
-    warnings = "\n".join(item.value for item in app.warning)
+    notices = "\n".join(item.value for item in app.info)
     assert (
         "AI 정리를 일시적으로 사용할 수 없어 검증된 근거를 직접 구성한 "
         "답변입니다."
-        in warnings
+        in notices
     )
     assert response.status == "complete"
     assert response.diagnostics_public.generation.mode == "fixed_template"
@@ -179,7 +183,8 @@ def test_app_provider_failure_uses_stable_red_fallback_and_mode() -> None:
         for item in app.error
     )
     captions = "\n".join(item.value for item in app.caption)
-    assert "상태: 자료 제공 실패" in captions
+    assert "자료 제공 실패" in captions
+    assert "상태: 자료 제공 실패" not in captions
     assert "자료 모드: 자료 미연결" in captions
     visible_text = "\n".join(item.value for item in app.text)
     assert "자료 제공 경로가 구성되지 않았거나 이용 불가" in visible_text
@@ -300,7 +305,11 @@ def test_app_renders_conflict_cards_and_three_safe_sources() -> None:
 
     assert not app.exception
     labels = "\n".join(item.value for item in app.markdown)
-    for label in ("긍정 요인", "확인된 위험", "더 확인할 것"):
+    for label in (
+        "긍정적으로 볼 점",
+        "주의해서 볼 점",
+        "앞으로 확인할 점",
+    ):
         assert label in labels
     rendered_sources = "\n".join(
         [*(item.value for item in app.markdown), *(item.value for item in app.text)]
@@ -308,7 +317,7 @@ def test_app_renders_conflict_cards_and_three_safe_sources() -> None:
     for label in ("뉴스", "공시", "리서치 리포트"):
         assert label in rendered_sources
     assert sum("](" in item.value for item in app.markdown) == 2
-    assert any(item.label == "분석 과정 보기" for item in app.expander)
+    assert any(item.label == "답변이 만들어진 과정" for item in app.expander)
 
 
 def _three_source_evidence() -> list[Evidence]:

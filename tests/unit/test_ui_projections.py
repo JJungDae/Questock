@@ -64,13 +64,13 @@ def test_answer_cards_have_exact_order_labels_and_hide_empty_sections() -> None:
     cards = project_baseline_answer(response).cards
 
     assert [(item.key, item.title) for item in cards] == [
-        ("summary", "한 줄 요약"),
-        ("facts", "확인된 사실"),
+        ("summary", "핵심 요약"),
+        ("facts", "확인된 내용"),
         ("interpretation", "왜 중요한가"),
-        ("positive_factors", "긍정 요인"),
-        ("risk_factors", "확인된 위험"),
-        ("inference", "AI 정리·추론"),
-        ("uncertainty", "더 확인할 것"),
+        ("positive_factors", "긍정적으로 볼 점"),
+        ("risk_factors", "주의해서 볼 점"),
+        ("inference", "근거를 바탕으로 보면"),
+        ("uncertainty", "앞으로 확인할 점"),
     ]
     assert all(item.emphasis == "normal" for item in cards)
 
