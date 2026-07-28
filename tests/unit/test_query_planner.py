@@ -267,6 +267,47 @@ def test_session_security_fallback_and_explicit_security_precedence():
     assert_clarification(ambiguous, RECENT_ISSUE)
 
 
+def test_short_company_switch_inherits_previous_intent_and_sources():
+    session = SessionContext(
+        current_security_id=SAMSUNG_ID,
+        previous_intent=RECENT_ISSUE,
+        previous_source_types=["news"],
+    )
+
+    result = planner().plan(f"{SK_HYNIX}는?", session=session)
+
+    assert_success(
+        result,
+        security_id=SK_HYNIX_ID,
+        intent=RECENT_ISSUE,
+        sources=["news"],
+        evidence=["recent_news"],
+    )
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        f"{SK_HYNIX}는 어떤 회사야?",
+        f"{SK_HYNIX}는 실적 어때?",
+    ],
+)
+def test_company_switch_with_new_intent_does_not_inherit_previous_intent(
+    query,
+):
+    session = SessionContext(
+        current_security_id=SAMSUNG_ID,
+        previous_intent=RECENT_ISSUE,
+        previous_source_types=["news"],
+    )
+
+    result = planner().plan(query, session=session)
+
+    assert result.intent == MULTI_SOURCE_SUMMARY
+    assert result.security is not None
+    assert security_id_for(result.security) == SK_HYNIX_ID
+
+
 def test_financial_term_does_not_inherit_session_security_but_preserves_explicit_security():
     session = SessionContext(current_security_id=SK_HYNIX_ID, current_date_range=DateRange(start=date(2026, 7, 1), end=date(2026, 7, 2)))
     query_planner = planner()
