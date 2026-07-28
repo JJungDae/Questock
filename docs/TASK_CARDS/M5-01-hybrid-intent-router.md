@@ -1,9 +1,9 @@
 # TASK CARD — M5-01-HR1 Hybrid Intent Router
 
 > Planning date: `2026-07-28`
-> Status: `INDEPENDENT REVIEW PASS / DEPLOYMENT AUTHORIZED`
+> Status: `PASS / DEPLOYED / COMPLETE`
 > Human Owner approval: `APPROVED`
-> Git and deployment: `NOT_AUTHORIZED`
+> Git and deployment: `COMPLETE`
 
 ## 1. Purpose
 
@@ -37,7 +37,7 @@ The router is hybrid:
 - replacing evidence policy, retrieval, answer generation, or citation checks
 - using the classifier to create facts or answer content
 - more than one classifier call per user request
-- commit, push, PR, merge, or deployment
+- unrelated commit, push, PR, merge, or deployment
 
 ## 4. Decision contract
 
@@ -170,4 +170,25 @@ Required defaults:
 - deployment authorization:
   `APPROVED by Human Owner on 2026-07-28`
 - commit, push, PR, merge, deployment:
-  `IN PROGRESS`
+  `COMPLETE`
+- implementation commit:
+  `2eb29bd8e090e0a950238f95a394470ed33723fb`
+- PR and merge/release:
+  `#24` /
+  `c96008229cae34c4c3243a4cbfe099c98cc594c5`
+- PR and merged-main quality gates:
+  `30338001377 PASS` / `30338154423 PASS`
+- deployment:
+  run `30338271294 PASS`
+- release image:
+  `sha256:ca844177af644501e28406012f22c5d91d08f1bea0afb6658ce0c4c319373602`
+- rollback target:
+  `824f06f014415fd66ad9bbd1c9743f03be02efcc` /
+  `sha256:b91c9ec9bf6cada77167c68606a565c0854f06ac168fa4d9f321934c5e9df42a`
+- rollback execution:
+  `NOT_RUN` because deployment passed
+- deployment verification:
+  API/UI health, external UI health, and recorded 7-scenario smoke `PASS`
+- production browser:
+  ambiguous risk routing, explicit price routing, completed-loading cleanup,
+  and cleared question input `PASS`
