@@ -80,6 +80,7 @@ def run(transport: ChatTransport | None = None) -> None:
         st.session_state.question_input = None
         st.session_state.transcript = ()
 
+    conversation_placeholder = st.empty()
     submitted_question = st.chat_input(
         "종목에 대해 궁금한 점을 물어보세요",
         max_chars=2000,
@@ -128,14 +129,20 @@ def run(transport: ChatTransport | None = None) -> None:
     transcript = st.session_state.transcript
     if isinstance(transcript, tuple) and transcript:
         try:
-            _render_transcript(transcript)
+            with conversation_placeholder.container():
+                _render_transcript(transcript)
         except ProjectionError:
-            st.error(_PROJECTION_FAILURE)
+            with conversation_placeholder.container():
+                st.error(_PROJECTION_FAILURE)
     elif isinstance(response, ChatResponse):
         try:
-            _render_response(response)
+            with conversation_placeholder.container():
+                _render_response(response)
         except ProjectionError:
-            st.error(_PROJECTION_FAILURE)
+            with conversation_placeholder.container():
+                st.error(_PROJECTION_FAILURE)
+    else:
+        conversation_placeholder.empty()
 
 
 def _initialize_state() -> None:
