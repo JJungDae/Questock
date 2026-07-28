@@ -241,7 +241,7 @@ def test_streamlit_renders_recorded_answer_and_process_visibility() -> None:
     )
     assert "자료 모드: 기록 자료" in captions
     assert "고정 데모 자료 · 실시간 연결 아님" in captions
-    assert "기준일: 2026-07-26" in captions
+    assert "2026-07-26 기준" in captions
     assert "확인 안 함" in captions
     assert "뉴스 ·" in visible_sources
     assert "자료 성격:" not in visible_text

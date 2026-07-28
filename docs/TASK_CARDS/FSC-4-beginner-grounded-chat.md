@@ -422,3 +422,43 @@ FSC-4 does not pass if any of the following remains:
     research-report sections 36
   - release smoke: `PASS`, 7 scenarios and 8 requests
   - rollback on the successful deployment: `NOT_RUN`
+
+## 15. Post-deployment answer-presentation closure
+
+Human Owner feedback after the deployed FSC-4 demo identified two remaining
+presentation defects:
+
+- the loading message could remain visible beside an already rendered answer
+- separate bordered section cards made a valid structured answer read like a
+  technical report rather than one conversational explanation
+
+The local follow-up branch `fix/fsc4-answer-presentation-polish` applies the
+following bounded closure:
+
+- explicitly clear the loading placeholder before the post-submit rerun
+- keep the existing answer-section schema but render its non-empty sections
+  inside one assistant message without separate bordered cards
+- use beginner-facing section names, compact status wording, one combined
+  notice, and `참고한 자료` links
+- strengthen the Gemini instruction toward a connected explanation, without
+  adding a universal item count or forcing unsupported length
+- keep research-report text outside Gemini and add local attribution so
+  report estimates do not appear as unexplained service facts
+- enforce LF for immutable service-snapshot JSON and checksum files through
+  `.gitattributes`
+
+Local validation:
+
+- focused answer/UI regression: `82 passed, 2 warnings`
+- full regression: `2087 passed, 2 warnings`
+- Ruff: `PASS`
+- service snapshot validation: `PASS`, 54 documents
+- approved-snapshot browser probe, `삼성전자 호재 있어?`: `PASS`
+  - submitted input cleared
+  - loading message absent after answer completion
+  - one continuous assistant answer
+  - report estimates explicitly attributed
+  - compact source links retained
+
+Commit, push, PR, merge, CI, and deployment for this follow-up are
+`NOT_STARTED`; they require their separately authorized stages.
