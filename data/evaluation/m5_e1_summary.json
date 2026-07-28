@@ -1,0 +1,246 @@
+{
+  "aggregates": {
+    "answer_relevancy": {
+      "calibration_status": "REQUIRED",
+      "error_case_ids": [
+        "report-hyundai-20260727",
+        "multi-source-hynix-20260727",
+        "term-per",
+        "term-operating-margin",
+        "crosscheck-samsung-hbm5",
+        "crosscheck-hyundai-latest-event",
+        "crosscheck-hyundai-earnings",
+        "conversation-risk-followup",
+        "conversation-disclosure-followup",
+        "conversation-company-switch",
+        "conversation-checkpoint-isolation"
+      ],
+      "mean": 0.9538461538461539,
+      "median": 1.0,
+      "minimum": 0.6666666666666666,
+      "pass_count": 10,
+      "pass_rate": 0.4166666666666667,
+      "scored_case_count": 13,
+      "scored_pass_rate": 0.7692307692307693,
+      "status": "PARTIAL",
+      "threshold": 1.0
+    },
+    "beginner_usefulness": {
+      "calibration_status": "REQUIRED",
+      "error_case_ids": [
+        "disclosure-samsung-20260727",
+        "report-hyundai-20260727",
+        "term-per",
+        "term-operating-margin",
+        "crosscheck-samsung-hbm5",
+        "crosscheck-hyundai-latest-event",
+        "crosscheck-hyundai-earnings",
+        "conversation-risk-followup",
+        "conversation-disclosure-followup",
+        "conversation-company-switch",
+        "conversation-checkpoint-isolation"
+      ],
+      "mean": 0.8307692307692308,
+      "median": 1.0,
+      "minimum": 0.2,
+      "pass_count": 10,
+      "pass_rate": 0.4166666666666667,
+      "scored_case_count": 13,
+      "scored_pass_rate": 0.7692307692307693,
+      "status": "PARTIAL",
+      "threshold": 0.5
+    },
+    "contextual_relevancy": {
+      "calibration_status": "REQUIRED",
+      "error_case_ids": [
+        "disclosure-samsung-20260727",
+        "report-hyundai-20260727",
+        "multi-source-hynix-20260727",
+        "term-per",
+        "term-operating-margin",
+        "crosscheck-samsung-hbm5",
+        "crosscheck-hyundai-latest-event",
+        "crosscheck-hyundai-earnings",
+        "conversation-risk-followup",
+        "conversation-disclosure-followup",
+        "conversation-company-switch",
+        "conversation-checkpoint-isolation"
+      ],
+      "mean": 0.7994318181818182,
+      "median": 0.8875,
+      "minimum": 0.0,
+      "pass_count": 5,
+      "pass_rate": 0.20833333333333334,
+      "scored_case_count": 12,
+      "scored_pass_rate": 0.4166666666666667,
+      "status": "PARTIAL",
+      "threshold": 1.0
+    },
+    "faithfulness": {
+      "calibration_status": "REPORT_ONLY",
+      "error_case_ids": [
+        "risk-samsung-20260727",
+        "report-hyundai-20260727",
+        "multi-source-hynix-20260727",
+        "term-per",
+        "term-operating-margin",
+        "crosscheck-samsung-hbm5",
+        "crosscheck-hyundai-latest-event",
+        "crosscheck-hyundai-earnings",
+        "conversation-risk-followup",
+        "conversation-disclosure-followup",
+        "conversation-company-switch",
+        "conversation-checkpoint-isolation"
+      ],
+      "mean": 0.9583333333333334,
+      "median": 1.0,
+      "minimum": 0.5,
+      "pass_count": 11,
+      "pass_rate": 0.4583333333333333,
+      "scored_case_count": 12,
+      "scored_pass_rate": 0.9166666666666666,
+      "status": "REPORT_ONLY",
+      "threshold": 1.0
+    }
+  },
+  "calibrations": {
+    "answer_relevancy": {
+      "agreement_count": 6,
+      "false_fail_count": 0,
+      "false_pass_count": 0,
+      "status": "REQUIRED",
+      "threshold": 1.0
+    },
+    "beginner_usefulness": {
+      "agreement_count": 6,
+      "false_fail_count": 0,
+      "false_pass_count": 0,
+      "status": "REQUIRED",
+      "threshold": 0.5
+    },
+    "contextual_relevancy": {
+      "agreement_count": 6,
+      "false_fail_count": 0,
+      "false_pass_count": 0,
+      "status": "REQUIRED",
+      "threshold": 1.0
+    },
+    "faithfulness": {
+      "agreement_count": 4,
+      "false_fail_count": 0,
+      "false_pass_count": 2,
+      "status": "REPORT_ONLY",
+      "threshold": 1.0
+    }
+  },
+  "created_at": "2026-07-28T23:51:06.048632+09:00",
+  "deepeval_version": "4.1.4",
+  "failed_metric_cases": {
+    "answer_relevancy": [
+      "move-hynix-20260727-1900",
+      "move-hyundai-20260724-1400",
+      "move-samsung-20260727-2100",
+      "report-hyundai-20260727",
+      "multi-source-hynix-20260727",
+      "term-per",
+      "term-operating-margin",
+      "crosscheck-samsung-hbm5",
+      "crosscheck-hyundai-latest-event",
+      "crosscheck-hyundai-earnings",
+      "conversation-risk-followup",
+      "conversation-disclosure-followup",
+      "conversation-company-switch",
+      "conversation-checkpoint-isolation"
+    ],
+    "beginner_usefulness": [
+      "issue-samsung-positive-20260724",
+      "risk-samsung-20260727",
+      "disclosure-samsung-20260727",
+      "report-hyundai-20260727",
+      "multi-source-hynix-20260727",
+      "term-per",
+      "term-operating-margin",
+      "crosscheck-samsung-hbm5",
+      "crosscheck-hyundai-latest-event",
+      "crosscheck-hyundai-earnings",
+      "conversation-risk-followup",
+      "conversation-disclosure-followup",
+      "conversation-company-switch",
+      "conversation-checkpoint-isolation"
+    ],
+    "contextual_relevancy": [
+      "move-samsung-20260724-1400",
+      "move-hynix-20260727-1900",
+      "move-hyundai-20260724-1400",
+      "move-samsung-20260727-2100",
+      "issue-samsung-positive-20260724",
+      "issue-hyundai-balanced-20260727",
+      "risk-samsung-20260727",
+      "disclosure-samsung-20260727",
+      "report-hyundai-20260727",
+      "multi-source-hynix-20260727",
+      "term-per",
+      "term-operating-margin",
+      "crosscheck-samsung-hbm5",
+      "crosscheck-hyundai-latest-event",
+      "crosscheck-hyundai-earnings",
+      "conversation-risk-followup",
+      "conversation-disclosure-followup",
+      "conversation-company-switch",
+      "conversation-checkpoint-isolation"
+    ],
+    "faithfulness": [
+      "move-hynix-20260727-1900",
+      "risk-samsung-20260727",
+      "report-hyundai-20260727",
+      "multi-source-hynix-20260727",
+      "term-per",
+      "term-operating-margin",
+      "crosscheck-samsung-hbm5",
+      "crosscheck-hyundai-latest-event",
+      "crosscheck-hyundai-earnings",
+      "conversation-risk-followup",
+      "conversation-disclosure-followup",
+      "conversation-company-switch",
+      "conversation-checkpoint-isolation"
+    ]
+  },
+  "generator_model": "gemini/gemini-3.5-flash",
+  "generic_metrics_status": "PARTIAL",
+  "hard_gate_failed_case_ids": [],
+  "hard_gate_passed_case_count": 24,
+  "hard_gate_status": "PASS",
+  "held_out_case_count": 24,
+  "incomplete_reason": "gemini_judge_quota_429",
+  "judge_model": "gemini-3.1-pro-preview",
+  "judge_usage": {
+    "held_out": {
+      "elapsed_seconds": 2085.654,
+      "input_tokens": 96481,
+      "logical_provider_requests": 231,
+      "output_tokens": 22933,
+      "reported_cost": 0.4681579999999999
+    },
+    "pilot": {
+      "elapsed_seconds": 467.068,
+      "input_tokens": 21822,
+      "logical_provider_requests": 63,
+      "output_tokens": 3307,
+      "reported_cost": 0.08332799999999999
+    }
+  },
+  "limitations": [
+    "LLM-as-a-judge 결과이며 결정론적 금융 hard gate를 대체하지 않는다.",
+    "judge와 generator가 모두 Gemini 계열이므로 계열 편향 가능성이 있다.",
+    "citation URL은 구조만 검사했으며 외부 페이지 HTTP 가용성은 검사하지 않았다.",
+    "raw 답변과 judge reason은 Git ignored 로컬 artifact에만 보관한다."
+  ],
+  "m5_d1_grouping_false_positive": 0,
+  "m5_d1_grouping_precision": 1.0,
+  "overall_status": "PARTIAL",
+  "pilot_case_count": 6,
+  "pro_comparison_ready": false,
+  "raw_artifact_committed": false,
+  "raw_generic_metrics_status": "FAIL",
+  "schema_version": "m5-e1-sanitized-summary-v1"
+}

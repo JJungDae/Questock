@@ -185,10 +185,7 @@ def test_exact_fifteen_cases_pass_fixed_acceptance_without_external_calls() -> N
             assert {
                 item.source_type for item in validated.evidence
             } == {"news"}
-        if case.expected_intent in {
-            "risk_factors",
-            "multi_source_summary",
-        }:
+        if case.expected_intent == "risk_factors":
             assert validated.status == "partial"
             assert {
                 item.source_type for item in validated.evidence
@@ -196,6 +193,14 @@ def test_exact_fifteen_cases_pass_fixed_acceptance_without_external_calls() -> N
                 "news",
                 "disclosure",
                 "research_report",
+            }
+        if case.expected_intent == "multi_source_summary":
+            assert validated.status == "partial"
+            assert {
+                item.source_type for item in validated.evidence
+            } == {
+                "news",
+                "disclosure",
             }
 
     assert sum(observed_eligibility) == 12

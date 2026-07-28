@@ -19,6 +19,7 @@ from app.api.schemas import (
     PublicCitationSummary,
     PublicContextBudgetSummary,
     PublicDecisionSummary,
+    PublicEvidenceComparison,
     PublicEvidencePipelineSummary,
     PublicGenerationSummary,
     PublicMarketSnapshot,
@@ -101,6 +102,16 @@ _DEGRADATION_WARNING = "llm_generation_degraded"
 _DEADLINE_WARNING = "request_deadline_exceeded"
 _FALLBACK_SECURITY_ID = "KRX:005930"
 _SAFE_RUNTIME_TOKEN = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
+_EVIDENCE_COMPARISON_QUERY = re.compile(
+    r"(?:같은\s*사건|서로\s*다른\s*사건|반복|재탕|재인용|"
+    r"독립\s*(?:기사|보도|근거)|원출처|중복\s*(?:기사|보도)|"
+    r"(?:뉴스|기사|보도|근거)(?:의|를|을)?\s*(?:대조|비교))",
+    re.IGNORECASE,
+)
+_COMPARISON_TERM = re.compile(
+    r"[A-Za-z][A-Za-z0-9.+-]{2,}|[가-힣0-9]{2,}",
+    re.IGNORECASE,
+)
 _FOCUS_QUERY_TERMS: dict[str, tuple[str, ...]] = {
     "general": ("최근", "이슈", "실적", "매출", "영업이익", "전망", "위험", "기술", "배당"),
     "recent_events": ("최근", "이슈", "뉴스", "보도", "실적", "전망"),
@@ -510,8 +521,40 @@ class ChatService:
         )
         if comparison is None:
             return response
-        return response.model_copy(
+        explicit_comparison = _EVIDENCE_COMPARISON_QUERY.search(query) is not None
+        if (
+            not explicit_comparison
+            and not _comparison_query_matches_event(query, comparison)
+        ):
+            return response
+        updated = response.model_copy(
             update={"evidence_comparison": comparison},
+            deep=True,
+        )
+        if not explicit_comparison:
+            return updated
+        warnings = [
+            item
+            for item in updated.warnings
+            if item != _DEGRADATION_WARNING
+        ]
+        return updated.model_copy(
+            update={
+                "answer_sections": _comparison_answer_sections(
+                    comparison
+                ),
+                "evidence": _comparison_relevant_evidence(
+                    updated.evidence,
+                    comparison,
+                    security_id=(
+                        f"{updated.security.market}:"
+                        f"{updated.security.ticker}"
+                        if updated.security is not None
+                        else None
+                    ),
+                ),
+                "warnings": warnings,
+            },
             deep=True,
         )
 
@@ -644,6 +687,7 @@ class ChatService:
             return self._composer.compose_fixed(
                 plan=plan,
                 selected_evidence=pipeline.budget.evidence,
+                question=request.message,
                 fallback_reason=(
                     "blocked"
                     if pipeline.decision.status == "blocked"
@@ -656,6 +700,7 @@ class ChatService:
             return self._composer.compose_fixed(
                 plan=plan,
                 selected_evidence=pipeline.budget.evidence,
+                question=request.message,
             )
         if not self._composer.llm_eligible(
             plan=plan,
@@ -665,6 +710,7 @@ class ChatService:
             return self._composer.compose_fixed(
                 plan=plan,
                 selected_evidence=pipeline.budget.evidence,
+                question=request.message,
             )
         try:
             async with self._request_protector.admit(
@@ -694,6 +740,7 @@ class ChatService:
             return self._composer.compose_fixed(
                 plan=plan,
                 selected_evidence=pipeline.budget.evidence,
+                question=request.message,
                 llm_result=limited_result,
             )
         except TimeoutError:
@@ -706,6 +753,7 @@ class ChatService:
             return self._composer.compose_fixed(
                 plan=plan,
                 selected_evidence=pipeline.budget.evidence,
+                question=request.message,
                 llm_result=timeout_result,
             )
 
@@ -947,6 +995,146 @@ class _PipelineResult:
         self.retrieval = retrieval.model_copy(deep=True)
         self.decision = decision
         self.budget = budget
+
+
+def _comparison_answer_sections(
+    comparison: PublicEvidenceComparison,
+) -> AnswerSections:
+    lineage = comparison.source_lineage_summary
+    if (
+        lineage.confirmed_independent_count == 0
+        and lineage.confirmed_republication_count == 0
+    ):
+        summary = (
+            f"수집된 기사 {comparison.article_total_count}건은 제목 유사성 "
+            f"기준으로 ‘{comparison.event_label}’이라는 같은 주제의 사건 "
+            "묶음으로 분류됐습니다. 다만 원출처 관계를 확인하지 못해 "
+            "모두 독립 보도인지 재인용인지까지는 단정할 수 없습니다."
+        )
+    else:
+        summary = (
+            f"이 사건 관련 기사 {comparison.article_total_count}건 중 "
+            f"독립 보도 {lineage.confirmed_independent_count}건, 재배포 "
+            f"{lineage.confirmed_republication_count}건이 확인됐습니다."
+        )
+    facts = [
+        (
+            f"화면에서는 관련 기사 "
+            f"{comparison.article_displayed_count}건의 제목과 원문 링크를 "
+            "확인할 수 있습니다."
+        )
+    ]
+    uncertainty = list(comparison.missing_evidence[:2])
+    return AnswerSections(
+        summary=[summary],
+        facts=facts,
+        uncertainty=uncertainty,
+    )
+
+
+def _comparison_relevant_evidence(
+    evidence: list[Evidence],
+    comparison: PublicEvidenceComparison,
+    *,
+    security_id: str | None,
+) -> list[Evidence]:
+    generic = {
+        "삼성전자",
+        "하이닉스",
+        "현대차",
+        "최근",
+        "뉴스",
+        "사건",
+        "관련",
+        "적용",
+        "속도",
+        "향상",
+        "전망",
+        "실적",
+        "기술",
+    }
+    terms = {
+        item.casefold()
+        for item in _COMPARISON_TERM.findall(comparison.event_label)
+        if item.casefold() not in generic
+        and not item.isdigit()
+    }
+    matched = [
+        item.model_copy(deep=True)
+        for item in evidence
+        if any(
+            term in f"{item.title} {item.snippet}".casefold()
+            for term in terms
+        )
+    ]
+    if matched or security_id is None:
+        return matched
+    return [
+        Evidence(
+            evidence_id=source.source_id,
+            document_id=source.source_id,
+            source_type="news",
+            title=source.title,
+            source_url=source.source_url,
+            published_at=source.published_at,
+            subject_security_ids=[security_id],
+            mentioned_security_ids=[],
+            scope="company_specific",
+            snippet=(
+                "기사 제목에서 확인되는 내용: "
+                f"{source.title}"
+            ),
+            locator={
+                "provider": "m5_d1_comparison",
+                "source_url": source.source_url,
+                "published_at": source.published_at.isoformat(),
+                "content_level": "source_title_only",
+            },
+            retrieval_score=1.0,
+        )
+        for source in comparison.article_sources[:3]
+    ]
+
+
+def _comparison_query_matches_event(
+    query: str,
+    comparison: PublicEvidenceComparison,
+) -> bool:
+    generic = {
+        "삼성전자",
+        "sk하이닉스",
+        "하이닉스",
+        "현대차",
+        "현대자동차",
+        "최근",
+        "뉴스",
+        "기사",
+        "보도",
+        "사건",
+        "이슈",
+        "관련",
+        "핵심",
+        "요약",
+        "적용",
+        "속도",
+        "향상",
+        "전망",
+        "실적",
+        "기술",
+    }
+    query_terms = {
+        item.casefold()
+        for item in _COMPARISON_TERM.findall(query)
+        if item.casefold() not in generic
+        and not item.isdigit()
+    }
+    event_terms = {
+        item.casefold()
+        for item in _COMPARISON_TERM.findall(comparison.event_label)
+        if item.casefold() not in generic
+        and not item.isdigit()
+    }
+    return bool(query_terms.intersection(event_terms))
 
 
 def _run_evidence_pipeline(

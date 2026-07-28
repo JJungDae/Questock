@@ -1,0 +1,264 @@
+{
+  "schema_version": "m5-e1-held-out-v1",
+  "cases": [
+    {
+      "case_id": "price-samsung-20260724-1400",
+      "category": "price",
+      "question": "삼성전자 주가 얼마야? 전일 대비 변동률도 알려줘.",
+      "as_of": "2026-07-24T14:00:00+09:00",
+      "expected_security_id": "KRX:005930",
+      "expected_intent": "price",
+      "expected_market": {
+        "price": 250500,
+        "observed_at": "2026-07-24T14:00:00+09:00",
+        "change_percent": -7.222222
+      }
+    },
+    {
+      "case_id": "price-hynix-20260727-2100",
+      "category": "price",
+      "question": "SK하이닉스 마지막 가격이 얼마인지 알려줘.",
+      "as_of": "2026-07-27T21:00:00+09:00",
+      "expected_security_id": "KRX:000660",
+      "expected_intent": "price",
+      "expected_market": {
+        "price": 1819000,
+        "observed_at": "2026-07-27T19:59:00+09:00",
+        "change_percent": 3.411029
+      }
+    },
+    {
+      "case_id": "price-hyundai-weekend-20260725-1000",
+      "category": "price",
+      "question": "현대차 현재 주가를 보여줘.",
+      "as_of": "2026-07-25T10:00:00+09:00",
+      "expected_security_id": "KRX:005380",
+      "expected_intent": "price",
+      "expected_market": {
+        "price": 400500,
+        "observed_at": "2026-07-24T19:59:00+09:00",
+        "change_percent": -7.291667
+      }
+    },
+    {
+      "case_id": "price-samsung-20260727-1900",
+      "category": "price",
+      "question": "삼성전자 지금 주가가 얼마야?",
+      "as_of": "2026-07-27T19:00:00+09:00",
+      "expected_security_id": "KRX:005930",
+      "expected_intent": "price",
+      "expected_market": {
+        "price": 255000,
+        "observed_at": "2026-07-27T19:00:00+09:00",
+        "change_percent": 2.204409
+      }
+    },
+    {
+      "case_id": "move-samsung-20260724-1400",
+      "category": "price_move",
+      "question": "삼성전자 주가가 왜 떨어졌어?",
+      "as_of": "2026-07-24T14:00:00+09:00",
+      "expected_security_id": "KRX:005930",
+      "expected_intent": "price_move",
+      "expected_market": {
+        "price": 250500,
+        "observed_at": "2026-07-24T14:00:00+09:00",
+        "change_percent": -7.222222
+      }
+    },
+    {
+      "case_id": "move-hynix-20260727-1900",
+      "category": "price_move",
+      "question": "SK하이닉스 주가가 왜 올랐어?",
+      "as_of": "2026-07-27T19:00:00+09:00",
+      "expected_security_id": "KRX:000660",
+      "expected_intent": "price_move",
+      "expected_market": {
+        "price": 1822000,
+        "observed_at": "2026-07-27T19:00:00+09:00",
+        "change_percent": 3.58158
+      }
+    },
+    {
+      "case_id": "move-hyundai-20260724-1400",
+      "category": "price_move",
+      "question": "현대차 하락 이유를 설명해줘.",
+      "as_of": "2026-07-24T14:00:00+09:00",
+      "expected_security_id": "KRX:005380",
+      "expected_intent": "price_move",
+      "expected_market": {
+        "price": 400500,
+        "observed_at": "2026-07-24T14:00:00+09:00",
+        "change_percent": -7.291667
+      }
+    },
+    {
+      "case_id": "move-samsung-20260727-2100",
+      "category": "price_move",
+      "question": "삼성전자 상승 배경이 뭐야?",
+      "as_of": "2026-07-27T21:00:00+09:00",
+      "expected_security_id": "KRX:005930",
+      "expected_intent": "price_move",
+      "expected_market": {
+        "price": 255000,
+        "observed_at": "2026-07-27T19:59:00+09:00",
+        "change_percent": 2.204409
+      }
+    },
+    {
+      "case_id": "issue-samsung-positive-20260724",
+      "category": "issue",
+      "question": "삼성전자 최근 뉴스 이슈와 호재를 알려줘.",
+      "as_of": "2026-07-24T14:00:00+09:00",
+      "expected_security_id": "KRX:005930",
+      "expected_intent": "recent_issue"
+    },
+    {
+      "case_id": "issue-hynix-latest-20260727",
+      "category": "issue",
+      "question": "SK하이닉스 최신 소식의 핵심을 정리해줘.",
+      "as_of": "2026-07-27T14:00:00+09:00",
+      "expected_security_id": "KRX:000660",
+      "expected_intent": "recent_issue"
+    },
+    {
+      "case_id": "issue-hyundai-balanced-20260727",
+      "category": "issue",
+      "question": "현대차 최근 뉴스 이슈에서 좋은 점과 나쁜 점을 알려줘.",
+      "as_of": "2026-07-27T19:00:00+09:00",
+      "expected_security_id": "KRX:005380",
+      "expected_intent": "recent_issue"
+    },
+    {
+      "case_id": "risk-samsung-20260727",
+      "category": "issue",
+      "question": "삼성전자 최근 뉴스에서 조심할 점을 알려줘.",
+      "as_of": "2026-07-27T14:00:00+09:00",
+      "expected_security_id": "KRX:005930",
+      "expected_intent": "risk_factors"
+    },
+    {
+      "case_id": "disclosure-samsung-20260727",
+      "category": "disclosure_report",
+      "question": "삼성전자 최근 공시의 핵심만 요약해줘.",
+      "as_of": "2026-07-27T14:00:00+09:00",
+      "expected_security_id": "KRX:005930",
+      "expected_intent": "disclosure_summary"
+    },
+    {
+      "case_id": "report-hyundai-20260727",
+      "category": "disclosure_report",
+      "question": "현대차 증권사 리포트의 관점을 쉽게 설명해줘.",
+      "as_of": "2026-07-27T19:00:00+09:00",
+      "expected_security_id": "KRX:005380",
+      "expected_intent": "research_report_summary"
+    },
+    {
+      "case_id": "multi-source-hynix-20260727",
+      "category": "disclosure_report",
+      "question": "SK하이닉스 뉴스와 공시를 한 번에 요약해줘.",
+      "as_of": "2026-07-27T14:00:00+09:00",
+      "expected_security_id": "KRX:000660",
+      "expected_intent": "multi_source_summary"
+    },
+    {
+      "case_id": "term-per",
+      "category": "financial_term",
+      "question": "PER 뜻을 주식 초보도 이해하게 설명해줘.",
+      "as_of": "2026-07-27T14:00:00+09:00",
+      "expected_security_id": null,
+      "expected_intent": "financial_term"
+    },
+    {
+      "case_id": "term-operating-margin",
+      "category": "financial_term",
+      "question": "영업이익률이 뭐야? 숫자가 높으면 어떤 뜻이야?",
+      "as_of": "2026-07-27T14:00:00+09:00",
+      "expected_security_id": null,
+      "expected_intent": "financial_term"
+    },
+    {
+      "case_id": "crosscheck-samsung-hbm5",
+      "category": "evidence_crosscheck",
+      "question": "삼성전자 HBM5 최근 뉴스가 같은 사건을 반복한 건지 알려줘.",
+      "as_of": "2026-07-27T21:00:00+09:00",
+      "expected_security_id": "KRX:005930",
+      "expected_intent": "recent_issue",
+      "expected_comparison": true
+    },
+    {
+      "case_id": "crosscheck-hyundai-latest-event",
+      "category": "evidence_crosscheck",
+      "question": "현대차 최근 뉴스가 여러 보도사에서 반복됐는지 알려줘.",
+      "as_of": "2026-07-27T21:00:00+09:00",
+      "expected_security_id": "KRX:005380",
+      "expected_intent": "recent_issue",
+      "expected_comparison": true
+    },
+    {
+      "case_id": "crosscheck-hyundai-earnings",
+      "category": "evidence_crosscheck",
+      "question": "현대차 실적 관련 최근 뉴스 근거를 대조해줘.",
+      "as_of": "2026-07-27T21:00:00+09:00",
+      "expected_security_id": "KRX:005380",
+      "expected_intent": "recent_issue",
+      "expected_comparison": true
+    },
+    {
+      "case_id": "conversation-risk-followup",
+      "category": "multi_turn",
+      "question": "그럼 위험 요인은 뭐야?",
+      "as_of": "2026-07-27T14:00:00+09:00",
+      "expected_security_id": "KRX:005930",
+      "expected_intent": "risk_factors",
+      "setup_turns": [
+        {
+          "question": "삼성전자 최근 뉴스 이슈를 요약해줘.",
+          "as_of": "2026-07-27T14:00:00+09:00"
+        }
+      ]
+    },
+    {
+      "case_id": "conversation-disclosure-followup",
+      "category": "multi_turn",
+      "question": "그 공시의 핵심 사실만 다시 요약해줘.",
+      "as_of": "2026-07-27T14:00:00+09:00",
+      "expected_security_id": "KRX:005930",
+      "expected_intent": "disclosure_summary",
+      "setup_turns": [
+        {
+          "question": "삼성전자 최근 공시를 요약해줘.",
+          "as_of": "2026-07-27T14:00:00+09:00"
+        }
+      ]
+    },
+    {
+      "case_id": "conversation-company-switch",
+      "category": "multi_turn",
+      "question": "이제 현대차 최근 뉴스로 바꿔줘.",
+      "as_of": "2026-07-27T19:00:00+09:00",
+      "expected_security_id": "KRX:005380",
+      "expected_intent": "recent_issue",
+      "setup_turns": [
+        {
+          "question": "삼성전자 최근 뉴스 이슈를 요약해줘.",
+          "as_of": "2026-07-27T19:00:00+09:00"
+        }
+      ]
+    },
+    {
+      "case_id": "conversation-checkpoint-isolation",
+      "category": "multi_turn",
+      "question": "그럼 27일 오후 2시 기준 최근 뉴스는?",
+      "as_of": "2026-07-27T14:00:00+09:00",
+      "expected_security_id": null,
+      "expected_intent": "recent_issue",
+      "setup_turns": [
+        {
+          "question": "SK하이닉스 최근 뉴스 이슈를 요약해줘.",
+          "as_of": "2026-07-24T14:00:00+09:00"
+        }
+      ]
+    }
+  ]
+}

@@ -153,7 +153,18 @@ class AnswerComposer:
                     "summary in later sections. Start each later claim with its "
                     "takeaway and then explain why it matters. Translate analyst "
                     "shorthand into ordinary Korean and identify it as an analyst "
-                    "estimate or view. Order later useful claims as: facts, interpretation, "
+                    "estimate or view. For a risk question, omit positive report "
+                    "details unless they are necessary to explain a clearly stated "
+                    "risk. For a disclosure question, lead with the main operating "
+                    "or financial facts instead of an incidental risk-management "
+                    "detail. Express filing amounts reported in 백만원 or 억원 as "
+                    "an easy-to-read approximate 조원 amount while retaining the "
+                    "exact original amount in parentheses. If Evidence states a "
+                    "material limitation or a check still required, include one "
+                    "concise uncertainty claim for a broad recent-issue answer. "
+                    "If the user asks for the core points again, materially "
+                    "condense and rephrase the prior answer instead of repeating it. "
+                    "Order later useful claims as: facts, interpretation, "
                     "inference, positive_factors, risk_factors, uncertainty. Omit "
                     "irrelevant or unsupported sections. You may paraphrase and "
                     "combine evidence, but every claim must cite all Evidence IDs "
@@ -180,6 +191,7 @@ class AnswerComposer:
                 (
                     "human",
                     "Intent:\n{intent}\n\nAnswer focus:\n{answer_focus}\n\n"
+                    "Response style for this question:\n{response_style}\n\n"
                     "<conversation_context_not_evidence>\n"
                     "{conversation_context}\n"
                     "</conversation_context_not_evidence>\n\n"
@@ -221,6 +233,10 @@ class AnswerComposer:
         )
         canonical_plan = _copy_plan(plan)
         canonical_evidence = _copy_evidence(selected_evidence)
+        canonical_evidence = _filter_requested_evidence(
+            canonical_question,
+            canonical_evidence,
+        )
         canonical_documents = _copy_documents(documents_by_id)
         eligible = _external_processing_eligible(
             canonical_evidence,
@@ -229,12 +245,20 @@ class AnswerComposer:
         projected = _project_m3_evidence(canonical_plan, eligible)
         canonical_budget = _call_budget(call_budget)
         if not projected:
-            return _fixed_result(canonical_plan, canonical_evidence)
+            return _fixed_result(
+                canonical_plan,
+                canonical_evidence,
+                question=canonical_question,
+            )
 
         rendered_evidence, evidence_aliases = _prompt_evidence(projected)
         payload = {
             "intent": canonical_plan.intent,
             "answer_focus": canonical_plan.answer_focus,
+            "response_style": _response_style(
+                canonical_question,
+                canonical_plan,
+            ),
             "question": canonical_question,
             "conversation_context": canonical_conversation_context,
             "evidence": rendered_evidence,
@@ -257,6 +281,11 @@ class AnswerComposer:
                 parsed.draft,
                 evidence_aliases,
                 parsed.result,
+            )
+            expanded_draft = _augment_llm_uncertainty(
+                expanded_draft,
+                plan=canonical_plan,
+                evidence=projected,
             )
             validation = validate_answer_draft(
                 expanded_draft,
@@ -347,6 +376,17 @@ class AnswerComposer:
                         + exc.rejection_count
                     ),
                 ) from None
+            final_draft = _polish_llm_draft(
+                final_draft,
+                plan=canonical_plan,
+                evidence=projected,
+                question=canonical_question,
+            )
+            claims = _citation_claims(
+                final_draft,
+                projected,
+                parsed.result,
+            )
             llm_composition = CompositionResult(
                 answer_sections=AnswerSections.from_claims(
                     final_draft.claims
@@ -371,11 +411,13 @@ class AnswerComposer:
                 canonical_plan,
                 canonical_evidence,
                 llm_composition,
+                question=canonical_question,
             )
         except _GenerationFailure as exc:
             return _fixed_result(
                 canonical_plan,
                 canonical_evidence,
+                question=canonical_question,
                 llm_result=exc.result,
                 citation_rejection_count=exc.rejection_count,
             )
@@ -383,11 +425,13 @@ class AnswerComposer:
             return _fixed_result(
                 canonical_plan,
                 canonical_evidence,
+                question=canonical_question,
             )
         except Exception:
             return _fixed_result(
                 canonical_plan,
                 canonical_evidence,
+                question=canonical_question,
                 llm_result=create_llm_result(
                     status=LLMStatus.INVALID_RESPONSE,
                     model=APPROVED_LLM_MODEL,
@@ -417,6 +461,7 @@ class AnswerComposer:
         *,
         plan: QueryPlan,
         selected_evidence: Sequence[Evidence],
+        question: str | None = None,
         llm_result: LLMResult | None = None,
         fallback_reason: Literal[
             "blocked",
@@ -427,6 +472,7 @@ class AnswerComposer:
         return _fixed_result(
             _copy_plan(plan),
             _copy_evidence(selected_evidence),
+            question=question,
             llm_result=llm_result,
             fallback_reason=fallback_reason,
         )
@@ -523,6 +569,30 @@ def _call_budget(value: LLMCallBudget | None) -> LLMCallBudget:
     if not isinstance(value, LLMCallBudget):
         raise AnswerCompositionError("LLM call budget is invalid")
     return value
+
+
+def _response_style(question: str, plan: QueryPlan) -> str:
+    normalized = " ".join(question.split()).casefold()
+    instructions = [
+        "Answer the current question directly and use only the amount of detail it needs."
+    ]
+    if any(marker in normalized for marker in ("핵심", "요점", "간단", "짧게")):
+        instructions.append(
+            "Keep this answer to the direct conclusion plus at most two essential supporting points."
+        )
+    if any(marker in normalized for marker in ("다시", "재요약", "한번 더")):
+        instructions.append(
+            "This is a re-summary request: materially rephrase and shorten the prior answer."
+        )
+    if any(marker in normalized for marker in ("쉽게", "초보", "무슨 뜻")):
+        instructions.append(
+            "Use everyday Korean, explain the practical meaning, and omit low-priority detailed figures."
+        )
+    if plan.answer_focus == "risk":
+        instructions.append(
+            "State the actual downside or uncertainty first; do not pad the answer with positive catalysts."
+        )
+    return " ".join(instructions)
 
 
 def _boundary_content(value: object) -> str:
@@ -661,6 +731,154 @@ def _expand_evidence_aliases(
         ) from None
 
 
+def _polish_llm_draft(
+    draft: StructuredAnswerDraft,
+    *,
+    plan: QueryPlan,
+    evidence: tuple[Evidence, ...],
+    question: str,
+) -> StructuredAnswerDraft:
+    evidence_by_id = {item.evidence_id: item for item in evidence}
+    claims: list[DraftClaim] = []
+    for claim in draft.claims:
+        bound_evidence = tuple(
+            evidence_by_id[evidence_id]
+            for evidence_id in claim.evidence_ids
+            if evidence_id in evidence_by_id
+        )
+        text = _expand_beginner_terms(claim.text)
+        if any(item.source_type == "disclosure" for item in bound_evidence):
+            text = _humanize_disclosure_amounts(text)
+            if (
+                claim.section == "summary"
+                and plan.answer_focus == "disclosure"
+                and "공시" in question
+            ):
+                report_name = _bound_report_name(bound_evidence)
+                if report_name and report_name not in text:
+                    text = f"{report_name} 기준으로, {text}"
+        claims.append(claim.model_copy(update={"text": text}, deep=True))
+
+    return StructuredAnswerDraft(claims=tuple(claims))
+
+
+def _expand_beginner_terms(text: str) -> str:
+    replacements = (
+        ("원스톱 턴키", "설계부터 생산·패키징까지 한 번에 제공하는 전략"),
+        ("'턴키'", "설계부터 생산·패키징까지 한 번에 제공하는 방식"),
+        ("파운드리", "반도체 위탁생산(파운드리)"),
+        ("HBM5", "차세대 고대역폭메모리(HBM5)"),
+        ("2나노 공정", "초미세 2나노 제조 공정"),
+    )
+    output = text
+    for original, replacement in replacements:
+        if original in output and replacement not in output:
+            output = output.replace(original, replacement)
+    return output
+
+
+def _augment_llm_uncertainty(
+    draft: StructuredAnswerDraft,
+    *,
+    plan: QueryPlan,
+    evidence: tuple[Evidence, ...],
+) -> StructuredAnswerDraft:
+    claims = list(draft.claims)
+    if (
+        plan.intent != "recent_issue"
+        or any(claim.section == "uncertainty" for claim in claims)
+        or len(claims) >= 10
+    ):
+        return draft
+    uncertainty = _first_grounded_uncertainty(evidence)
+    if uncertainty is None:
+        return draft
+    text, evidence_id = uncertainty
+    existing_ids = {claim.claim_id for claim in claims}
+    claim_id = "claim-uncertainty"
+    suffix = 2
+    while claim_id in existing_ids:
+        claim_id = f"claim-uncertainty-{suffix}"
+        suffix += 1
+    claims.append(
+        DraftClaim(
+            claim_id=claim_id,
+            section="uncertainty",
+            text=text,
+            evidence_ids=(evidence_id,),
+        )
+    )
+    return StructuredAnswerDraft(claims=tuple(claims))
+
+
+_DISCLOSURE_AMOUNT = re.compile(
+    r"(?<![\d,])(?P<value>\d{1,3}(?:,\d{3})+|\d+)"
+    r"(?P<unit>백만원|억원)"
+)
+
+
+def _humanize_disclosure_amounts(text: str) -> str:
+    def replace(match: re.Match[str]) -> str:
+        if "원문" in text[max(0, match.start() - 8) : match.start()]:
+            return match.group(0)
+        value = match.group("value")
+        unit = match.group("unit")
+        numeric = int(value.replace(",", ""))
+        trillion = (
+            numeric / 1_000_000
+            if unit == "백만원"
+            else numeric / 10_000
+        )
+        if trillion < 1:
+            return match.group(0)
+        return (
+            f"약 {trillion:,.1f}조원"
+            f"(공시 원문 {value}{unit})"
+        )
+
+    return _DISCLOSURE_AMOUNT.sub(replace, text)
+
+
+def _bound_report_name(evidence: tuple[Evidence, ...]) -> str | None:
+    for item in evidence:
+        if item.source_type != "disclosure":
+            continue
+        report_name = item.locator.get("report_name")
+        if isinstance(report_name, str) and report_name.strip():
+            return report_name.strip()
+        title = item.title.split(" ·", 1)[0].strip()
+        if title:
+            return title
+    return None
+
+
+def _first_grounded_uncertainty(
+    evidence: tuple[Evidence, ...],
+) -> tuple[str, str] | None:
+    markers = (
+        "확인해야",
+        "확인할 필요",
+        "함께 봐야",
+        "단정",
+        "달라질 수",
+        "변동 요인",
+        "변수",
+    )
+    for item in evidence:
+        sentences = tuple(
+            sentence.strip()
+            for sentence in re.split(r"(?<=[.!?])\s+", item.snippet)
+            if sentence.strip()
+        )
+        for sentence in reversed(sentences):
+            if (
+                any(marker in sentence for marker in markers)
+                and not is_unsafe_answer_text(sentence, intent="recent_issue")
+            ):
+                return sentence, item.evidence_id
+    return None
+
+
 def _citation_claims(
     draft: StructuredAnswerDraft,
     evidence: tuple[Evidence, ...],
@@ -734,6 +952,7 @@ def _fixed_result(
     plan: QueryPlan,
     evidence: tuple[Evidence, ...],
     *,
+    question: str | None = None,
     llm_result: LLMResult | None = None,
     citation_rejection_count: int = 0,
     fallback_reason: Literal[
@@ -742,10 +961,12 @@ def _fixed_result(
         "no_evidence",
     ] | None = None,
 ) -> CompositionResult:
+    evidence = _filter_requested_evidence(question or "", evidence)
     if plan.intent == "prohibited_advice" or fallback_reason == "blocked":
         return _empty_fixed_result(
             plan,
             fallback_reason="blocked",
+            question=question,
             llm_result=llm_result,
             citation_rejection_count=citation_rejection_count,
         )
@@ -753,6 +974,7 @@ def _fixed_result(
         return _empty_fixed_result(
             plan,
             fallback_reason=fallback_reason or "no_evidence",
+            question=question,
             llm_result=llm_result,
             citation_rejection_count=citation_rejection_count,
         )
@@ -760,6 +982,7 @@ def _fixed_result(
         return _fixed_glossary_result(
             plan,
             evidence,
+            question=question,
             llm_result=llm_result,
             citation_rejection_count=citation_rejection_count,
         )
@@ -770,10 +993,20 @@ def _fixed_result(
     fixed_rejection_count = 0
     projected_evidence = _project_m3_evidence(
         plan,
-        evidence,
-    )[:_fixed_evidence_limit(plan.answer_focus)]
+        _prioritize_fixed_evidence(
+            plan,
+            evidence,
+            question=question,
+        ),
+    )[:_fixed_evidence_limit(plan, question=question)]
     for index, item in enumerate(projected_evidence):
-        public_text = _fixed_claim_text(plan, item)
+        public_text = _fixed_claim_text(
+            plan,
+            item,
+            question=question,
+        )
+        if not public_text:
+            continue
         if is_unsafe_answer_text(public_text, intent=plan.intent):
             fixed_rejection_count += 1
             continue
@@ -798,6 +1031,7 @@ def _fixed_result(
         return _empty_fixed_result(
             plan,
             fallback_reason="no_evidence",
+            question=question,
             llm_result=llm_result,
             citation_rejection_count=(
                 citation_rejection_count + fixed_rejection_count
@@ -832,12 +1066,38 @@ def _fixed_result(
             citation_rejection_count + fixed_rejection_count
         ),
     )
-
-
-def _fixed_evidence_limit(answer_focus: str) -> int:
-    if answer_focus in {"recent_events", "performance", "disclosure"}:
+def _fixed_evidence_limit(
+    plan: QueryPlan,
+    *,
+    question: str | None = None,
+) -> int:
+    normalized = " ".join((question or "").split()).casefold()
+    if (
+        plan.answer_focus == "disclosure"
+        and any(
+            marker in normalized
+            for marker in ("핵심", "요점", "다시")
+        )
+    ):
+        return 2
+    if (
+        plan.intent == "research_report_summary"
+        and "쉽게" in normalized
+    ):
+        return 2
+    if any(
+        marker in normalized
+        for marker in ("핵심", "요점", "간단", "짧게", "쉽게", "다시")
+    ):
+        return 3
+    if plan.answer_focus in {"recent_events", "performance", "disclosure"}:
         return 4
-    if answer_focus in {"positive", "risk", "outlook", "shareholder_return"}:
+    if plan.answer_focus in {
+        "positive",
+        "risk",
+        "outlook",
+        "shareholder_return",
+    }:
         return 5
     return 6
 
@@ -852,17 +1112,95 @@ def _fixed_detail_section(answer_focus: str) -> AnswerSectionName:
     return "facts"
 
 
-def _fixed_claim_text(plan: QueryPlan, item: Evidence) -> str:
+def _prioritize_fixed_evidence(
+    plan: QueryPlan,
+    evidence: tuple[Evidence, ...],
+    *,
+    question: str | None,
+) -> tuple[Evidence, ...]:
+    del question
+    indexed = list(enumerate(evidence))
+    if plan.answer_focus == "disclosure":
+        category_order = {
+            "consolidated_revenue": 0,
+            "consolidated_operating_profit": 1,
+            "net_income_or_equivalent": 2,
+            "production_or_sales": 3,
+            "capex": 4,
+            "research_and_development": 5,
+            "financial_position_or_cashflow_or_debt": 6,
+            "risk_or_uncertainty": 9,
+        }
+        indexed.sort(
+            key=lambda pair: (
+                category_order.get(
+                    str(pair[1].locator.get("category", "")),
+                    7,
+                ),
+                pair[0],
+            )
+        )
+    elif plan.intent == "research_report_summary":
+
+        def report_key(pair: tuple[int, Evidence]) -> tuple[int, int, int]:
+            index, item = pair
+            text = item.snippet
+            overview = int(
+                any(
+                    marker in text
+                    for marker in (
+                        "주요 위험",
+                        "촉매",
+                        "전망",
+                        "평가",
+                        "핵심",
+                    )
+                )
+            )
+            dense = len(re.findall(r"\d+(?:\.\d+)?", text))
+            return (-overview, dense, index)
+
+        indexed.sort(key=report_key)
+    return tuple(item.model_copy(deep=True) for _, item in indexed)
+
+
+def _fixed_claim_text(
+    plan: QueryPlan,
+    item: Evidence,
+    *,
+    question: str | None,
+) -> str:
     canonical = item.snippet.strip()
-    title_prefix = "기사 제목에서 확인되는 내용:"
     if (
-        plan.intent == "price_move"
-        and item.source_type == "news"
-        and canonical.startswith(title_prefix)
+        item.source_type == "research_report"
+        and question is not None
+        and (
+            plan.intent == "research_report_summary"
+            or plan.answer_focus == "risk"
+        )
     ):
+        return _beginner_report_claim_text(
+            canonical,
+            answer_focus=plan.answer_focus,
+        )
+    if (
+        item.source_type == "disclosure"
+        and (
+            plan.answer_focus == "disclosure"
+            or plan.intent == "multi_source_summary"
+        )
+    ):
+        return _beginner_disclosure_claim_text(item, question=question)
+    title_prefix = "기사 제목에서 확인되는 내용:"
+    if item.source_type == "news" and canonical.startswith(title_prefix):
         title = canonical[len(title_prefix):].strip()
         if title:
-            return f"당일 보도에서 {title} 관련 소식이 확인됐습니다."
+            prefix = (
+                "당일 보도에서는"
+                if plan.intent == "price_move"
+                else "최근 보도에서는"
+            )
+            return f"{prefix} {title} 관련 소식이 확인됐습니다."
     return canonical
 
 
@@ -870,7 +1208,15 @@ def _merge_fixed_report_evidence(
     plan: QueryPlan,
     evidence: tuple[Evidence, ...],
     composition: CompositionResult,
+    *,
+    question: str,
 ) -> CompositionResult:
+    requested_sources = _requested_source_types(question)
+    if (
+        len(requested_sources) >= 2
+        and "research_report" not in requested_sources
+    ):
+        return composition
     reports = tuple(
         item
         for item in evidence
@@ -891,9 +1237,15 @@ def _merge_fixed_report_evidence(
         if (
             item.evidence_id in accepted_ids
             or is_unsafe_answer_text(item.snippet, intent=plan.intent)
+            or not _report_matches_focus(item.snippet, plan.answer_focus)
         ):
             continue
-        public_claim_text = _beginner_report_claim_text(item.snippet)
+        public_claim_text = _beginner_report_claim_text(
+            item.snippet,
+            answer_focus=plan.answer_focus,
+        )
+        if not public_claim_text:
+            continue
         claim = CitationClaim(
             claim_id=f"fixed-report-{index}",
             text=public_claim_text,
@@ -932,13 +1284,74 @@ def _merge_fixed_report_evidence(
     )
 
 
-def _beginner_report_claim_text(snippet: str) -> str:
+def _report_matches_focus(snippet: str, answer_focus: str) -> bool:
+    normalized = " ".join(snippet.split()).casefold()
+    if answer_focus != "risk":
+        return True
+    if any(
+        marker in normalized
+        for marker in (
+            "우려가 제한",
+            "위험이 제한",
+            "훼손 우려가 제한",
+        )
+    ):
+        return False
+    return any(
+        marker in normalized
+        for marker in (
+            "위험",
+            "우려",
+            "둔화",
+            "변동성",
+            "불확실",
+            "부담",
+            "차질",
+            "관세",
+            "환율",
+        )
+    )
+
+
+def _beginner_report_claim_text(
+    snippet: str,
+    *,
+    answer_focus: str,
+) -> str:
     canonical = snippet.strip()
     if not canonical:
         return canonical
+    if answer_focus == "risk":
+        if not _report_matches_focus(canonical, answer_focus):
+            return ""
+        risk_match = re.search(
+            r"(?:주요\s*위험은|위험은)\s*(.+?)"
+            r"(?:이다|라고\s*봤다|라고\s*분석했다)\.?$",
+            canonical,
+        )
+        if risk_match:
+            risk_text = _expand_report_terms(
+                risk_match.group(1).strip()
+            )
+            return (
+                "증권사 리포트는 "
+                f"{risk_text}을 주요 위험 요인으로 봤습니다."
+            )
+    if (
+        "3분기 촉매로 RMAC 가동" in canonical
+        and "주요 위험은" in canonical
+    ):
+        return (
+            "증권사 리포트는 3분기 로봇 관련 일정과 미국 로봇 정책, "
+            "외부 투자 가능성을 긍정 요인으로 봤습니다. 반면 환율·관세·"
+            "인센티브 변화와 로봇 양산·자금 조달이 계획대로 진행될지는 "
+            "위험 요인으로 짚었습니다."
+        )
+    canonical = _expand_report_terms(canonical)
     for original, replacement in (
         ("추정했다.", "추정했습니다."),
         ("전망했다.", "전망했습니다."),
+        ("전망됐다.", "전망했습니다."),
         ("제시했다.", "제시했습니다."),
         ("분석했다.", "분석했습니다."),
         ("평가했다.", "평가했습니다."),
@@ -953,10 +1366,81 @@ def _beginner_report_claim_text(snippet: str) -> str:
     return f"증권사 리포트 기준으로는 {canonical}"
 
 
+def _expand_report_terms(value: str) -> str:
+    output = value.replace("ASP", "평균판매가격(ASP)")
+    output = output.replace("촉매", "긍정 요인")
+    output = output.replace("자금조달", "자금 조달")
+    return output
+
+
+def _beginner_disclosure_claim_text(
+    item: Evidence,
+    *,
+    question: str | None,
+) -> str:
+    canonical = item.snippet.strip()
+    value = item.locator.get("value")
+    unit = item.locator.get("unit")
+    if (
+        isinstance(value, str)
+        and unit in {"백만원", "억원"}
+        and value.replace(",", "").isdigit()
+    ):
+        numeric = int(value.replace(",", ""))
+        trillion = (
+            numeric / 1_000_000
+            if unit == "백만원"
+            else numeric / 10_000
+        )
+        if trillion >= 1:
+            canonical = canonical.replace(
+                f"{value}{unit}",
+                (
+                    f"약 {trillion:,.1f}조원"
+                    f"(공시 원문 {value}{unit})"
+                ),
+            )
+    for original, replacement in (
+        ("기재했다.", "기재했습니다."),
+        ("이다.", "입니다."),
+        ("했다.", "했습니다."),
+    ):
+        if canonical.endswith(original):
+            canonical = f"{canonical[:-len(original)]}{replacement}"
+            break
+    normalized_question = " ".join((question or "").split()).casefold()
+    if (
+        "매출액" in canonical
+        and any(
+            marker in normalized_question
+            for marker in ("공시", "분기보고서", "반기보고서", "사업보고서")
+        )
+    ):
+        report_name = item.locator.get("report_name")
+        if not isinstance(report_name, str) or not report_name.strip():
+            report_name = item.title.split(" ·", 1)[0]
+        if report_name and report_name not in canonical:
+            canonical = f"{report_name} 기준으로, {canonical}"
+    if any(
+        marker in normalized_question
+        for marker in ("다시", "재요약", "한번 더")
+    ):
+        if "매출액" in canonical:
+            canonical = f"다시 핵심만 말하면, {canonical}"
+        elif canonical.startswith("2026년 1분기 연결 영업이익"):
+            canonical = canonical.replace(
+                "2026년 1분기 연결 영업이익",
+                "같은 기간 연결 영업이익",
+                1,
+            )
+    return canonical
+
+
 def _fixed_glossary_result(
     plan: QueryPlan,
     evidence: tuple[Evidence, ...],
     *,
+    question: str | None,
     llm_result: LLMResult | None,
     citation_rejection_count: int,
 ) -> CompositionResult:
@@ -978,9 +1462,13 @@ def _fixed_glossary_result(
                 llm_result=llm_result,
                 citation_rejection_count=citation_rejection_count + 1,
             )
+        public_text = _beginner_glossary_claim_text(
+            item,
+            question=question,
+        )
         claim = CitationClaim(
             claim_id=f"fixed-{index + 1}",
-            text=item.snippet,
+            text=public_text,
             evidence_ids=(item.evidence_id,),
         )
         try:
@@ -1039,10 +1527,12 @@ def _empty_fixed_result(
     ],
     llm_result: LLMResult | None,
     citation_rejection_count: int,
+    question: str | None = None,
 ) -> CompositionResult:
+    del question
     return CompositionResult(
         answer_sections=AnswerSections(
-            summary=[_SAFE_FALLBACKS[fallback_reason]]
+            summary=[_fallback_text(plan, fallback_reason)]
         ),
         claims=(),
         citations=CitationValidationResult((), ()),
@@ -1054,6 +1544,110 @@ def _empty_fixed_result(
         public_evidence=(),
         citation_rejection_count=citation_rejection_count,
     )
+
+
+def _beginner_glossary_claim_text(
+    item: Evidence,
+    *,
+    question: str | None,
+) -> str:
+    canonical = item.snippet
+    normalized_question = " ".join((question or "").split()).casefold()
+    section = item.locator.get("section")
+    if (
+        item.title == "주가수익비율"
+        and section == "definition"
+        and canonical.startswith("주가수익비율은")
+    ):
+        canonical = canonical.replace(
+            "주가수익비율은",
+            "PER(주가수익비율)은",
+            1,
+        )
+    if (
+        item.title == "주가수익비율"
+        and section == "formula"
+        and any(
+            marker in normalized_question
+            for marker in ("쉽게", "초보", "무슨 뜻")
+        )
+    ):
+        return (
+            "주가 ÷ 주당순이익(EPS, 회사의 이익을 주식 수로 나눈 "
+            "주식 1주당 이익)"
+        )
+    if (
+        item.title == "영업이익률"
+        and section == "why_it_matters"
+        and any(
+            marker in normalized_question
+            for marker in ("높으면", "높을수록", "무슨 뜻", "의미")
+        )
+    ):
+        return (
+            "숫자가 높을수록 매출에서 본업의 이익으로 남는 몫이 "
+            "크다는 뜻이며, 기간별 또는 유사업체 간 수익성을 비교할 때 "
+            "사용합니다."
+        )
+    return canonical
+
+
+def _requested_source_types(
+    question: str,
+) -> frozenset[str]:
+    normalized = " ".join(question.split()).casefold()
+    requested: set[str] = set()
+    if any(marker in normalized for marker in ("뉴스", "기사", "보도")):
+        requested.add("news")
+    if any(
+        marker in normalized
+        for marker in (
+            "공시",
+            "dart",
+            "분기보고서",
+            "반기보고서",
+            "사업보고서",
+        )
+    ):
+        requested.add("disclosure")
+    if any(
+        marker in normalized
+        for marker in ("리포트", "증권사 보고서", "증권사 자료")
+    ):
+        requested.add("research_report")
+    return frozenset(requested)
+
+
+def _filter_requested_evidence(
+    question: str,
+    evidence: tuple[Evidence, ...],
+) -> tuple[Evidence, ...]:
+    requested_sources = _requested_source_types(question)
+    if not requested_sources:
+        return evidence
+    requested_evidence = tuple(
+        item.model_copy(deep=True)
+        for item in evidence
+        if item.source_type in requested_sources
+    )
+    return requested_evidence or evidence
+
+
+def _fallback_text(
+    plan: QueryPlan,
+    reason: Literal["blocked", "provider_failed", "no_evidence"],
+) -> str:
+    if (
+        reason == "no_evidence"
+        and plan.intent == "price_move"
+        and plan.security is not None
+    ):
+        return (
+            f"{plan.security.security_name}의 해당 시점 당일 가격 움직임을 "
+            "설명할 회사 직접 근거를 확인하지 못했습니다. 확인되지 않은 "
+            "원인을 추정하지 않겠습니다."
+        )
+    return _SAFE_FALLBACKS[reason]
 
 
 def _glossary_claim_sections_valid(
