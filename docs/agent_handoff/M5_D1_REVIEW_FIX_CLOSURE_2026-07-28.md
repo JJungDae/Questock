@@ -103,3 +103,20 @@ pre-existing and did not fail this checkpoint.
   `NOT_RUN`
 - deployment:
   `NOT_RUN`
+
+## Later publication and deployment
+
+The Human Owner subsequently authorized the remaining stages.
+
+- implementation commit:
+  `95b98555bd588134148a9104f733d6f85f00480b`
+- PR and merge:
+  `#26` / `373ea00d4e06526a98898e9c38f4d4a7871b1a8f`
+- PR and merged-main quality gates:
+  `30362235377` / `30362397614`, both `PASS`
+- GCE deployment:
+  `30362550006`, `PASS`
+- final status:
+  `PASS / DEPLOYED / COMPLETE`
+- deployment closure:
+  `docs/agent_handoff/M5_D1_DEPLOYMENT_CLOSURE_2026-07-28.md`

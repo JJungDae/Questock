@@ -2,10 +2,10 @@
 
 > Planning date: `2026-07-28`
 > Planning base: `40f58b3df7a53c3386e9653fd3b061f010b31335`
-> Status: `LOCAL PASS / REVIEW FINDINGS CLOSED / HUMAN OWNER CHECK READY`
+> Status: `PASS / DEPLOYED / COMPLETE`
 > Implementation:
-> `M5-D1-0~M5-D1-5 LOCAL PASS / REVIEW FINDINGS CLOSED`
-> Git and deployment: `NOT_AUTHORIZED`
+> `M5-D1-0~M5-D1-6 PASS / DEPLOYED / COMPLETE`
+> Git and deployment: `COMPLETE`
 
 ## 1. Authority and purpose
 
@@ -647,7 +647,7 @@ meet the acceptance contract.
 - implementation branch:
   `feature/m5-d1-evidence-crosscheck`
 - implementation:
-  `M5-D1-0~M5-D1-5 LOCAL PASS / REVIEW FINDINGS CLOSED / HUMAN OWNER CHECK READY`
+  `M5-D1-0~M5-D1-6 PASS / DEPLOYED / COMPLETE`
 - M5-D1-1 collection and coverage inventory:
   `LOCAL PASS`
 - M5-D1-1R multi-publisher report preparation:
@@ -729,8 +729,21 @@ meet the acceptance contract.
 - existing Python `3.14` / LangChain Pydantic V1 warning:
   `OPEN / NON-BLOCKING FOR THIS CHECKPOINT`
 - documentation diff check: `PASS`
-- commit: `NOT_RUN`
-- push: `NOT_RUN`
-- PR: `NOT_RUN`
-- merge: `NOT_RUN`
-- deployment: `NOT_RUN`
+- implementation commit:
+  `95b98555bd588134148a9104f733d6f85f00480b`
+- pull request:
+  `#26`
+- release SHA:
+  `373ea00d4e06526a98898e9c38f4d4a7871b1a8f`
+- PR quality gate:
+  `30362235377`, `PASS`
+- merged-main quality gate:
+  `30362397614`, `PASS`
+- deployment:
+  run `30362550006`, `PASS`
+- release image:
+  `sha256:e8480098951728eeb4c2a5cb83a36bc5c03c5ee9b40c9286a10d212713ee57b5`
+- rollback:
+  `NOT_RUN` because deployment passed
+- deployment closure:
+  `docs/agent_handoff/M5_D1_DEPLOYMENT_CLOSURE_2026-07-28.md`
