@@ -460,5 +460,15 @@ Local validation:
   - report estimates explicitly attributed
   - compact source links retained
 
-Commit, push, PR, merge, CI, and deployment for this follow-up are
-`NOT_STARTED`; they require their separately authorized stages.
+Publication status:
+
+- implementation and plan commit:
+  `edb46ae` (`Polish FSC-4 answers and plan M5`)
+- remote branch:
+  `fix/fsc4-answer-presentation-polish` — pushed
+- draft PR:
+  `#18` — <https://github.com/JJungDae/Questock/pull/18>
+- focused publish-preflight regression:
+  `85 passed, 2 warnings`
+- PR CI: `PENDING`
+- merge and deployment: `NOT_STARTED`

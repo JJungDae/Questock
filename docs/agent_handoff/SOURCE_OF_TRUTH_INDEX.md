@@ -171,6 +171,13 @@ API/UI health and 7-scenario release smoke PASS;
 initial deployment smoke failure auto-rollback PASS to
 2adcc787a803996d4a181a6cd3faa3158602660a
 
+FSC-4 post-deployment answer-presentation follow-up:
+local PASS; implementation commit `edb46ae`; remote branch pushed;
+draft PR #18 OPEN
+<https://github.com/JJungDae/Questock/pull/18>;
+focused publish-preflight `85 passed, 2 warnings`; PR CI PENDING;
+merge and deployment NOT_STARTED
+
 SC-06 verification:
 live acceptance PASS; cumulative LLM success 10/12; Critical 3/3 with zero
 Gemini calls; actual provider attempts 26/30; all 15 public validations PASS;
