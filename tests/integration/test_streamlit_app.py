@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -11,6 +11,7 @@ from app.api.schemas import ChatRequest
 from app.core.models import Evidence
 from app.services.chat_service import ChatService
 from app.services.market_snapshot_store import RecordedMarketSnapshotStore
+
 NOW = datetime(2026, 7, 25, 3, tzinfo=UTC)
 
 
@@ -354,6 +355,28 @@ def test_changing_checkpoint_clears_visible_conversation_and_session() -> None:
         7,
         27,
         10,
+        0,
+        tzinfo=ZoneInfo("Asia/Seoul"),
+    )
+
+
+def test_changing_checkpoint_date_clears_visible_conversation_and_session() -> None:
+    transport = FakeTransport(_response())
+    app = AppTest.from_function(_app, args=(transport,)).run()
+    _submit(app, "삼성전자 최근 뉴스")
+    first_session_id = transport.requests[-1].session_id
+
+    app.selectbox[0].select(date(2026, 7, 25)).run()
+
+    assert not app.exception
+    assert not app.chat_message
+    _submit(app, "삼성전자 현재 주가 얼마야?")
+    assert transport.requests[-1].session_id != first_session_id
+    assert transport.requests[-1].as_of == datetime(
+        2026,
+        7,
+        25,
+        14,
         0,
         tzinfo=ZoneInfo("Asia/Seoul"),
     )
