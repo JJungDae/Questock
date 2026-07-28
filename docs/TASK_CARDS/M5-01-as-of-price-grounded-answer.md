@@ -7,7 +7,7 @@
 - Implementation base: PR `#18` merge
   `6f50ee922c2a1c74278ead2f679472ba3e19bc8b`
 - Product scope: Samsung Electronics, SK hynix, Hyundai Motor
-- Current status: `LOCAL IMPLEMENTATION PASS / RELEASE NOT_STARTED`
+- Current status: `PASS / DEPLOYED / COMPLETE`
 - API preflight: `PASS`
 - Human Owner direction:
   - expose five selectable checkpoints for each date
@@ -511,7 +511,7 @@ M5-01 is complete only when:
 
 ---
 
-## 13. Local implementation evidence
+## 13. Implementation and release evidence
 
 Status as of `2026-07-28`:
 
@@ -551,7 +551,7 @@ Status as of `2026-07-28`:
   - interactive local browser checks passed for trading-day and weekend cases
 - deterministic validation:
   - M5 golden set: `8 passed`
-  - full regression: `2110 passed, 2 warnings`
+  - full regression: `2111 passed, 2 warnings`
   - Ruff over `app`, `scripts`, and `tests`: `PASS`
   - tracked and new M5-file secret scans: `PASS`, findings `[]`
   - M3 executable gate: `34/34`, with the prior M3-12 inactive price boundary
@@ -564,9 +564,43 @@ Status as of `2026-07-28`:
   - live verified: `2/2`
   - future evidence count: `0`
 - optional Flash-versus-Pro comparison: `NOT_RUN`
-- M5 implementation commit, push, PR, merge, deployment, and deployment smoke:
-  `NOT_STARTED`
+- implementation release:
+  - implementation commit:
+    `eb72b91b27fa7d6885551a6be255faf6ef6007d1`
+  - PR `#19`: `MERGED`
+  - merge SHA:
+    `d6a5b6a9f7cd7e3027e5842693fcab6aca312127`
+  - PR quality-gate run `30327176594`: `PASS`
+  - merged-main quality-gate run `30327274970`: `PASS`
+- deployed-browser closure:
+  - the first production browser pass verified the selected-time price and a
+    Gemini price-move answer, then exposed a stale prior-chat render after a
+    checkpoint change
+  - PRs `#20` and `#21` added checkpoint state reset and callback handling;
+    production verification showed that state changed but the old Streamlit
+    chat DOM could still remain
+  - PR `#22` added an explicitly cleared conversation placeholder
+  - PR `#22` merge/deployed SHA:
+    `824f06f014415fd66ad9bbd1c9743f03be02efcc`
+  - PR quality-gate run `30329244843`: `PASS`
+  - merged-main quality-gate run `30329322602`: `PASS`
+  - deployment run `30329400059`: `PASS`
+  - deployed image:
+    `sha256:b91c9ec9bf6cada77167c68606a565c0854f06ac168fa4d9f321934c5e9df42a`
+  - API/UI health, recorded snapshot `54` documents, and `7` release-smoke
+    scenarios: `PASS`
+  - final production browser:
+    - `2026-07-27 14:00 KST` Samsung Electronics price answer: `PASS`
+    - switching to `2026-07-25` removed the prior question and answer from the
+      DOM and changed the session: `PASS`
+    - `2026-07-25 21:00 KST` closed-market answer used the
+      `2026-07-24 19:59 KST` last trade, `252,500` KRW and `-6.48%`: `PASS`
+    - completed-answer/loading-message overlap: `0`
+  - rollback target:
+    `40dca28ed9c9a93d6ebf7c95161fda52ec1e01ef` /
+    `sha256:f0283455a40679c405ed1ae5489d2444de199f31bbdba97675a029509a52b359`
+  - rollback execution: `NOT_RUN` because the final deployment passed
 
-This is a local implementation pass, not M5-01 release completion. The
-completion criteria above still require an authorized deployment and its
-smoke result.
+M5-01 satisfies its required implementation, validation, deployment, smoke,
+and documentation criteria. Optional Flash-versus-Pro comparison remains
+outside completion and was not run.
