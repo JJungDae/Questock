@@ -182,12 +182,15 @@ def _render_checkpoint_controls() -> datetime:
 def _apply_checkpoint_context(selected_as_of: datetime) -> None:
     checkpoint = selected_as_of.strftime("%Y%m%dT%H%MKST")
     previous = st.session_state.get("active_checkpoint_id")
-    if previous is not None and previous != checkpoint:
+    changed = previous is not None and previous != checkpoint
+    if changed:
         st.session_state.session_id = _new_session_id()
         st.session_state.response = None
         st.session_state.question = ""
         st.session_state.transcript = ()
     st.session_state.active_checkpoint_id = checkpoint
+    if changed:
+        st.rerun()
 
 
 def _append_transcript(
