@@ -534,3 +534,23 @@ judge의 `MAX_TOKENS` 구조화 응답 오류는 제품 오류와 분리했다. 
 raw 산출물은
 `var/evaluation/m5_e1_remediation_v7_20260729/`에만 있으며 Git에
 포함하지 않는다. Gemini 생성 모델 비교는 `NOT_RUN`이다.
+
+## 15. 게시·배포 closure
+
+- quality remediation PR: `#28`
+- production review follow-up PR: `#29`
+- final release SHA:
+  `459e0dd07d67a1e5791c74914e173b3d688eb75a`
+- final CI: `30390792554 PASS`
+- final GCE deployment: `30390955630 PASS`
+- final full regression: `2219 passed, 2 warnings`
+- final M3 gate: `34/34 PASS`
+- production UI verification: `PASS`
+
+운영 시연에서 발견한 짧은 회사 전환 질문의 자료 유형 승계 회귀까지
+수정하고 다시 배포했다. 삼성전자 뉴스 답변 뒤 `SK하이닉스는?` 질문은
+SK하이닉스로 전환되면서 뉴스 근거만 유지한다. 공시 전용, 뉴스·공시
+비교, 주가 원인, 입력창 초기화와 로딩 종료도 운영 UI에서 확인했다.
+
+M5-E1 상태는 `PASS / DEPLOYED / COMPLETE`다. Gemini 생성 모델 비교는
+별도 후속 항목이며 현재 `NOT_RUN`이다.

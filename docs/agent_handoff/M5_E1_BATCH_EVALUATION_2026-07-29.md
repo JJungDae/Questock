@@ -166,3 +166,20 @@ Beginner Usefulness 0.8 사례 4건은 잔여 관찰 대상으로 남긴다.
 raw 산출물은 Git ignored 경로
 `var/evaluation/m5_e1_remediation_v7_20260729/`에만 남겼다.
 Gemini 생성 모델 비교는 이번 승인 범위 밖이므로 `NOT_RUN`이다.
+
+## 10. 게시·배포 closure
+
+품질 보완은 PR `#28`로 병합했다. 최초 운영 시연에서 짧은 회사 전환
+질문이 이전의 뉴스 범위를 잃는 회귀를 발견해 PR `#29`로 좁게
+보완했다.
+
+- final release SHA:
+  `459e0dd07d67a1e5791c74914e173b3d688eb75a`
+- final CI run: `30390792554 PASS`
+- final GCE deployment run: `30390955630 PASS`
+- final full regression: `2219 passed, 2 warnings`
+- production UI verification: `PASS`
+
+운영 화면에서 뉴스 전용, 공시 전용, 뉴스·공시 비교, 주가 원인,
+회사 전환, 입력 초기화와 로딩 종료를 확인했다. 최종 상태는
+`M5-E1 PASS / DEPLOYED / COMPLETE`다.
