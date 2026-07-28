@@ -13,6 +13,7 @@ from scripts.evaluate_m5_e1_deepeval import (
     _calibrate_threshold,
 )
 from scripts.evaluate_m5_e1_gemini_batch import (
+    _calibrations,
     _inline_requests,
     _request_specs,
 )
@@ -179,5 +180,31 @@ def test_m5_e1_batch_request_contract() -> None:
     assert all(
         request["config"]["temperature"] == 0
         and request["config"]["response_mime_type"] == "application/json"
+        and request["config"]["max_output_tokens"] == 2048
         for request in requests
     )
+
+
+def test_batch_reuses_locked_pilot_thresholds() -> None:
+    pilot = _payload(PILOT_PATH)
+    pilot_results = {
+        case["case_id"]: {
+            metric_name: {
+                "score": (
+                    0.8
+                    if metric_name == "beginner_usefulness"
+                    else 1.0
+                )
+            }
+            for metric_name in METRIC_NAMES
+        }
+        for case in pilot["cases"]
+    }
+
+    calibrations = _calibrations(pilot, pilot_results)
+
+    assert calibrations["answer_relevancy"]["threshold"] == 0.3
+    assert calibrations["faithfulness"]["threshold"] == 0.5
+    assert calibrations["contextual_relevancy"]["threshold"] == 0.0
+    assert calibrations["beginner_usefulness"]["threshold"] == 0.9
+    assert calibrations["beginner_usefulness"]["status"] == "REQUIRED"

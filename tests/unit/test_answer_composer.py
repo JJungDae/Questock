@@ -317,6 +317,133 @@ def test_supported_numeric_paraphrase_is_retained() -> None:
     assert len(client.calls) == 1
 
 
+def test_llm_disclosure_amounts_are_rendered_for_beginner_readability() -> None:
+    snippet = "2026년 1분기 연결 매출액은 52,576,287백만원이다."
+    source_url = (
+        "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002181"
+    )
+    locator = {
+        "provider": "opendart_disclosure",
+        "receipt_no": "20260515002181",
+        "viewer_url": source_url,
+        "corp_code": "00164779",
+        "stock_code": "000660",
+        "corp_name": "SK하이닉스",
+        "report_name": "분기보고서 (제79기)",
+        "received_date": "20260515",
+        "category": "consolidated_revenue",
+        "value": "52,576,287",
+        "unit": "백만원",
+    }
+    document = _document(source_type="disclosure").model_copy(
+        update={
+            "title": "분기보고서 (제79기)",
+            "source_url": source_url,
+            "text": snippet,
+            "locator": locator,
+        },
+        deep=True,
+    )
+    evidence = _evidence(
+        source_type="disclosure",
+        evidence_id="evidence:disclosure:amount",
+        source_url=source_url,
+        locator=locator,
+        snippet=snippet,
+    ).model_copy(
+        update={"title": "분기보고서 (제79기) · 매출 실적"},
+        deep=True,
+    )
+    plan = _plan().model_copy(
+        update={
+            "intent": "disclosure_summary",
+            "answer_focus": "disclosure",
+            "required_sources": ["disclosure"],
+            "required_evidence": ["disclosure"],
+        },
+        deep=True,
+    )
+
+    result = asyncio.run(
+        AnswerComposer(
+            FakeLLMClient(
+                _draft(
+                    text=snippet,
+                    evidence_id=evidence.evidence_id,
+                )
+            )
+        ).compose(
+            question="SK하이닉스 최근 공시를 요약해줘.",
+            plan=plan,
+            selected_evidence=[evidence],
+            documents_by_id={document.document_id: document},
+            timeout_seconds=2,
+        )
+    )
+
+    assert result.generation_mode == "llm"
+    assert result.answer_sections.summary == [
+        "분기보고서 (제79기) 기준으로, 2026년 1분기 연결 매출액은 "
+        "약 52.6조원(공시 원문 52,576,287백만원)이다."
+    ]
+    assert result.claims[0].text == result.answer_sections.summary[0]
+
+
+def test_recent_issue_llm_answer_retains_grounded_uncertainty() -> None:
+    snippet = (
+        "외국인 매수는 투자 심리에 긍정적일 수 있습니다. "
+        "중장기 실적은 메모리 가격과 AI 수요를 함께 봐야 합니다."
+    )
+    evidence = _evidence(snippet=snippet)
+
+    result = asyncio.run(
+        AnswerComposer(
+            FakeLLMClient(
+                _draft(
+                    text="외국인 매수는 투자 심리에 긍정적일 수 있습니다.",
+                )
+            )
+        ).compose(
+            question="삼성전자 최근 이슈를 정리해줘.",
+            plan=_plan(),
+            selected_evidence=[evidence],
+            documents_by_id={_document().document_id: _document()},
+            timeout_seconds=2,
+        )
+    )
+
+    assert result.generation_mode == "llm"
+    assert result.answer_sections.uncertainty == [
+        "중장기 실적은 메모리 가격과 AI 수요를 함께 봐야 합니다."
+    ]
+    assert result.claims[-1].evidence_ids == (evidence.evidence_id,)
+
+
+def test_llm_answer_expands_dense_semiconductor_terms_after_grounding() -> None:
+    snippet = (
+        "삼성전자 파운드리 HBM5에 2나노 공정을 적용하고 "
+        "원스톱 턴키 전략을 추진한다."
+    )
+    evidence = _evidence(snippet=snippet)
+
+    result = asyncio.run(
+        AnswerComposer(FakeLLMClient(_draft(text=snippet))).compose(
+            question="삼성전자 상승 배경이 뭐야?",
+            plan=_plan(),
+            selected_evidence=[evidence],
+            documents_by_id={_document().document_id: _document()},
+            timeout_seconds=2,
+        )
+    )
+
+    summary = result.answer_sections.summary[0]
+    assert result.generation_mode == "llm"
+    assert "반도체 위탁생산(파운드리)" in summary
+    assert "차세대 고대역폭메모리(HBM5)" in summary
+    assert "초미세 2나노 제조 공정" in summary
+    assert "설계부터 생산·패키징까지 한 번에 제공하는 전략" in summary
+
+
 def test_unsupported_detail_is_removed_without_discarding_grounded_summary() -> None:
     summary = "삼성전자가 반도체 설비 투자를 늘렸다."
     unsupported = "회사는 해외 공장을 모두 매각했다."
@@ -1372,6 +1499,165 @@ def test_permission_denied_report_is_excluded_before_projection_and_refilled() -
         "증권사 리포트 기준으로는 비전송 리포트다."
     ]
     assert result.claims[-1].text == result.answer_sections.facts[-1]
+
+
+def test_explicit_news_and_disclosure_answer_does_not_append_report() -> None:
+    report = _evidence(
+        source_type="research_report",
+        evidence_id="evidence:report:not-requested",
+        snippet="증권사 리포트는 연간 이익 전망을 제시했다.",
+    )
+    news = _evidence(
+        evidence_id="evidence:news:requested",
+        snippet="뉴스는 AI 메모리 수요 변화를 설명했다.",
+    )
+    disclosure = _evidence(
+        source_type="disclosure",
+        evidence_id="evidence:disclosure:requested",
+        snippet="공시는 분기 매출을 기재했다.",
+    )
+    plan = _plan().model_copy(
+        update={
+            "intent": "multi_source_summary",
+            "required_sources": [
+                "news",
+                "disclosure",
+                "research_report",
+            ],
+            "required_evidence": ["multi_source"],
+        },
+        deep=True,
+    )
+    client = FakeLLMClient(
+        _draft(
+            text=news.snippet,
+            evidence_id=news.evidence_id,
+        )
+    )
+    documents = {
+        document.document_id: document
+        for document in (
+            _document(source_type="news"),
+            _document(source_type="disclosure"),
+            _document(source_type="research_report", permission=False),
+        )
+    }
+
+    result = asyncio.run(
+        AnswerComposer(client).compose(
+            question="SK하이닉스 뉴스와 공시를 한 번에 요약해줘.",
+            plan=plan,
+            selected_evidence=[news, disclosure, report],
+            documents_by_id=documents,
+            timeout_seconds=2,
+        )
+    )
+
+    assert result.generation_mode == "llm"
+    assert result.public_evidence == (news,)
+    assert all(
+        "증권사 리포트" not in value
+        for values in result.answer_sections.model_dump().values()
+        for value in values
+    )
+
+
+def test_failed_generation_fallback_respects_explicit_source_subset() -> None:
+    report = _evidence(
+        source_type="research_report",
+        evidence_id="evidence:report:fallback-not-requested",
+        snippet="증권사 리포트는 연간 이익 전망을 제시했다.",
+    )
+    news = _evidence(
+        evidence_id="evidence:news:fallback-requested",
+        snippet="뉴스는 AI 메모리 수요 변화를 설명했다.",
+    )
+    disclosure = _evidence(
+        source_type="disclosure",
+        evidence_id="evidence:disclosure:fallback-requested",
+        snippet="공시는 2026년 1분기 연결 매출액을 기재했다.",
+    )
+    plan = _plan().model_copy(
+        update={
+            "intent": "multi_source_summary",
+            "required_sources": [
+                "news",
+                "disclosure",
+                "research_report",
+            ],
+            "required_evidence": ["multi_source"],
+        },
+        deep=True,
+    )
+
+    result = AnswerComposer(FakeLLMClient(_draft())).compose_fixed(
+        plan=plan,
+        selected_evidence=[news, disclosure, report],
+        question="SK하이닉스 뉴스와 공시를 한 번에 요약해줘.",
+        llm_result=create_llm_result(
+            status=LLMStatus.INVALID_RESPONSE,
+            model="gemini/gemini-3.5-flash",
+            provider="gemini",
+            latency_ms=1,
+        ),
+    )
+
+    assert result.public_evidence
+    assert all(
+        item.source_type in {"news", "disclosure"}
+        for item in result.public_evidence
+    )
+    assert all(
+        "증권사 리포트" not in value
+        for values in result.answer_sections.model_dump().values()
+        for value in values
+    )
+
+
+def test_failed_generation_fallback_respects_explicit_news_only_scope() -> None:
+    news = _evidence(
+        evidence_id="evidence:news:risk-requested",
+        snippet="뉴스는 빅테크 AI 투자 변화가 수요 전망을 흔들 수 있다고 전했다.",
+    )
+    disclosure = _evidence(
+        source_type="disclosure",
+        evidence_id="evidence:disclosure:risk-not-requested",
+        snippet="공시는 통화선도 거래 건수를 기재했다.",
+    )
+    report = _evidence(
+        source_type="research_report",
+        evidence_id="evidence:report:risk-not-requested",
+        snippet="리포트는 평균판매가격 둔화를 위험으로 봤다.",
+    )
+    plan = _plan().model_copy(
+        update={
+            "intent": "risk_factors",
+            "answer_focus": "risk",
+            "required_sources": [
+                "news",
+                "disclosure",
+                "research_report",
+            ],
+            "required_evidence": ["risk"],
+        },
+        deep=True,
+    )
+
+    result = AnswerComposer(FakeLLMClient(_draft())).compose_fixed(
+        plan=plan,
+        selected_evidence=[news, disclosure, report],
+        question="삼성전자 최근 뉴스에서 조심할 점을 알려줘.",
+        llm_result=create_llm_result(
+            status=LLMStatus.INVALID_RESPONSE,
+            model="gemini/gemini-3.5-flash",
+            provider="gemini",
+            latency_ms=1,
+        ),
+    )
+
+    assert result.public_evidence == (news,)
+    assert result.answer_sections.risk_factors == []
+    assert result.answer_sections.summary == [news.snippet]
 
 
 def test_fixed_multi_source_projection_uses_same_source_diverse_order() -> None:

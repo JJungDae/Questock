@@ -5,7 +5,7 @@
 > Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
 > Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
 > B9 planning base: `b9ddf7461306d16cf1da14634ce458050d78f7bc`
-> 상태: `B9 PASS / M4 Gate PASS / FSC-0~FSC-4 PASS / complete; M5-01 PASS / DEPLOYED / COMPLETE; M5-01-HR1 PASS / DEPLOYED / COMPLETE; M5-D1 PASS / DEPLOYED / COMPLETE at 373ea00d4e06526a98898e9c38f4d4a7871b1a8f; M5-E1 BATCH EVALUATION COMPLETE / QUALITY GATE FAIL`
+> 상태: `B9 PASS / M4 Gate PASS / FSC-0~FSC-4 PASS / complete; M5-01 PASS / DEPLOYED / COMPLETE; M5-01-HR1 PASS / DEPLOYED / COMPLETE; M5-D1 PASS / DEPLOYED / COMPLETE at 373ea00d4e06526a98898e9c38f4d4a7871b1a8f; M5-E1 REMEDIATION EVALUATION COMPLETE / QUALITY GATE PASS; publication and deployment pending`
 
 ## 1. 목적
 
@@ -63,7 +63,8 @@ PASS / complete
 Task Card 사실 동기화 완료, B6-0에서 상태 확인
 
 현재 완료 bundle:
-B9, First Service Completion, M5-01, M5-01-HR1, M5-D1
+B9, First Service Completion, M5-01, M5-01-HR1, M5-D1,
+M5-E1 quality remediation and evaluation gate
 
 M5-D1 Evidence Cross-check:
 M5-D1-0~M5-D1-6 `PASS / DEPLOYED / COMPLETE`;
@@ -79,7 +80,11 @@ M5-D1 publication and GCE deployment complete;
 M5-E1 frozen answers and hard gate complete;
 earlier DeepEval built-in held-out run remains a historical quota partial;
 Gemini 3.1 Pro Batch evaluation completed with 120/120 responses;
-Beginner Usefulness failed at 12/24, so remediation is required
+the original Batch FAIL remains historical;
+remediation hard gate passed at 24/24;
+Answer Relevancy 24/24, Faithfulness 24/24,
+Beginner Usefulness 20/24 and aggregate quality gate PASS;
+publication and deployment are pending
 
 M5-E1 실행 기준:
 docs/TASK_CARDS/M5-E1-deepeval-quality-evaluation.md
@@ -529,18 +534,19 @@ current status:
 M5-D1-0~M5-D1-6 `PASS / DEPLOYED / COMPLETE`;
 release SHA `373ea00d4e06526a98898e9c38f4d4a7871b1a8f`
 
-current planned evaluation:
+current evaluation standard:
 docs/TASK_CARDS/M5-E1-deepeval-quality-evaluation.md
 
 evaluation status:
-M5-E1 `BATCH EVALUATION COMPLETE / QUALITY GATE FAIL`;
+M5-E1 `REMEDIATION EVALUATION COMPLETE / QUALITY GATE PASS`;
 earlier DeepEval built-in run remains `PARTIAL / JUDGE_QUOTA_STOP`;
-Gemini 3.1 Pro Batch G-Eval-style fixed-rubric run `120/120`;
+the original Gemini 3.1 Pro Batch FAIL remains historical;
+final Gemini 3.1 Pro Batch G-Eval-style fixed-rubric run `120/120`;
 hard gate `24/24 PASS`;
-Answer Relevancy `22/24 PASS`;
+Answer Relevancy `24/24 PASS`;
 Faithfulness `24/24 PASS`;
 Contextual Relevancy `REPORT_ONLY`;
-Beginner Usefulness `12/24 FAIL`;
+Beginner Usefulness `20/24 PASS`;
 Gemini generator-model comparison remains `NOT_RUN`
 
 completed M5 extension:
@@ -553,7 +559,7 @@ current execution decision:
 docs/agent_handoff/FIRST_SERVICE_COMPLETION_EXECUTION_DECISION_2026-07-27.md
 
 next:
-remediate the bounded answer-quality failures, then rerun regression evaluation
+publish, merge, deploy, and run production demo verification
 ```
 
 ## 6. 금지

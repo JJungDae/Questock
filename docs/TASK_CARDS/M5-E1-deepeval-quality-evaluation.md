@@ -508,3 +508,29 @@ G-Eval형 교차평가다.
 
 - `docs/agent_handoff/M5_E1_BATCH_EVALUATION_2026-07-29.md`
 - `data/evaluation/m5_e1_batch_summary.json`
+
+## 14. 2026-07-29 품질 보완 및 재평가
+
+최초 Batch `FAIL`은 당시 release의 역사적 기준선으로 유지한다. 이후
+질문 범위, 사건 관련성, 공시 단위, 초보자 용어, 후속 요약의 구현 문제를
+보완하고 held-out 답변을 다시 고정했다.
+
+최종 검증:
+
+- full regression: `2215 passed, 2 warnings`
+- deterministic hard gate: `24/24 PASS`
+- Answer Relevancy: `24/24 PASS`
+- Faithfulness: `24/24 PASS`
+- Contextual Relevancy: `REPORT_ONLY`
+- Beginner Usefulness: `20/24 PASS`
+- overall: `EVALUATION COMPLETE / QUALITY GATE PASS`
+
+모든 threshold는 held-out 확인 전 고정한 값을 유지했다. Beginner
+Usefulness는 `0.9`를 유지했고 사후 하향하지 않았다.
+
+judge의 `MAX_TOKENS` 구조화 응답 오류는 제품 오류와 분리했다. 동일 frozen
+답변을 유지한 채 평가기 출력 상한을 768에서 2048로 높여 재판정했다.
+
+raw 산출물은
+`var/evaluation/m5_e1_remediation_v7_20260729/`에만 있으며 Git에
+포함하지 않는다. Gemini 생성 모델 비교는 `NOT_RUN`이다.

@@ -800,12 +800,15 @@ def _evaluate_capability_behavior(
             *sections.summary,
             *sections.facts,
         }
+        requested_source_types = ["news", "disclosure"]
+        requested_snippets = {
+            _MULTI_SOURCE_SNIPPETS["news"],
+            "삼성전자 공시는 투자 결정을 설명했습니다.",
+        }
         if (
             case.scenario_id != "multi_source_fallback"
-            or len(source_types) != 3
-            or set(source_types)
-            != {"news", "disclosure", "research_report"}
-            or rendered != set(_MULTI_SOURCE_SNIPPETS.values())
+            or source_types != requested_source_types
+            or rendered != requested_snippets
             or sections.interpretation
             or sections.inference
         ):
@@ -1038,6 +1041,7 @@ def _validate_capability_evidence(cases: tuple[GoldenCase, ...]) -> None:
         raise M3GateFixtureError("M3 gate fixture is invalid")
 
     three_sources = {"news", "disclosure", "research_report"}
+    named_a06_sources = {"news", "disclosure"}
     a05 = by_capability["A05-M"][0]
     a06 = by_capability["A06-M"][0]
     if (
@@ -1046,8 +1050,10 @@ def _validate_capability_evidence(cases: tuple[GoldenCase, ...]) -> None:
         or len(a05.expected["evidence_source_types"]) != 3
         or a05.expected["generation_mode"] != "llm"
         or a06.expected["intent"] != "multi_source_summary"
-        or set(a06.expected["evidence_source_types"]) != three_sources
-        or len(a06.expected["evidence_source_types"]) != 3
+        or set(a06.expected["evidence_source_types"]) != named_a06_sources
+        or len(a06.expected["evidence_source_types"]) != 2
+        or set(a06.expected["forbidden_evidence_source_types"])
+        != {"research_report"}
         or a06.expected["generation_mode"] != "fixed_template"
         or a06.expected["fallback_required"] is not True
     ):

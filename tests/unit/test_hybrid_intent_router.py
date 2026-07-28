@@ -124,6 +124,7 @@ def test_conflicting_recent_risk_cues_can_select_recent_issue() -> None:
         "삼성전자 최근 뉴스 알려줘",
         "왜 주가변동성이 위험요인이야?",
         "공시가 뭐야?",
+        "SK하이닉스 뉴스와 공시를 한 번에 요약해줘.",
         "삼성전자 지금 사야 돼?",
         "날씨 알려줘",
     ],

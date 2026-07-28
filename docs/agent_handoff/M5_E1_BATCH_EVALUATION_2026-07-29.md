@@ -1,7 +1,8 @@
 # M5-E1 Gemini Pro Batch Evaluation
 
 > 실행일: 2026-07-29
-> 상태: `EVALUATION COMPLETE / QUALITY GATE FAIL`
+> 현재 상태: `REMEDIATION EVALUATION COMPLETE / QUALITY GATE PASS`
+> 아래 1~8절: 최초 Batch 평가의 역사적 `FAIL` 기록
 > 평가 대상 release: `373ea00d4e06526a98898e9c38f4d4a7871b1a8f`
 > 제품 generator: `gemini/gemini-3.5-flash`
 > Batch judge: `gemini-3.1-pro-preview`
@@ -106,3 +107,62 @@ commit, push, PR, deployment는 수행하지 않았다.
 다음 단계는 위 실패 유형을 범위로 한 보완 작업과 동일 frozen 질문의
 회귀 평가다. Human Owner가 발표 목적의 탐색적 모델 비교를 별도로
 승인하면 품질 gate와 구분해 실행해야 한다.
+
+## 9. 보완 후 재평가
+
+최초 `FAIL`을 현재 상태로 덮어쓰지 않고, 해당 결과를 기준선으로 보존한
+상태에서 답변 생성·라우팅·근거 범위 문제를 보완했다.
+
+주요 변경:
+
+- 가격변동 질문은 같은 날 뉴스와 질문에 직접 맞는 근거를 우선한다.
+- 명시적으로 요청한 뉴스·공시·리포트 범위 밖 자료는 답변 생성에서 제외한다.
+- 근거 대조는 질문과 관련된 사건만 연결하고 원출처 미확인은 단정하지 않는다.
+- 공시 금액은 원문 수치를 보존하면서 조원 단위로 함께 설명한다.
+- PER, 평균판매가격, 반도체 위탁생산 등 초보자에게 어려운 용어를 풀어쓴다.
+- 최근 이슈 근거에 중요한 한계가 있으면 불확실성 설명을 보존한다.
+- 후속 공시 요약은 이전 문장을 반복하지 않고 핵심 수치를 다시 표현한다.
+
+재평가 대상은 `agent/m5-e1-quality-remediation`의 `291d6f7` 기반
+작업 상태이며, 제품 generator는 그대로
+`gemini/gemini-3.5-flash`를 사용했다.
+
+### 최종 실행
+
+- held-out 제품 답변: `24`
+- setup 답변: `4`
+- deterministic hard gate: `24/24 PASS`
+- judge: `gemini-3.1-pro-preview`
+- Batch 요청·응답: `120/120`
+- threshold 사후 하향: `NOT_RUN`
+- Beginner Usefulness threshold: `0.9` 고정
+- judge max output tokens: `2048`
+
+768토큰 실행에서는 한 응답이 `MAX_TOKENS`로 잘려 구조화 응답 오류가
+반복됐다. 제품 답변을 바꾸거나 임계값을 낮추지 않고 judge 출력 상한만
+2048로 높여 동일 frozen 답변을 다시 판정했다.
+
+| 지표 | threshold | 통과 | 평균 | 상태 |
+|---|---:|---:|---:|---|
+| Answer Relevancy | 0.3 | 24/24 | 0.9708 | PASS |
+| Faithfulness | 0.5 | 24/24 | 1.0000 | PASS |
+| Contextual Relevancy | 0.0 | 24/24 | 0.9375 | REPORT_ONLY |
+| Beginner Usefulness | 0.9 | 20/24 | 0.9208 | PASS |
+
+필수 지표는 모두 release 기준을 통과했고 전체 상태는
+`EVALUATION COMPLETE / QUALITY GATE PASS`다.
+
+Beginner Usefulness 0.8 사례 4건은 잔여 관찰 대상으로 남긴다.
+
+- `disclosure-samsung-20260727`
+- `multi-source-hynix-20260727`
+- `crosscheck-hyundai-earnings`
+- `conversation-disclosure-followup`
+
+이 중 “핵심만 다시” 질문에 부가 위험까지 요구하거나 뉴스 근거 대조에
+리포트·DART 추가를 요구한 판정은 질문 범위보다 넓다. 평가 통과를 위해
+답변을 불필요하게 늘리지는 않았다.
+
+raw 산출물은 Git ignored 경로
+`var/evaluation/m5_e1_remediation_v7_20260729/`에만 남겼다.
+Gemini 생성 모델 비교는 이번 승인 범위 밖이므로 `NOT_RUN`이다.

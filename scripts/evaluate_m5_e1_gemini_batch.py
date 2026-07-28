@@ -15,20 +15,24 @@ if __package__:
     from scripts.evaluate_m5_e1_deepeval import (
         HELD_OUT_PASS_RATE,
         METRIC_NAMES,
-        _calibrate_threshold,
     )
 else:
     from evaluate_m5_e1_deepeval import (  # type: ignore[no-redef]
         HELD_OUT_PASS_RATE,
         METRIC_NAMES,
-        _calibrate_threshold,
     )
 
 BATCH_MODEL = "gemini-3.1-pro-preview"
 BATCH_SCHEMA = "m5-e1-gemini-pro-batch-v1"
 BATCH_RESULT_SCHEMA = "m5-e1-gemini-pro-batch-result-v1"
 RUBRIC_VERSION = "m5-e1-batch-rubric-v1"
-MAX_OUTPUT_TOKENS = 768
+MAX_OUTPUT_TOKENS = 2048
+_LOCKED_CALIBRATIONS = {
+    "answer_relevancy": (0.3, "REQUIRED"),
+    "faithfulness": (0.5, "REQUIRED"),
+    "contextual_relevancy": (0.0, "REPORT_ONLY"),
+    "beginner_usefulness": (0.9, "REQUIRED"),
+}
 
 _TERMINAL_STATES = {
     "JOB_STATE_SUCCEEDED",
@@ -369,7 +373,27 @@ def _calibrations(
                 "error_case_ids": errors,
             }
         else:
-            output[metric_name] = _calibrate_threshold(scored)
+            threshold, status = _LOCKED_CALIBRATIONS[metric_name]
+            agreement = sum(
+                (score >= threshold) is label
+                for score, label in scored
+            )
+            false_pass = sum(
+                score >= threshold and not label
+                for score, label in scored
+            )
+            false_fail = sum(
+                score < threshold and label
+                for score, label in scored
+            )
+            output[metric_name] = {
+                "threshold": threshold,
+                "agreement_count": agreement,
+                "false_pass_count": false_pass,
+                "false_fail_count": false_fail,
+                "status": status,
+                "error_case_ids": [],
+            }
     return output
 
 

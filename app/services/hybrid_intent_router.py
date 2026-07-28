@@ -262,6 +262,11 @@ class HybridIntentRouter:
             return False
 
         normalized = _normalize_intent_text(query)
+        if (
+            plan.intent == MULTI_SOURCE_SUMMARY
+            and _explicit_source_group_count(normalized) >= 2
+        ):
+            return False
         cue_groups = _cue_groups(normalized)
         if len(cue_groups) >= 2:
             return True
@@ -469,6 +474,29 @@ def _cue_groups(normalized: str) -> frozenset[str]:
     if _contains_any(normalized, RECENT_ISSUE_PATTERNS):
         groups.add(RECENT_ISSUE)
     return frozenset(groups)
+
+
+def _explicit_source_group_count(normalized: str) -> int:
+    groups = 0
+    if any(marker in normalized for marker in ("뉴스", "기사", "보도")):
+        groups += 1
+    if any(
+        marker in normalized
+        for marker in (
+            "공시",
+            "dart",
+            "분기보고서",
+            "반기보고서",
+            "사업보고서",
+        )
+    ):
+        groups += 1
+    if any(
+        marker in normalized
+        for marker in ("리포트", "증권사 보고서", "증권사 자료")
+    ):
+        groups += 1
+    return groups
 
 
 def _failure_status(status: LLMStatus) -> ClassifierStatus:
