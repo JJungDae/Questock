@@ -1,0 +1,115 @@
+{
+  "schema_version": "m5-e1-gemini-pro-batch-summary-v1",
+  "created_at": "2026-07-29T01:47:45.059373+09:00",
+  "evaluation_target_release": "373ea00d4e06526a98898e9c38f4d4a7871b1a8f",
+  "generator_model": "gemini/gemini-3.5-flash",
+  "judge_model": "gemini-3.1-pro-preview",
+  "evaluation_method": "Gemini Batch G-Eval-style fixed rubric",
+  "rubric_version": "m5-e1-batch-rubric-v1",
+  "request_count": 120,
+  "response_count": 120,
+  "pilot_case_count": 6,
+  "held_out_case_count": 24,
+  "hard_gate_status": "PASS",
+  "hard_gate_passed_case_count": 24,
+  "calibrations": {
+    "answer_relevancy": {
+      "threshold": 0.3,
+      "agreement_count": 5,
+      "false_pass_count": 0,
+      "false_fail_count": 1,
+      "status": "REQUIRED"
+    },
+    "faithfulness": {
+      "threshold": 0.5,
+      "agreement_count": 6,
+      "false_pass_count": 0,
+      "false_fail_count": 0,
+      "status": "REQUIRED"
+    },
+    "contextual_relevancy": {
+      "threshold": 0.0,
+      "agreement_count": 5,
+      "false_pass_count": 1,
+      "false_fail_count": 0,
+      "status": "REPORT_ONLY"
+    },
+    "beginner_usefulness": {
+      "threshold": 0.9,
+      "agreement_count": 6,
+      "false_pass_count": 0,
+      "false_fail_count": 0,
+      "status": "REQUIRED"
+    }
+  },
+  "aggregates": {
+    "answer_relevancy": {
+      "threshold": 0.3,
+      "mean": 0.8916666666666666,
+      "median": 1.0,
+      "minimum": 0.0,
+      "pass_count": 22,
+      "pass_rate": 0.9166666666666666,
+      "status": "PASS"
+    },
+    "faithfulness": {
+      "threshold": 0.5,
+      "mean": 1.0,
+      "median": 1.0,
+      "minimum": 1.0,
+      "pass_count": 24,
+      "pass_rate": 1.0,
+      "status": "PASS"
+    },
+    "contextual_relevancy": {
+      "threshold": 0.0,
+      "mean": 0.9166666666666666,
+      "median": 1.0,
+      "minimum": 0.0,
+      "pass_count": 24,
+      "pass_rate": 1.0,
+      "status": "REPORT_ONLY"
+    },
+    "beginner_usefulness": {
+      "threshold": 0.9,
+      "mean": 0.7374999999999999,
+      "median": 0.8500000000000001,
+      "minimum": 0.0,
+      "pass_count": 12,
+      "pass_rate": 0.5,
+      "status": "FAIL"
+    }
+  },
+  "failed_metric_cases": {
+    "answer_relevancy": [
+      "crosscheck-samsung-hbm5",
+      "conversation-disclosure-followup"
+    ],
+    "faithfulness": [],
+    "beginner_usefulness": [
+      "move-hynix-20260727-1900",
+      "issue-samsung-positive-20260724",
+      "risk-samsung-20260727",
+      "disclosure-samsung-20260727",
+      "report-hyundai-20260727",
+      "multi-source-hynix-20260727",
+      "term-operating-margin",
+      "crosscheck-samsung-hbm5",
+      "crosscheck-hyundai-earnings",
+      "conversation-risk-followup",
+      "conversation-disclosure-followup",
+      "conversation-company-switch"
+    ]
+  },
+  "generic_metrics_status": "FAIL",
+  "overall_status": "FAIL",
+  "limitations": [
+    "This is a separate Gemini Batch G-Eval-style run and is not mixed with the earlier partial DeepEval built-in scores.",
+    "The LLM judge does not replace deterministic financial hard gates.",
+    "The judge and generator are both Gemini-family models, so family bias remains possible.",
+    "Contextual Relevancy is report-only because the pilot did not distinguish the noisy-context negative control.",
+    "Raw responses and judge reasons remain in a Git-ignored local artifact."
+  ],
+  "raw_artifact_committed": false,
+  "model_comparison_ready": false
+}

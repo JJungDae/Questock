@@ -1,11 +1,11 @@
 # QUESTOCK SOURCE OF TRUTH INDEX
 
-> 기준일: 2026-07-28
+> 기준일: 2026-07-29
 > 기준 branch: canonical `main`; deployed runtime release `373ea00d4e06526a98898e9c38f4d4a7871b1a8f`
 > Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
 > Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
 > B9 planning base: `b9ddf7461306d16cf1da14634ce458050d78f7bc`
-> 상태: `B9 PASS / M4 Gate PASS / FSC-0~FSC-4 PASS / complete; M5-01 PASS / DEPLOYED / COMPLETE; M5-01-HR1 PASS / DEPLOYED / COMPLETE; M5-D1 PASS / DEPLOYED / COMPLETE at 373ea00d4e06526a98898e9c38f4d4a7871b1a8f`
+> 상태: `B9 PASS / M4 Gate PASS / FSC-0~FSC-4 PASS / complete; M5-01 PASS / DEPLOYED / COMPLETE; M5-01-HR1 PASS / DEPLOYED / COMPLETE; M5-D1 PASS / DEPLOYED / COMPLETE at 373ea00d4e06526a98898e9c38f4d4a7871b1a8f; M5-E1 BATCH EVALUATION COMPLETE / QUALITY GATE FAIL`
 
 ## 1. 목적
 
@@ -76,8 +76,19 @@ release SHA `373ea00d4e06526a98898e9c38f4d4a7871b1a8f`
 
 현재 checkpoint:
 M5-D1 publication and GCE deployment complete;
-Human Owner production UI review available;
-next implementation scope requires Human Owner direction
+M5-E1 frozen answers and hard gate complete;
+earlier DeepEval built-in held-out run remains a historical quota partial;
+Gemini 3.1 Pro Batch evaluation completed with 120/120 responses;
+Beginner Usefulness failed at 12/24, so remediation is required
+
+M5-E1 실행 기준:
+docs/TASK_CARDS/M5-E1-deepeval-quality-evaluation.md
+
+M5-E1 부분 종료 기록:
+docs/agent_handoff/M5_E1_EVALUATION_PARTIAL_2026-07-28.md
+
+M5-E1 Batch 평가 기록:
+docs/agent_handoff/M5_E1_BATCH_EVALUATION_2026-07-29.md
 
 M5-D1 실행 기준:
 docs/TASK_CARDS/M5-D1-evidence-crosscheck.md
@@ -518,6 +529,20 @@ current status:
 M5-D1-0~M5-D1-6 `PASS / DEPLOYED / COMPLETE`;
 release SHA `373ea00d4e06526a98898e9c38f4d4a7871b1a8f`
 
+current planned evaluation:
+docs/TASK_CARDS/M5-E1-deepeval-quality-evaluation.md
+
+evaluation status:
+M5-E1 `BATCH EVALUATION COMPLETE / QUALITY GATE FAIL`;
+earlier DeepEval built-in run remains `PARTIAL / JUDGE_QUOTA_STOP`;
+Gemini 3.1 Pro Batch G-Eval-style fixed-rubric run `120/120`;
+hard gate `24/24 PASS`;
+Answer Relevancy `22/24 PASS`;
+Faithfulness `24/24 PASS`;
+Contextual Relevancy `REPORT_ONLY`;
+Beginner Usefulness `12/24 FAIL`;
+Gemini generator-model comparison remains `NOT_RUN`
+
 completed M5 extension:
 docs/TASK_CARDS/M5-01-hybrid-intent-router.md
 
@@ -528,7 +553,7 @@ current execution decision:
 docs/agent_handoff/FIRST_SERVICE_COMPLETION_EXECUTION_DECISION_2026-07-27.md
 
 next:
-Human Owner production UI review or next-scope direction
+remediate the bounded answer-quality failures, then rerun regression evaluation
 ```
 
 ## 6. 금지
