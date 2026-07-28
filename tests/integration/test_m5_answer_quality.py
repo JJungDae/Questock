@@ -218,6 +218,30 @@ def test_risk_answer_does_not_append_positive_limited_risk_report() -> None:
     assert all(item.source_type == "news" for item in response.evidence)
 
 
+def test_short_company_switch_preserves_news_context() -> None:
+    service = _service()
+    as_of = datetime(2026, 7, 25, 21, 0, tzinfo=KST)
+    _chat(
+        service,
+        "삼성전자 최근 뉴스에서 호재가 뭐야?",
+        session_id="quality-short-company-switch",
+        as_of=as_of,
+    )
+
+    response = _chat(
+        service,
+        "SK하이닉스는?",
+        session_id="quality-short-company-switch",
+        as_of=as_of,
+    )
+
+    assert response.diagnostics_public.query_plan.intent == "recent_issue"
+    assert response.security is not None
+    assert response.security.ticker == "000660"
+    assert response.evidence
+    assert {item.source_type for item in response.evidence} == {"news"}
+
+
 def test_core_follow_up_is_shorter_than_initial_disclosure_answer() -> None:
     service = _service()
     as_of = datetime(2026, 7, 27, 14, 0, tzinfo=KST)

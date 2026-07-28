@@ -416,6 +416,12 @@ class QueryPlanner:
         security = extraction.security
         if intent == OUT_OF_SCOPE:
             intent = _session_follow_up_intent(intent_query, session)
+        if intent == OUT_OF_SCOPE and security is not None:
+            intent = _session_security_switch_intent(
+                intent_query,
+                security,
+                session,
+            )
         if (
             intent == OUT_OF_SCOPE
             and _contains_any(
@@ -587,6 +593,43 @@ def _session_follow_up_intent(
         return OUT_OF_SCOPE
     expected_sources = list(SOURCE_EVIDENCE_MATRIX[previous][0])
     if session.previous_source_types != expected_sources:
+        return OUT_OF_SCOPE
+    return cast(Intent, previous)
+
+
+def _session_security_switch_intent(
+    normalized_query: str,
+    security: SecurityIdentifier,
+    session: SessionContext | None,
+) -> Intent:
+    if session is None:
+        return OUT_OF_SCOPE
+    previous = session.previous_intent
+    if previous not in SECURITY_REQUIRED_INTENTS:
+        return OUT_OF_SCOPE
+    expected_sources = list(SOURCE_EVIDENCE_MATRIX[previous][0])
+    if session.previous_source_types != expected_sources:
+        return OUT_OF_SCOPE
+
+    remainder = normalized_query
+    for value in {
+        security.security_name,
+        security.corp_name,
+        security.ticker,
+        f"{security.market}:{security.ticker}",
+    }:
+        remainder = remainder.replace(_normalize_intent_text(value), " ")
+    shorthand = re.sub(r"[\s?!.,~]+", "", remainder)
+    if shorthand not in {
+        "은",
+        "는",
+        "은요",
+        "는요",
+        "도",
+        "도요",
+        "쪽은",
+        "쪽은요",
+    }:
         return OUT_OF_SCOPE
     return cast(Intent, previous)
 
