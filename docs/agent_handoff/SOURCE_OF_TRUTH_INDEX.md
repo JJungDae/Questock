@@ -66,11 +66,14 @@ Task Card 사실 동기화 완료, B6-0에서 상태 확인
 B9, First Service Completion, M5-01
 
 현재 공식 bundle:
-M5-01 as-of price-grounded answer - PASS / DEPLOYED / COMPLETE
+M5-01-HR1 Hybrid Intent Router -
+INDEPENDENT REVIEW PASS / DEPLOYMENT AUTHORIZED
 
 현재 checkpoint:
-Human Owner deployed-UI feedback;
-new implementation checkpoint not declared
+M5-01 post-deployment answer-quality closure
+LOCAL PASS / HUMAN OWNER APPROVED;
+M5-01-HR1 local implementation and validation complete;
+independent review fix closed; release execution in progress
 
 M5-01 실행 기준:
 docs/TASK_CARDS/M5-01-as-of-price-grounded-answer.md
@@ -257,6 +260,52 @@ rollback target `40dca28ed9c9a93d6ebf7c95161fda52ec1e01ef` /
 `sha256:f0283455a40679c405ed1ae5489d2444de199f31bbdba97675a029509a52b359`;
 rollback execution `NOT_RUN` because deployment passed
 
+M5-01 post-deployment answer-quality closure:
+`LOCAL PASS / HUMAN OWNER APPROVED`;
+same-day news-first price-move retrieval, optional-source warning suppression,
+bounded non-repeating price context, natural title-only fallback, HBM variant
+retrieval, narrowed direct-price classification, and completed-loading cleanup;
+focused `258 passed`, Streamlit `13 passed`, full regression `2122 passed`,
+Ruff PASS, local disabled-Gemini browser PASS;
+commit/push/PR/merge/deployment `NOT_RUN`
+
+M5-01-HR1:
+Hybrid Intent Router
+`INDEPENDENT REVIEW PASS / DEPLOYMENT AUTHORIZED`;
+rules remain the deterministic first route, only ambiguous or conflicting
+questions may use Gemini classification, and classifier failure must return to
+the deterministic rule result;
+classifier maximum `1` call per request, answer composer maximum `1` additional
+call, timeout `3` seconds, retry `0`;
+focused `115 passed`, affected regression `435 passed`, release-contract
+regression `61 passed`, full regression `2148 passed`, Ruff PASS;
+M3 Gate `34/34`, Critical `17/17`, public exposure `0`;
+tracked and new-file secret scans PASS with findings `[]`; diff check PASS;
+bounded live classifier smoke `2/2 PASS`, actual provider calls `2`,
+answer-generation calls `0`;
+GCE contract includes `QUESTOCK_HYBRID_ROUTER_ENABLED=true`;
+pre-review commit/push/PR/merge/deployment state `NOT_RUN`
+
+M5-01-HR1 independent review:
+`PASS WITH REQUIRED FIX / FIX CLOSED`;
+classifier-reclassified price-only responses now emit sanitized observations;
+`intent_classifier_status` records allowlisted accepted/failure state without
+prompt, response, question, credential, or session content;
+affected regression `164 passed`, full regression `2158 passed`, Ruff and
+compile PASS, M3 Gate `34/34`, Critical `17/17`, public exposure `0`, tracked
+and new-file secret scans findings `[]`, diff check PASS;
+Human Owner authorized GitHub publication, merge, and deployment on
+`2026-07-28`; release execution in progress
+
+Competitive differentiation review:
+`docs/agent_handoff/COMPETITIVE_DIFFERENTIATION_REVIEW_2026-07-28.md`;
+standalone Q&A, citations, positive/risk summaries, charts, watchlists, alerts,
+screening, and portfolio ideas overlap with current services;
+the leading candidate is an `As-of Replay` extension of the implemented
+selected-time hard boundary and zero-future-evidence contract;
+the next sequence is differentiation decision/implementation, evaluation
+metrics, then optional LLM model comparison
+
 B6 구현:
 PASS / complete
 
@@ -381,7 +430,7 @@ docs/TASK_CARDS/B9-release-deployment-traceability.md
 docs/TASK_CARDS/M5-01-as-of-price-grounded-answer.md
 
 current:
-none declared; Human Owner deployed-UI feedback
+docs/TASK_CARDS/M5-01-hybrid-intent-router.md
 
 completed FSC execution standard:
 docs/TASK_CARDS/FSC-4-beginner-grounded-chat.md
@@ -390,7 +439,8 @@ current execution decision:
 docs/agent_handoff/FIRST_SERVICE_COMPLETION_EXECUTION_DECISION_2026-07-27.md
 
 next:
-new implementation checkpoint not declared
+M5-01-HR1 release execution and production verification;
+then Human Owner differentiation decision
 ```
 
 ## 6. 금지

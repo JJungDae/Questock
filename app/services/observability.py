@@ -18,6 +18,21 @@ _DECISION_STATUSES = frozenset(
 _GENERATION_MODES = frozenset(
     {"llm", "fixed_template", "blocked", "not_called"}
 )
+_INTENT_ROUTING_MODES = frozenset(
+    {"deterministic", "hybrid_llm", "hybrid_fallback", "cached"}
+)
+_INTENT_CLASSIFIER_STATUSES = frozenset(
+    {
+        "not_called",
+        "accepted",
+        "timeout",
+        "rate_limited",
+        "authentication_error",
+        "provider_unavailable",
+        "invalid_response",
+        "content_blocked",
+    }
+)
 
 
 class ObservationValidationError(ValueError):
@@ -36,6 +51,8 @@ class RequestObservation:
     total_latency_ms: float
     llm_call_count: int
     fallback_used: bool
+    intent_routing: str = "deterministic"
+    intent_classifier_status: str = "not_called"
 
     def __post_init__(self) -> None:
         _validate_token(self.request_id, "request ID")
@@ -80,11 +97,33 @@ class RequestObservation:
         if (
             type(self.llm_call_count) is not int
             or self.llm_call_count < 0
-            or self.llm_call_count > 1
+            or self.llm_call_count > 2
         ):
             raise ObservationValidationError("LLM call count is invalid")
         if type(self.fallback_used) is not bool:
             raise ObservationValidationError("fallback state is invalid")
+        if self.intent_routing not in _INTENT_ROUTING_MODES:
+            raise ObservationValidationError("intent routing is invalid")
+        if (
+            self.intent_classifier_status
+            not in _INTENT_CLASSIFIER_STATUSES
+            or (
+                self.intent_routing in {"deterministic", "cached"}
+                and self.intent_classifier_status != "not_called"
+            )
+            or (
+                self.intent_routing == "hybrid_llm"
+                and self.intent_classifier_status != "accepted"
+            )
+            or (
+                self.intent_routing == "hybrid_fallback"
+                and self.intent_classifier_status
+                in {"not_called", "accepted"}
+            )
+        ):
+            raise ObservationValidationError(
+                "intent classifier status is invalid"
+            )
 
     def to_payload(self) -> dict[str, object]:
         return {
@@ -92,6 +131,8 @@ class RequestObservation:
             "evidence_decision": self.evidence_decision,
             "fallback_used": self.fallback_used,
             "intent": self.intent,
+            "intent_classifier_status": self.intent_classifier_status,
+            "intent_routing": self.intent_routing,
             "llm_call_count": self.llm_call_count,
             "provider_statuses": dict(self.provider_statuses),
             "request_id": self.request_id,

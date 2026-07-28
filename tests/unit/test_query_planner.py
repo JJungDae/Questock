@@ -11,6 +11,7 @@ from app.planning.query_planner import (
     FINANCIAL_TERM,
     MULTI_SOURCE_SUMMARY,
     OUT_OF_SCOPE,
+    PRICE,
     PROHIBITED_ADVICE,
     PRICE_MOVE,
     QueryPlanner,
@@ -409,6 +410,32 @@ def test_price_move_question_is_retrievable_in_m5() -> None:
         ),
         answer_focus="price_move",
     )
+
+
+def test_price_move_without_period_defaults_to_selected_basis_day() -> None:
+    result = planner().plan(f"{SAMSUNG} 주가 왜 떨어졌어?")
+
+    assert result.intent == PRICE_MOVE
+    assert result.date_range == DateRange(
+        start=date(2026, 7, 23),
+        end=date(2026, 7, 23),
+    )
+
+
+def test_price_word_inside_risk_question_does_not_force_price_intent() -> None:
+    result = planner().plan(
+        f"{SAMSUNG} 왜 주가변동성이 위험요인이야?"
+    )
+
+    assert result.intent == RISK_FACTORS
+    assert result.answer_focus == "risk"
+
+
+def test_everyday_direct_price_question_remains_supported() -> None:
+    result = planner().plan(f"{SAMSUNG} 주가 어때?")
+
+    assert result.intent == PRICE
+    assert result.answer_focus == "price"
 
 
 def test_benign_historical_probability_word_is_not_prohibited_by_itself():

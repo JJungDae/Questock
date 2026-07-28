@@ -51,6 +51,11 @@ MATRIX = {
         ["recent_news", "disclosure", "research_report"],
         True,
     ),
+    "price_move": (
+        ["news", "disclosure", "research_report"],
+        ["recent_news", "disclosure", "research_report"],
+        True,
+    ),
 }
 
 
@@ -257,6 +262,31 @@ def test_missing_one_required_source_is_partial_in_matrix_order():
     assert result.status == EvidenceDecisionStatus.PARTIAL
     assert result.satisfied_sources == ("news", "research_report")
     assert result.missing_sources == ("disclosure",)
+
+
+def test_price_move_news_is_complete_without_forcing_slower_sources() -> None:
+    plan = query_plan("price_move")
+    item = evidence("news", evidence_id="evidence:price-move-news")
+
+    result = evaluate(plan, [item])
+
+    assert result.status == EvidenceDecisionStatus.COMPLETE
+    assert result.satisfied_sources == ("news",)
+    assert result.missing_sources == ()
+
+
+def test_price_move_secondary_source_without_news_stays_partial() -> None:
+    plan = query_plan("price_move")
+    item = evidence(
+        "research_report",
+        evidence_id="evidence:price-move-report",
+    )
+
+    result = evaluate(plan, [item])
+
+    assert result.status == EvidenceDecisionStatus.PARTIAL
+    assert result.satisfied_sources == ("research_report",)
+    assert result.missing_sources == ("news",)
 
 
 def test_all_required_sources_missing_is_no_evidence():

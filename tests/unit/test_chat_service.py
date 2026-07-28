@@ -19,6 +19,7 @@ from app.llm.base import LLMRequest, LLMResult, LLMStatus, create_llm_result
 from app.providers.base import create_provider_result
 from app.services import chat_service as chat_service_module
 from app.services.chat_service import ChatService, ChatServiceError
+from app.services.hybrid_intent_router import HybridIntentRouter
 from app.services.observability import (
     InMemoryObservationSink,
     JsonLogObservationSink,
@@ -224,6 +225,37 @@ class ExtractiveLLM:
         )
 
 
+class IntentClassifierLLM:
+    def __init__(
+        self,
+        *,
+        intent: str = "recent_issue",
+        content: str | None = None,
+    ) -> None:
+        self.intent = intent
+        self.content = content
+        self.calls = 0
+
+    async def complete(
+        self,
+        request: LLMRequest,
+        *,
+        timeout_seconds: float,
+    ) -> LLMResult:
+        self.calls += 1
+        content = self.content or json.dumps(
+            {"intent": self.intent},
+            ensure_ascii=False,
+        )
+        return create_llm_result(
+            status=LLMStatus.OK,
+            content=content,
+            model="gemini/gemini-3.5-flash",
+            provider="gemini",
+            latency_ms=1,
+        )
+
+
 def _service(
     gateway: FakeGateway,
     llm: ExtractiveLLM,
@@ -236,6 +268,7 @@ def _service(
     request_protector: RequestProtector | None = None,
     response_cache: ResponseCache | None = None,
     session_store: InMemorySessionStore | None = None,
+    intent_router: HybridIntentRouter | None = None,
 ) -> ChatService:
     kwargs: dict[str, Any] = {
         "source_gateway": gateway,
@@ -262,6 +295,8 @@ def _service(
         kwargs["response_cache"] = response_cache
     if session_store is not None:
         kwargs["session_store"] = session_store
+    if intent_router is not None:
+        kwargs["intent_router"] = intent_router
     return ChatService(
         **kwargs,
     )
@@ -343,6 +378,101 @@ def test_complete_response_emits_actual_internal_observation_once() -> None:
     assert observation.total_latency_ms == 12.5
     assert observation.llm_call_count == 1
     assert observation.fallback_used is False
+
+
+def test_hybrid_route_and_answer_calls_are_bounded_and_observed() -> None:
+    sink = InMemoryObservationSink()
+    classifier = IntentClassifierLLM(intent="recent_issue")
+    answer_llm = ExtractiveLLM()
+
+    response = asyncio.run(
+        _service(
+            FakeGateway((news_document(),)),
+            answer_llm,
+            observation_sink=sink,
+            request_id_factory=lambda: "request-hybrid-route",
+            intent_router=HybridIntentRouter(
+                classifier,
+                enabled=True,
+            ),
+        ).chat(
+            _request("삼성전자 최근 악재 알려줘"),
+        )
+    )
+
+    assert (
+        response.diagnostics_public.query_plan.intent
+        == "recent_issue"
+    )
+    assert classifier.calls == 1
+    assert answer_llm.calls == 1
+    assert sink.observations[0].llm_call_count == 2
+    assert sink.observations[0].intent_routing == "hybrid_llm"
+    assert sink.observations[0].intent_classifier_status == "accepted"
+
+
+def test_invalid_hybrid_route_falls_back_to_deterministic_plan() -> None:
+    sink = InMemoryObservationSink()
+    classifier = IntentClassifierLLM(content="not-json")
+    answer_llm = ExtractiveLLM()
+
+    response = asyncio.run(
+        _service(
+            FakeGateway((news_document(),)),
+            answer_llm,
+            observation_sink=sink,
+            request_id_factory=lambda: "request-hybrid-fallback",
+            intent_router=HybridIntentRouter(
+                classifier,
+                enabled=True,
+            ),
+        ).chat(
+            _request("삼성전자 최근 악재 알려줘"),
+        )
+    )
+
+    assert (
+        response.diagnostics_public.query_plan.intent
+        == "risk_factors"
+    )
+    assert classifier.calls == 1
+    assert sink.observations[0].intent_routing == "hybrid_fallback"
+    assert (
+        sink.observations[0].intent_classifier_status
+        == "invalid_response"
+    )
+    assert sink.observations[0].llm_call_count in {1, 2}
+
+
+def test_hybrid_price_reclassification_emits_classifier_observation() -> None:
+    sink = InMemoryObservationSink()
+    classifier = IntentClassifierLLM(intent="price")
+
+    response = asyncio.run(
+        _service(
+            FakeGateway(()),
+            ExtractiveLLM(),
+            observation_sink=sink,
+            request_id_factory=lambda: "request-hybrid-price",
+            intent_router=HybridIntentRouter(
+                classifier,
+                enabled=True,
+            ),
+        ).chat(
+            _request("삼성전자 주가 상황 어때?"),
+        )
+    )
+
+    assert response.diagnostics_public.query_plan.intent == "price"
+    assert classifier.calls == 1
+    assert len(sink.observations) == 1
+    observation = sink.observations[0]
+    assert observation.intent == "price"
+    assert observation.retrieval_strategy == "market-snapshot-m5-01-v1"
+    assert observation.evidence_decision == "no_evidence"
+    assert observation.llm_call_count == 1
+    assert observation.intent_routing == "hybrid_llm"
+    assert observation.intent_classifier_status == "accepted"
 
 
 def test_fixed_template_and_blocked_fallback_observations_are_distinct() -> None:

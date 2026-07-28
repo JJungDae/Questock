@@ -490,6 +490,23 @@ def test_natural_korean_variants_keep_same_selection_and_score() -> None:
     ) == 1
 
 
+def test_hbm_query_matches_numbered_hbm_variant() -> None:
+    relevant = evidence(
+        "ev:hbm5",
+        title="삼성전자 파운드리 HBM5 2나노 공정 적용",
+        snippet="",
+    )
+
+    result = retrieve_evidence(
+        [relevant],
+        request("삼성전자 주가 배경 HBM 기술"),
+    )
+
+    assert result.status == RetrievalStatus.OK
+    assert result_ids(result) == [relevant.evidence_id]
+    assert result.evidence[0].retrieval_score >= 0.5
+
+
 def test_multi_source_selection_keeps_one_threshold_result_per_source_first() -> None:
     news_first = evidence(
         "ev:news:first",

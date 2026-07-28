@@ -60,9 +60,31 @@ def test_llm_and_protection_switch_defaults_and_exact_values() -> None:
     assert defaults.llm_mode == "disabled"
     assert defaults.request_protection_enabled is False
     assert defaults.response_cache_enabled is False
+    assert defaults.hybrid_router_enabled is False
     assert enabled.llm_mode == "gemini"
     assert enabled.request_protection_enabled is True
     assert enabled.response_cache_enabled is True
+    assert enabled.hybrid_router_enabled is False
+
+
+def test_hybrid_router_switch_requires_gemini_mode() -> None:
+    enabled = load_runtime_config(
+        {
+            "QUESTOCK_SOURCE_MODE": "recorded",
+            "QUESTOCK_LLM_MODE": "gemini",
+            "QUESTOCK_HYBRID_ROUTER_ENABLED": "true",
+        }
+    )
+
+    assert enabled.hybrid_router_enabled is True
+
+    with pytest.raises(RuntimeConfigurationError):
+        build_runtime(
+            config=RuntimeConfig(
+                source_mode="recorded",
+                hybrid_router_enabled=True,
+            )
+        )
 
 
 @pytest.mark.parametrize(
@@ -71,6 +93,7 @@ def test_llm_and_protection_switch_defaults_and_exact_values() -> None:
         ("QUESTOCK_LLM_MODE", "automatic"),
         ("QUESTOCK_REQUEST_PROTECTION_ENABLED", "1"),
         ("QUESTOCK_RESPONSE_CACHE_ENABLED", "yes"),
+        ("QUESTOCK_HYBRID_ROUTER_ENABLED", "enabled"),
     ],
 )
 def test_invalid_runtime_switch_is_sanitized(
@@ -103,12 +126,14 @@ def test_gemini_runtime_wires_llm_protection_and_cache_without_call(
             llm_mode="gemini",
             request_protection_enabled=True,
             response_cache_enabled=True,
+            hybrid_router_enabled=True,
         )
     )
 
     assert state.chat_service._live_llm_enabled is True  # noqa: SLF001
     assert state.chat_service._request_protector.enabled is True  # noqa: SLF001
     assert state.chat_service._response_cache.enabled is True  # noqa: SLF001
+    assert state.chat_service._intent_router.enabled is True  # noqa: SLF001
     assert state.chat_service._model_fingerprint != "disabled"  # noqa: SLF001
 
 

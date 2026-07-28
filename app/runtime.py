@@ -19,6 +19,7 @@ from app.services.demo_source_gateway import (
     load_demo_corpus,
 )
 from app.services.glossary_service import GlossaryService
+from app.services.hybrid_intent_router import HybridIntentRouter
 from app.services.m5_news_snapshot import M5NewsSnapshotError
 from app.services.m5_source_gateway import M5RecordedSourceGateway
 from app.services.market_snapshot_store import (
@@ -46,6 +47,7 @@ _SNAPSHOT_ID_ENV = "QUESTOCK_SNAPSHOT_ID"
 _LLM_MODE_ENV = "QUESTOCK_LLM_MODE"
 _REQUEST_PROTECTION_ENV = "QUESTOCK_REQUEST_PROTECTION_ENABLED"
 _RESPONSE_CACHE_ENV = "QUESTOCK_RESPONSE_CACHE_ENABLED"
+_HYBRID_ROUTER_ENV = "QUESTOCK_HYBRID_ROUTER_ENABLED"
 _RUNTIME_VERSION = "b9-recorded-v1"
 _M5_RUNTIME_DATA_VERSION = "m5-01-v1-c963ba0d-438138c4"
 
@@ -61,6 +63,7 @@ class RuntimeConfig:
     llm_mode: LLMMode = "disabled"
     request_protection_enabled: bool = False
     response_cache_enabled: bool = False
+    hybrid_router_enabled: bool = False
 
 
 @dataclass(frozen=True)
@@ -106,12 +109,17 @@ def load_runtime_config(
         values,
         _RESPONSE_CACHE_ENV,
     )
+    hybrid_router_enabled = _read_switch(
+        values,
+        _HYBRID_ROUTER_ENV,
+    )
     return RuntimeConfig(  # type: ignore[arg-type]
         source_mode=mode,
         snapshot_id=snapshot_id,
         llm_mode=llm_mode,
         request_protection_enabled=request_protection_enabled,
         response_cache_enabled=response_cache_enabled,
+        hybrid_router_enabled=hybrid_router_enabled,
     )
 
 
@@ -207,19 +215,30 @@ def _build_chat_service(
     market_snapshot_store: RecordedMarketSnapshotStore | None = None,
 ) -> ChatService:
     composer = None
+    intent_router = HybridIntentRouter()
     model_fingerprint = "disabled"
     live_llm_enabled = False
     if config.llm_mode == "gemini":
         try:
             llm_config = LLMConfig.from_env(require_credential=True)
-            composer = AnswerComposer(LiteLLMClient(llm_config))
+            llm_client = LiteLLMClient(llm_config)
+            composer = AnswerComposer(llm_client)
+            intent_router = HybridIntentRouter(
+                llm_client if config.hybrid_router_enabled else None,
+                enabled=config.hybrid_router_enabled,
+            )
         except (ConfigValidationError, TypeError, ValueError):
             raise RuntimeConfigurationError(
                 "LLM runtime configuration is invalid"
             ) from None
         model_fingerprint = hashlib.sha256(
             json.dumps(
-                llm_config.safe_summary(),
+                {
+                    "hybrid_router_enabled": (
+                        config.hybrid_router_enabled
+                    ),
+                    "llm": llm_config.safe_summary(),
+                },
                 ensure_ascii=True,
                 separators=(",", ":"),
                 sort_keys=True,
@@ -243,6 +262,7 @@ def _build_chat_service(
             model_fingerprint=model_fingerprint,
             live_llm_enabled=live_llm_enabled,
             market_snapshot_store=market_snapshot_store,
+            intent_router=intent_router,
         )
     except (MarketSnapshotStoreError, TypeError, ValueError):
         raise RuntimeConfigurationError(
@@ -256,6 +276,11 @@ def _validate_runtime_config(config: RuntimeConfig) -> None:
         or config.llm_mode not in {"disabled", "gemini"}
         or type(config.request_protection_enabled) is not bool
         or type(config.response_cache_enabled) is not bool
+        or type(config.hybrid_router_enabled) is not bool
+        or (
+            config.hybrid_router_enabled
+            and config.llm_mode != "gemini"
+        )
         or (
             config.snapshot_id is not None
             and (

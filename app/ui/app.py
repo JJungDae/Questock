@@ -81,6 +81,7 @@ def run(transport: ChatTransport | None = None) -> None:
         st.session_state.transcript = ()
 
     conversation_placeholder = st.empty()
+    loading_placeholder = st.empty()
     submitted_question = st.chat_input(
         "종목에 대해 궁금한 점을 물어보세요",
         max_chars=2000,
@@ -97,7 +98,6 @@ def run(transport: ChatTransport | None = None) -> None:
         except ValidationError:
             st.error(_INPUT_FAILURE)
         else:
-            loading_placeholder = st.empty()
             try:
                 active_transport = transport or _default_transport(
                     st.session_state.session_id
@@ -116,6 +116,7 @@ def run(transport: ChatTransport | None = None) -> None:
                     response=response,
                 )
                 st.session_state.clear_question_input = True
+                loading_placeholder.empty()
                 st.rerun()
             except ChatTransportError as exc:
                 st.session_state.response = None
