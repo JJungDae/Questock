@@ -1,11 +1,11 @@
 # QUESTOCK SOURCE OF TRUTH INDEX
 
 > 기준일: 2026-07-29
-> 기준 branch: canonical `main`; deployed runtime release `373ea00d4e06526a98898e9c38f4d4a7871b1a8f`
+> 기준 branch: canonical `main`; deployed runtime release `459e0dd07d67a1e5791c74914e173b3d688eb75a`
 > Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
 > Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
 > B9 planning base: `b9ddf7461306d16cf1da14634ce458050d78f7bc`
-> 상태: `B9 PASS / M4 Gate PASS / FSC-0~FSC-4 PASS / complete; M5-01 PASS / DEPLOYED / COMPLETE; M5-01-HR1 PASS / DEPLOYED / COMPLETE; M5-D1 PASS / DEPLOYED / COMPLETE at 373ea00d4e06526a98898e9c38f4d4a7871b1a8f; M5-E1 REMEDIATION EVALUATION COMPLETE / QUALITY GATE PASS; publication and deployment pending`
+> 상태: `B9 PASS / M4 Gate PASS / FSC-0~FSC-4 PASS / complete; M5-01 PASS / DEPLOYED / COMPLETE; M5-01-HR1 PASS / DEPLOYED / COMPLETE; M5-D1 PASS / DEPLOYED / COMPLETE; M5-E1 PASS / DEPLOYED / COMPLETE at 459e0dd07d67a1e5791c74914e173b3d688eb75a`
 
 ## 1. 목적
 
@@ -84,7 +84,10 @@ the original Batch FAIL remains historical;
 remediation hard gate passed at 24/24;
 Answer Relevancy 24/24, Faithfulness 24/24,
 Beginner Usefulness 20/24 and aggregate quality gate PASS;
-publication and deployment are pending
+PR #28 and follow-up PR #29 merged;
+GCE run 30390955630 deployed release
+459e0dd07d67a1e5791c74914e173b3d688eb75a;
+production UI verification PASS
 
 M5-E1 실행 기준:
 docs/TASK_CARDS/M5-E1-deepeval-quality-evaluation.md
@@ -547,6 +550,8 @@ Answer Relevancy `24/24 PASS`;
 Faithfulness `24/24 PASS`;
 Contextual Relevancy `REPORT_ONLY`;
 Beginner Usefulness `20/24 PASS`;
+release `459e0dd07d67a1e5791c74914e173b3d688eb75a`
+`PASS / DEPLOYED / COMPLETE`;
 Gemini generator-model comparison remains `NOT_RUN`
 
 completed M5 extension:
@@ -559,7 +564,7 @@ current execution decision:
 docs/agent_handoff/FIRST_SERVICE_COMPLETION_EXECUTION_DECISION_2026-07-27.md
 
 next:
-publish, merge, deploy, and run production demo verification
+Gemini generator-model comparison remains a separate `NOT_RUN` item
 ```
 
 ## 6. 금지
