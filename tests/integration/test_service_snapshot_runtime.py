@@ -14,6 +14,7 @@ from app.runtime import (
     get_runtime_state,
     load_runtime_config,
 )
+from app.services.m5_source_gateway import M5RecordedSourceGateway
 from app.services.service_snapshot import SERVICE_SNAPSHOT_ID
 from app.services.service_snapshot_gateway import (
     RecordedServiceSnapshotGateway,
@@ -71,10 +72,9 @@ def test_snapshot_runtime_loads_once_and_uses_fixed_basis(monkeypatch) -> None:
     assert calls == 1
     assert first.corpus is not None
     assert first.corpus.basis_at.isoformat() == "2026-07-24T05:02:00+00:00"
-    assert isinstance(
-        first.chat_service._source_gateway,  # noqa: SLF001
-        RecordedServiceSnapshotGateway,
-    )
+    gateway = first.chat_service._source_gateway  # noqa: SLF001
+    assert isinstance(gateway, M5RecordedSourceGateway)
+    assert isinstance(gateway._base, RecordedServiceSnapshotGateway)  # noqa: SLF001
 
 
 def test_snapshot_health_reports_exact_source_counts(monkeypatch) -> None:

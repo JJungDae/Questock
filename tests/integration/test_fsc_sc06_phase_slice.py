@@ -134,10 +134,13 @@ def test_three_company_recorded_api_and_ui_flow(
 
     assert not rendered.exception
     assert len(transport.requests) == 1
-    assert not rendered.selectbox
+    assert len(rendered.selectbox) == 2
+    assert rendered.selectbox[0].label == "기준 날짜"
+    assert rendered.selectbox[1].label == "기준 시점"
     captions = "\n".join(item.value for item in rendered.caption)
     assert "Snapshot ID: svc-20260724-1402" in captions
-    assert "기준 시점: 2026-07-24 14:02 KST" in captions
+    assert "선택 기준 시점: 2026-07-27 14:00 KST" in captions
+    assert "2026-07-24 14:02 KST 기준" in captions
     assert "현재 답변 생성: 근거 기반 고정 응답" in captions
 
 

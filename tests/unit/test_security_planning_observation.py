@@ -72,14 +72,14 @@ def test_early_blocked_plan_preserves_resolved_observation() -> None:
     assert observed.security_id == "KRX:005930"
 
 
-def test_price_move_out_of_scope_preserves_resolved_observation() -> None:
+def test_price_move_preserves_resolved_observation() -> None:
     observed = build_observed_query_plan(
         "\uc0bc\uc131\uc804\uc790 \uc65c \uc62c\ub790\uc5b4",
         basis_date=BASIS_DATE,
         resolver=SecurityResolver(),
     )
 
-    assert observed.plan.intent == "out_of_scope"
+    assert observed.plan.intent == "price_move"
     assert observed.resolution_status == "resolved"
     assert observed.security_id == "KRX:005930"
 

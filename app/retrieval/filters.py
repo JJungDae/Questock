@@ -119,6 +119,13 @@ def _document_type_match(document: FinancialDocument, request: RetrievalRequest)
 
 
 def _date_in_range(value: datetime | None, request: RetrievalRequest) -> bool:
+    if request.as_of is not None:
+        if (
+            not _is_aware_datetime(value)
+            or not _is_aware_datetime(request.as_of)
+            or value > request.as_of
+        ):
+            return False
     if request.date_range is None:
         return True
     if not _is_aware_datetime(value):
@@ -183,8 +190,6 @@ def _evidence_date_match(
     request: RetrievalRequest,
     linked_document: FinancialDocument | None,
 ) -> bool:
-    if request.date_range is None:
-        return True
     effective_timestamp = evidence.published_at if _is_aware_datetime(evidence.published_at) else None
     if effective_timestamp is None and linked_document is not None and _is_aware_datetime(linked_document.published_at):
         effective_timestamp = linked_document.published_at

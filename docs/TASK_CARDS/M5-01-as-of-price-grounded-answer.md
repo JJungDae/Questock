@@ -4,9 +4,11 @@
 
 - Planning date: `2026-07-28`
 - Planning base: `bbcdc7352cf6791624b5de74ef7dc05ae6ecde88`
+- Implementation base: PR `#18` merge
+  `6f50ee922c2a1c74278ead2f679472ba3e19bc8b`
 - Product scope: Samsung Electronics, SK hynix, Hyundai Motor
-- Current status: `PLAN READY / IMPLEMENTATION NOT_STARTED`
-- API preflight: `PENDING`
+- Current status: `LOCAL IMPLEMENTATION PASS / RELEASE NOT_STARTED`
+- API preflight: `PASS`
 - Human Owner direction:
   - expose five selectable checkpoints for each date
   - add price-grounded answers after the FSC-4 answer-presentation follow-up
@@ -506,3 +508,65 @@ M5-01 is complete only when:
 - Critical, golden, full regression, and deployment smoke satisfy their gates
 - the Human Owner approves deployment
 - Source of Truth and work logs match the actual Git and deployment state
+
+---
+
+## 13. Local implementation evidence
+
+Status as of `2026-07-28`:
+
+- PR `#18` was merged before M5 implementation:
+  - merge SHA:
+    `6f50ee922c2a1c74278ead2f679472ba3e19bc8b`
+  - quality-gate run `30323480083`: `PASS`
+  - PR `#18` deployment: `NOT_STARTED`
+- KIS historical minute-bar preflight: `PASS`
+  - production quotation credentials present locally
+  - all three securities resolved
+  - raw responses and token cache remain Git-ignored
+  - credential, token, account, article body, and raw response exposure: `0`
+- normalized market snapshot:
+  - three stocks × twenty checkpoints = `60` records
+  - future observation count: `0`
+  - weekend closed-market records: `30`
+  - checksum:
+    `438138c4be2da03c170787376d56367ea27cdf1f551b2f80f6f4cfbf85f14849`
+- expanded title-only news:
+  - collection window: after `2026-07-24 14:00 KST` through
+    `2026-07-27`
+  - retained after deterministic relevance filtering: `7`
+  - Samsung Electronics `4`, SK hynix `1`, Hyundai Motor `2`
+  - checksum:
+    `c963ba0d909b0866185169eccf165bea0b50b449d32a935ed8170f64b8cc1a90`
+- temporal and state contract:
+  - exact `as_of` evidence included
+  - one-second-future evidence excluded
+  - response cache and session memory partitioned by checkpoint
+  - weekend and after-close answers retain the actual prior observation time
+- answer and UI:
+  - direct selected-time price and previous-close comparison implemented
+  - price-move answers separate verified movement from possible background
+  - date and five-checkpoint selectors implemented
+  - checkpoint changes clear the visible conversation and change session scope
+  - interactive local browser checks passed for trading-day and weekend cases
+- deterministic validation:
+  - M5 golden set: `8 passed`
+  - full regression: `2110 passed, 2 warnings`
+  - Ruff over `app`, `scripts`, and `tests`: `PASS`
+  - tracked and new M5-file secret scans: `PASS`, findings `[]`
+  - M3 executable gate: `34/34`, with the prior M3-12 inactive price boundary
+    explicitly promoted to `ACTIVATED_IN_M5`
+- bounded live Gemini acceptance:
+  - provider calls: `2`
+  - model: `gemini/gemini-3.5-flash`
+  - recent-issue answer: `PASS`, public status `complete`
+  - price-move answer: `PASS`, public status `partial`
+  - live verified: `2/2`
+  - future evidence count: `0`
+- optional Flash-versus-Pro comparison: `NOT_RUN`
+- M5 implementation commit, push, PR, merge, deployment, and deployment smoke:
+  `NOT_STARTED`
+
+This is a local implementation pass, not M5-01 release completion. The
+completion criteria above still require an authorized deployment and its
+smoke result.

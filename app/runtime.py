@@ -19,6 +19,12 @@ from app.services.demo_source_gateway import (
     load_demo_corpus,
 )
 from app.services.glossary_service import GlossaryService
+from app.services.m5_news_snapshot import M5NewsSnapshotError
+from app.services.m5_source_gateway import M5RecordedSourceGateway
+from app.services.market_snapshot_store import (
+    MarketSnapshotStoreError,
+    RecordedMarketSnapshotStore,
+)
 from app.services.service_snapshot import (
     SERVICE_SNAPSHOT_ID,
     ServiceSnapshot,
@@ -41,6 +47,7 @@ _LLM_MODE_ENV = "QUESTOCK_LLM_MODE"
 _REQUEST_PROTECTION_ENV = "QUESTOCK_REQUEST_PROTECTION_ENABLED"
 _RESPONSE_CACHE_ENV = "QUESTOCK_RESPONSE_CACHE_ENABLED"
 _RUNTIME_VERSION = "b9-recorded-v1"
+_M5_RUNTIME_DATA_VERSION = "m5-01-v1-c963ba0d-438138c4"
 
 
 class RuntimeConfigurationError(ValueError):
@@ -162,13 +169,27 @@ def build_runtime(
             "recorded runtime data is invalid"
         ) from None
     basis_at = corpus.basis_at
+    try:
+        gateway = M5RecordedSourceGateway(gateway)
+    except M5NewsSnapshotError:
+        raise RuntimeConfigurationError(
+            "recorded M5 news data is invalid"
+        ) from None
+    try:
+        market_snapshot_store = RecordedMarketSnapshotStore()
+    except MarketSnapshotStoreError:
+        raise RuntimeConfigurationError(
+            "recorded market data is invalid"
+        ) from None
     service = _build_chat_service(
         config=canonical_config,
         source_gateway=gateway,
         snapshot_id=(
-            canonical_config.snapshot_id or "b9-recorded-demo"
+            f"{canonical_config.snapshot_id or 'b9-recorded-demo'}."
+            f"{_M5_RUNTIME_DATA_VERSION}"
         ),
         utc_now=lambda: basis_at,
+        market_snapshot_store=market_snapshot_store,
     )
     return RuntimeState(
         config=canonical_config,
@@ -183,6 +204,7 @@ def _build_chat_service(
     source_gateway: object,
     snapshot_id: str,
     utc_now: Callable[[], object] | None = None,
+    market_snapshot_store: RecordedMarketSnapshotStore | None = None,
 ) -> ChatService:
     composer = None
     model_fingerprint = "disabled"
@@ -220,8 +242,9 @@ def _build_chat_service(
             snapshot_id=snapshot_id,
             model_fingerprint=model_fingerprint,
             live_llm_enabled=live_llm_enabled,
+            market_snapshot_store=market_snapshot_store,
         )
-    except (TypeError, ValueError):
+    except (MarketSnapshotStoreError, TypeError, ValueError):
         raise RuntimeConfigurationError(
             "runtime service configuration is invalid"
         ) from None

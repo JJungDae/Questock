@@ -14,7 +14,7 @@ def test_executable_m3_gate_runs_real_local_pipeline() -> None:
     assert report.critical_percentage == 100
     assert report.critical_failed_case_ids == ()
     assert report.exposure_count == 0
-    assert report.m3_12_status == "NOT_ACTIVATED"
+    assert report.m3_12_status == "ACTIVATED_IN_M5"
     assert set(report.capabilities) == CAPABILITIES
     assert report.failed_case_ids == ()
 

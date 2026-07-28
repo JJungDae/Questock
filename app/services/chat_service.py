@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import math
 import re
 import time
@@ -11,6 +12,7 @@ from typing import Callable
 from uuid import uuid4
 
 from app.answer.composer import AnswerComposer, CompositionResult
+from app.answer.models import AnswerSections
 from app.api.schemas import (
     ChatRequest,
     ChatResponse,
@@ -19,6 +21,7 @@ from app.api.schemas import (
     PublicDecisionSummary,
     PublicEvidencePipelineSummary,
     PublicGenerationSummary,
+    PublicMarketSnapshot,
     PublicProcessSummary,
     PublicQueryPlanSummary,
     PublicSecuritySummary,
@@ -28,6 +31,7 @@ from app.config import APPROVED_LLM_MODEL
 from app.core.models import (
     Evidence,
     FinancialDocument,
+    MarketSnapshot,
     QueryPlan,
     RetrievalRequest,
     RetrievalResult,
@@ -49,6 +53,11 @@ from app.retrieval import filter_evidence, retrieve_evidence
 from app.services.planning_observation import (
     PublicResolutionStatus,
     build_observed_query_plan,
+)
+from app.services.market_snapshot_schema import checkpoint_id
+from app.services.market_snapshot_store import (
+    MarketSnapshotStoreError,
+    RecordedMarketSnapshotStore,
 )
 from app.services.glossary_service import (
     GlossaryPipelineResult,
@@ -98,6 +107,29 @@ _FOCUS_QUERY_TERMS: dict[str, tuple[str, ...]] = {
     "research_view": ("리포트", "전망", "예상", "목표", "촉매", "위험"),
     "balanced": ("실적", "호재", "위험", "전망", "기술", "배당"),
     "term": (),
+    "price": (),
+    "price_move": (
+        "가격",
+        "상승",
+        "하락",
+        "배경",
+        "뉴스",
+        "공시",
+        "전망",
+        "위험",
+        "HBM",
+        "반도체",
+        "수주",
+        "공급",
+        "실적",
+        "제품",
+        "기술",
+        "투자",
+        "생산",
+        "판매",
+        "동맹",
+        "지분",
+    ),
 }
 
 
@@ -140,6 +172,7 @@ class ChatService:
         snapshot_id: str = "runtime-unconfigured",
         model_fingerprint: str = "disabled",
         live_llm_enabled: bool = False,
+        market_snapshot_store: RecordedMarketSnapshotStore | None = None,
     ) -> None:
         if (
             type(deadline_seconds) not in {int, float}
@@ -195,6 +228,7 @@ class ChatService:
         self._snapshot_id = snapshot_id
         self._model_fingerprint = model_fingerprint
         self._live_llm_enabled = live_llm_enabled
+        self._market_snapshot_store = market_snapshot_store
 
     async def chat(
         self,
@@ -205,16 +239,27 @@ class ChatService:
         if not isinstance(request, ChatRequest):
             raise ChatServiceError("chat request is invalid")
         try:
-            async with self._session_store.serialized(request.session_id):
+            basis_at = _request_basis_at(request, self._utc_now)
+            checkpoint = (
+                checkpoint_id(basis_at)
+                if request.as_of is not None
+                else "legacy"
+            )
+            session_id = _time_scoped_session_id(
+                request.session_id,
+                checkpoint,
+            )
+            async with self._session_store.serialized(session_id):
                 revision = self._session_store.revision(
-                    request.session_id
+                    session_id
                 )
                 cached = self._response_cache.get(
-                    session_id=request.session_id,
+                    session_id=session_id,
                     snapshot_id=self._snapshot_id,
                     question=request.message,
                     revision=revision,
                     model_fingerprint=self._model_fingerprint,
+                    checkpoint_id=checkpoint,
                 )
                 if cached is not None:
                     self._emit_cached_observation(cached.observation)
@@ -222,6 +267,9 @@ class ChatService:
                 return await self._chat_serialized(
                     request,
                     client_key=client_key,
+                    basis_at=basis_at,
+                    checkpoint=checkpoint,
+                    session_id=session_id,
                 )
         except ChatServiceError:
             raise
@@ -239,19 +287,41 @@ class ChatService:
         request: ChatRequest,
         *,
         client_key: str | None,
+        basis_at: datetime,
+        checkpoint: str,
+        session_id: str,
     ) -> ChatResponse:
         if not isinstance(request, ChatRequest):
             raise ChatServiceError("chat request is invalid")
-        basis_at = _aware_utc(self._utc_now())
         started_at = self._monotonic()
         try:
             observed = build_observed_query_plan(
                 request.message,
                 basis_date=basis_at.astimezone(SEOUL_TZ).date(),
                 resolver=self._resolver,
-                session=self._session_store.get(request.session_id),
+                session=self._session_store.get(session_id),
             )
             plan = observed.plan
+            market_snapshot = self._market_snapshot(
+                plan,
+                basis_at=basis_at,
+            )
+            if plan.intent == "price" and not plan.requires_clarification:
+                response = _build_price_only_response(
+                    plan=plan,
+                    snapshot=market_snapshot,
+                    basis_at=basis_at,
+                    resolution_status=observed.resolution_status,
+                    resolved_security_id=observed.security_id,
+                )
+                self._save_session_context(session_id, plan)
+                self._record_session_exchange(
+                    request=request,
+                    response=response,
+                    plan=plan,
+                    session_id=session_id,
+                )
+                return response
             call_budget = self._new_call_budget()
             if (
                 plan.intent == "financial_term"
@@ -293,7 +363,7 @@ class ChatService:
                 client_key=client_key,
                 conversation_context=(
                     self._session_store.conversation_context(
-                        request.session_id
+                        session_id
                     )
                 ),
             )
@@ -316,6 +386,7 @@ class ChatService:
                 resolved_security_id=observed.security_id,
                 deadline_exhausted=deadline_exhausted,
                 live_llm_enabled=self._live_llm_enabled,
+                market_snapshot=market_snapshot,
             )
             if self._deadline_reached(started_at):
                 deadline_exhausted = True
@@ -335,12 +406,14 @@ class ChatService:
                     resolved_security_id=observed.security_id,
                     deadline_exhausted=deadline_exhausted,
                     live_llm_enabled=self._live_llm_enabled,
+                    market_snapshot=market_snapshot,
                 )
-            self._save_session_context(request.session_id, plan)
+            self._save_session_context(session_id, plan)
             resulting_revision = self._record_session_exchange(
                 request=request,
                 response=response,
                 plan=plan,
+                session_id=session_id,
             )
             observation = self._emit_terminal_observation(
                 plan=plan,
@@ -352,19 +425,42 @@ class ChatService:
             )
             if resulting_revision is not None and observation is not None:
                 self._response_cache.put(
-                    session_id=request.session_id,
+                    session_id=session_id,
                     snapshot_id=self._snapshot_id,
                     question=request.message,
                     resulting_revision=resulting_revision,
                     model_fingerprint=self._model_fingerprint,
                     response=response,
                     observation=observation,
+                    checkpoint_id=checkpoint,
                 )
             return response
         except ChatServiceError:
             raise
         except Exception:
             raise ChatServiceError("chat service unavailable") from None
+
+    def _market_snapshot(
+        self,
+        plan: QueryPlan,
+        *,
+        basis_at: datetime,
+    ) -> MarketSnapshot | None:
+        if (
+            plan.intent not in {"price", "price_move"}
+            or plan.security is None
+            or self._market_snapshot_store is None
+        ):
+            return None
+        try:
+            return self._market_snapshot_store.get(
+                security_id=(
+                    f"{plan.security.market}:{plan.security.ticker}"
+                ),
+                as_of=basis_at,
+            )
+        except MarketSnapshotStoreError:
+            return None
 
     async def _source_data(
         self,
@@ -512,6 +608,7 @@ class ChatService:
         request: ChatRequest,
         response: ChatResponse,
         plan: QueryPlan,
+        session_id: str,
     ) -> int | None:
         try:
             security_id = (
@@ -520,7 +617,7 @@ class ChatService:
                 else None
             )
             return self._session_store.append_exchange(
-                request.session_id,
+                session_id,
                 user_question=request.message,
                 assistant_public_text=_assistant_memory_text(response),
                 status=response.status,
@@ -744,6 +841,7 @@ def _run_evidence_pipeline(
         security_id=_request_security_id(plan, documents),
         source_types=list(plan.required_sources),
         date_range=plan.date_range.model_copy(deep=True) if plan.date_range else None,
+        as_of=basis_at,
         top_k=10,
     )
     hard_filtered = tuple(
@@ -896,6 +994,7 @@ def _build_response(
     resolved_security_id: str | None,
     deadline_exhausted: bool,
     live_llm_enabled: bool,
+    market_snapshot: MarketSnapshot | None,
 ) -> ChatResponse:
     warnings = [item.code for item in pipeline.decision.warnings]
     if deadline_exhausted:
@@ -917,10 +1016,12 @@ def _build_response(
     response_status = pipeline.decision.status
     if response_status == "complete" and not composition.public_evidence:
         response_status = "no_evidence"
-    return ChatResponse(
+    response = ChatResponse(
         status=response_status,
         security=plan.security.model_copy(deep=True) if plan.security else None,
         basis_date=basis_at.astimezone(SEOUL_TZ).date(),
+        basis_at=basis_at,
+        market_snapshot=_public_market_snapshot(market_snapshot),
         answer_sections=composition.answer_sections.model_copy(deep=True),
         evidence=[
             item.model_copy(deep=True) for item in composition.public_evidence
@@ -929,6 +1030,9 @@ def _build_response(
         missing_sources=list(pipeline.decision.missing_sources),
         diagnostics_public=summary,
     )
+    if plan.intent == "price_move" and market_snapshot is not None:
+        return _attach_price_movement(response, market_snapshot)
+    return response
 
 
 def _build_process_summary(
@@ -1055,6 +1159,262 @@ def _assistant_memory_text(response: ChatResponse) -> str:
     if not text:
         raise ChatServiceError("chat response is invalid")
     return text
+
+
+def _request_basis_at(
+    request: ChatRequest,
+    utc_now: Callable[[], datetime],
+) -> datetime:
+    if request.as_of is not None:
+        return _aware_utc(request.as_of)
+    return _aware_utc(utc_now())
+
+
+def _time_scoped_session_id(
+    session_id: str,
+    checkpoint: str,
+) -> str:
+    if checkpoint == "legacy":
+        return session_id
+    digest = hashlib.sha256(
+        f"{session_id}\n{checkpoint}".encode("utf-8")
+    ).hexdigest()
+    return f"m5-{digest}"
+
+
+def _public_market_snapshot(
+    snapshot: MarketSnapshot | None,
+) -> PublicMarketSnapshot | None:
+    if (
+        snapshot is None
+        or snapshot.checkpoint_id is None
+        or snapshot.requested_as_of is None
+        or snapshot.market_code not in {"J", "NX", "UN"}
+        or snapshot.market_session
+        not in {
+            "pre_market",
+            "regular",
+            "after_market",
+            "after_close",
+            "closed",
+        }
+        or snapshot.market_status
+        not in {"open", "closed", "no_trade_yet", "no_data"}
+    ):
+        return None
+    return PublicMarketSnapshot(
+        checkpoint_id=snapshot.checkpoint_id,
+        requested_as_of=snapshot.requested_as_of,
+        observed_at=snapshot.observed_at,
+        price=snapshot.price,
+        previous_close=snapshot.previous_close,
+        change=snapshot.change,
+        change_percent=snapshot.change_percent,
+        volume=snapshot.volume,
+        market_code=snapshot.market_code,
+        market_session=snapshot.market_session,
+        market_status=snapshot.market_status,
+        currency="KRW",
+    )
+
+
+def _build_price_only_response(
+    *,
+    plan: QueryPlan,
+    snapshot: MarketSnapshot | None,
+    basis_at: datetime,
+    resolution_status: PublicResolutionStatus,
+    resolved_security_id: str | None,
+) -> ChatResponse:
+    public_snapshot = _public_market_snapshot(snapshot)
+    if snapshot is None or public_snapshot is None:
+        status = "provider_failed"
+        sections = AnswerSections(
+            summary=[
+                "선택한 기준 시점의 가격 자료를 확인하지 못했습니다."
+            ],
+            uncertainty=[
+                "기준 날짜와 시점을 다시 선택한 뒤 확인해 주세요."
+            ],
+        )
+        decision_status = "provider_failed"
+    else:
+        status = "complete"
+        sections = AnswerSections(
+            summary=[_price_summary_text(snapshot)],
+            facts=[_price_fact_text(snapshot)],
+            uncertainty=(
+                [_closed_market_text(snapshot)]
+                if snapshot.market_status == "closed"
+                else []
+            ),
+        )
+        decision_status = "complete"
+    process = _price_process_summary(
+        plan=plan,
+        resolution_status=resolution_status,
+        resolved_security_id=resolved_security_id,
+        decision_status=decision_status,
+        has_snapshot=public_snapshot is not None,
+    )
+    return ChatResponse(
+        status=status,
+        security=(
+            plan.security.model_copy(deep=True)
+            if plan.security is not None
+            else None
+        ),
+        basis_date=basis_at.astimezone(SEOUL_TZ).date(),
+        basis_at=basis_at,
+        market_snapshot=public_snapshot,
+        answer_sections=sections,
+        evidence=[],
+        warnings=[],
+        missing_sources=[],
+        diagnostics_public=process,
+    )
+
+
+def _price_process_summary(
+    *,
+    plan: QueryPlan,
+    resolution_status: PublicResolutionStatus,
+    resolved_security_id: str | None,
+    decision_status: str,
+    has_snapshot: bool,
+) -> PublicProcessSummary:
+    return PublicProcessSummary(
+        data_mode="recorded",
+        live_connectivity_checked=False,
+        security=PublicSecuritySummary(
+            resolution_status=resolution_status,
+            security_id=resolved_security_id,
+        ),
+        query_plan=PublicQueryPlanSummary(
+            intent=plan.intent,
+            required_sources=[],
+            date_start=plan.date_range.start if plan.date_range else None,
+            date_end=plan.date_range.end if plan.date_range else None,
+        ),
+        sources=[],
+        evidence_pipeline=PublicEvidencePipelineSummary(
+            normalized_count=0,
+            hard_filtered_count=0,
+            freshness_retained_count=0,
+            freshness_warning_codes=[],
+            retrieval_status="empty",
+            retrieval_selected_count=0,
+        ),
+        decision=PublicDecisionSummary(
+            evidence_decision_status=decision_status,
+            satisfied_sources=[],
+            missing_sources=[],
+            no_data_sources=[] if has_snapshot else [],
+            failed_sources=[],
+        ),
+        context_budget=PublicContextBudgetSummary(
+            input_count=0,
+            unique_count=0,
+            selected_count=0,
+            duplicate_drop_count=0,
+            source_cap_drop_count=0,
+            count_cap_drop_count=0,
+            context_drop_count=0,
+            estimated_context_tokens=0,
+            estimated_context_chars=0,
+        ),
+        citation=PublicCitationSummary(
+            claim_count=1 if has_snapshot else 0,
+            citation_count=0,
+            rejection_count=0,
+        ),
+        generation=PublicGenerationSummary(
+            mode="fixed_template",
+            llm_status=None,
+            model=None,
+            live_verified=False,
+        ),
+    )
+
+
+def _attach_price_movement(
+    response: ChatResponse,
+    snapshot: MarketSnapshot,
+) -> ChatResponse:
+    sections = response.answer_sections.model_copy(deep=True)
+    sections.summary = [
+        _price_summary_text(snapshot),
+        *sections.summary,
+    ]
+    sections.facts = [
+        _price_fact_text(snapshot),
+        *sections.facts,
+    ]
+    uncertainty = (
+        "확인된 자료는 가격 움직임의 가능한 배경 요인입니다. "
+        "하나의 원인으로 단정할 수 없습니다."
+    )
+    if uncertainty not in sections.uncertainty:
+        sections.uncertainty.append(uncertainty)
+    if snapshot.market_status == "closed":
+        closed_notice = _closed_market_text(snapshot)
+        if closed_notice not in sections.uncertainty:
+            sections.uncertainty.append(closed_notice)
+    return response.model_copy(
+        deep=True,
+        update={
+            "status": (
+                "partial"
+                if response.status
+                in {"no_evidence", "provider_failed"}
+                else response.status
+            ),
+            "answer_sections": sections,
+        },
+    )
+
+
+def _price_summary_text(snapshot: MarketSnapshot) -> str:
+    direction = (
+        "상승"
+        if snapshot.change > 0
+        else "하락"
+        if snapshot.change < 0
+        else "보합"
+    )
+    return (
+        f"{_kst_label(snapshot.observed_at)} 관측 가격은 "
+        f"{_won(snapshot.price)}원으로, 전 거래일 KRX 종가 대비 "
+        f"{direction}했습니다."
+    )
+
+
+def _price_fact_text(snapshot: MarketSnapshot) -> str:
+    sign = "+" if snapshot.change > 0 else ""
+    return (
+        f"가격 {_won(snapshot.price)}원 · 전일 종가 "
+        f"{_won(snapshot.previous_close)}원 · 변동 "
+        f"{sign}{_won(snapshot.change)}원 "
+        f"({sign}{snapshot.change_percent:.2f}%)"
+    )
+
+
+def _closed_market_text(snapshot: MarketSnapshot) -> str:
+    return (
+        "선택한 시점에는 시장이 닫혀 있어 "
+        f"{_kst_label(snapshot.observed_at)}의 마지막 실제 체결을 "
+        "표시했습니다."
+    )
+
+
+def _kst_label(value: datetime) -> str:
+    return value.astimezone(SEOUL_TZ).strftime(
+        "%Y-%m-%d %H:%M KST"
+    )
+
+
+def _won(value: float) -> str:
+    return f"{value:,.0f}"
 
 
 def _aware_utc(value: object) -> datetime:

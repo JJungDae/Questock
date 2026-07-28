@@ -89,6 +89,21 @@ class MarketSnapshot(QuestockModel):
     market_session: str
     currency: str
     source: str
+    checkpoint_id: str | None = None
+    requested_as_of: datetime | None = None
+    market_code: str | None = None
+    market_status: str | None = None
+
+    @model_validator(mode="after")
+    def validate_checkpoint_time(self) -> "MarketSnapshot":
+        if (
+            self.requested_as_of is not None
+            and self.observed_at > self.requested_as_of
+        ):
+            raise ValueError(
+                "market snapshot observed_at must not exceed requested_as_of"
+            )
+        return self
 
 
 class FinancialDocument(QuestockModel):
@@ -207,6 +222,7 @@ class RetrievalRequest(QuestockModel):
     security_id: str
     source_types: list[str]
     date_range: DateRange | None = None
+    as_of: datetime | None = None
     document_types: list[str] | None = None
     top_k: int = Field(default=6, gt=0)
 

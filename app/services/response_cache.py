@@ -39,6 +39,7 @@ class _CacheKey:
     question_digest: str
     revision: int
     model_fingerprint: str
+    checkpoint_id: str
 
 
 @dataclass
@@ -103,6 +104,7 @@ class ResponseCache:
         question: str,
         revision: int,
         model_fingerprint: str,
+        checkpoint_id: str = "legacy",
     ) -> CachedResponse | None:
         if not self._enabled:
             return None
@@ -112,6 +114,7 @@ class ResponseCache:
             question=question,
             revision=revision,
             model_fingerprint=model_fingerprint,
+            checkpoint_id=checkpoint_id,
         )
         now = self._now()
         self._purge_expired(now)
@@ -134,6 +137,7 @@ class ResponseCache:
         model_fingerprint: str,
         response: ChatResponse,
         observation: RequestObservation,
+        checkpoint_id: str = "legacy",
     ) -> None:
         if not self._enabled:
             return
@@ -148,6 +152,7 @@ class ResponseCache:
             question=question,
             revision=resulting_revision,
             model_fingerprint=model_fingerprint,
+            checkpoint_id=checkpoint_id,
         )
         now = self._now()
         self._purge_expired(now)
@@ -180,6 +185,7 @@ class ResponseCache:
                 item.question_digest,
                 item.revision,
                 item.model_fingerprint,
+                item.checkpoint_id,
             ),
         )
         del self._entries[key]
@@ -216,6 +222,7 @@ def _cache_key(
     question: object,
     revision: object,
     model_fingerprint: object,
+    checkpoint_id: object = "legacy",
 ) -> _CacheKey:
     if (
         not isinstance(session_id, str)
@@ -227,6 +234,8 @@ def _cache_key(
         or not _SAFE_TOKEN.fullmatch(snapshot_id)
         or not isinstance(model_fingerprint, str)
         or not _SAFE_TOKEN.fullmatch(model_fingerprint)
+        or not isinstance(checkpoint_id, str)
+        or not _SAFE_TOKEN.fullmatch(checkpoint_id)
         or type(revision) is not int
         or revision < 0
         or not isinstance(question, str)
@@ -246,6 +255,7 @@ def _cache_key(
         ).hexdigest(),
         revision=revision,
         model_fingerprint=model_fingerprint,
+        checkpoint_id=checkpoint_id,
     )
 
 

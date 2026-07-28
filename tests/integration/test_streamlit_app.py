@@ -3,12 +3,14 @@ from __future__ import annotations
 import asyncio
 from datetime import UTC, datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from streamlit.testing.v1 import AppTest
 
 from app.api.schemas import ChatRequest
 from app.core.models import Evidence
 from app.services.chat_service import ChatService
+from app.services.market_snapshot_store import RecordedMarketSnapshotStore
 NOW = datetime(2026, 7, 25, 3, tzinfo=UTC)
 
 
@@ -65,7 +67,16 @@ def test_app_initial_render_has_expected_shell() -> None:
 
     assert not app.exception
     assert app.title[0].value == "Questock"
-    assert not app.selectbox
+    assert len(app.selectbox) == 2
+    assert app.selectbox[0].label == "기준 날짜"
+    assert app.selectbox[1].label == "기준 시점"
+    assert list(app.selectbox[0].options) == [
+        "2026-07-24",
+        "2026-07-25",
+        "2026-07-26",
+        "2026-07-27",
+    ]
+    assert len(app.selectbox[1].options) == 5
     assert len(app.chat_input) == 1
     assert (
         app.chat_input[0].proto.placeholder
@@ -73,8 +84,11 @@ def test_app_initial_render_has_expected_shell() -> None:
     )
     captions = "\n".join(item.value for item in app.caption)
     assert "Snapshot ID: svc-20260724-1402" in captions
-    assert "기준 시점: 2026-07-24 14:02 KST" in captions
-    assert "뉴스 수집 범위: 2026-07-24 00:00~14:00 KST" in captions
+    assert "선택 기준 시점: 2026-07-27 14:00 KST" in captions
+    assert (
+        "뉴스 수집 범위: 2026-07-24 00:00~2026-07-27 23:59 KST"
+        in captions
+    )
     assert "자료 모드: recorded" in captions
     assert "Gemini 3.5 Flash 또는 근거 기반 고정 응답" in captions
     assert "외부 LLM 전송 안 함" in captions
@@ -95,6 +109,25 @@ def test_app_initial_render_has_expected_shell() -> None:
     )
 
 
+def _price_response():
+    return asyncio.run(
+        ChatService(
+            market_snapshot_store=RecordedMarketSnapshotStore(),
+        ).chat(
+            ChatRequest(
+                message="삼성전자 현재 주가 얼마야?",
+                session_id="streamlit-price",
+                as_of=datetime(
+                    2026,
+                    7,
+                    24,
+                    21,
+                    0,
+                    tzinfo=ZoneInfo("Asia/Seoul"),
+                ),
+            )
+        )
+    )
 def test_app_submit_uses_injected_transport_and_renders_process() -> None:
     transport = FakeTransport(_response())
     app = AppTest.from_function(_app, args=(transport,)).run()
@@ -105,6 +138,14 @@ def test_app_submit_uses_injected_transport_and_renders_process() -> None:
     assert len(transport.requests) == 1
     assert transport.requests[0].message == "삼성전자 최근 뉴스"
     assert transport.requests[0].session_id.startswith("anonymous-")
+    assert transport.requests[0].as_of == datetime(
+        2026,
+        7,
+        27,
+        14,
+        0,
+        tzinfo=ZoneInfo("Asia/Seoul"),
+    )
     assert transport.timeouts == [35.0]
     assert app.chat_input[0].value in {None, ""}
     assert not app.get("spinner")
@@ -189,6 +230,23 @@ def test_app_provider_failure_uses_stable_red_fallback_and_mode() -> None:
     visible_text = "\n".join(item.value for item in app.text)
     assert "자료 제공 경로가 구성되지 않았거나 이용 불가" in visible_text
     assert "provider_unavailable" not in visible_text
+
+
+def test_app_renders_selected_time_market_status_and_observation_time() -> None:
+    transport = FakeTransport(_price_response())
+    app = AppTest.from_function(_app, args=(transport,)).run()
+
+    _submit(app, "삼성전자 현재 주가 얼마야?")
+
+    assert not app.exception
+    captions = "\n".join(item.value for item in app.caption)
+    assert "기준 시점 2026-07-24 21:00 KST" in captions
+    assert "시장 상태 장 종료·휴장" in captions
+    assert "가격 관측 2026-07-24 19:59 KST" in captions
+    rendered = "\n".join(
+        item.value for item in app.markdown
+    )
+    assert "252,500원" in rendered
 
 
 def test_app_renders_malicious_html_as_text_not_markdown() -> None:
@@ -277,6 +335,28 @@ def test_app_rerun_without_submit_never_calls_transport() -> None:
 
     assert not app.exception
     assert transport.requests == []
+
+
+def test_changing_checkpoint_clears_visible_conversation_and_session() -> None:
+    transport = FakeTransport(_response())
+    app = AppTest.from_function(_app, args=(transport,)).run()
+    _submit(app, "삼성전자 최근 뉴스")
+    first_session_id = transport.requests[-1].session_id
+
+    app.selectbox[1].select("장중 (10:00)").run()
+
+    assert not app.exception
+    assert not app.chat_message
+    _submit(app, "삼성전자 현재 주가 얼마야?")
+    assert transport.requests[-1].session_id != first_session_id
+    assert transport.requests[-1].as_of == datetime(
+        2026,
+        7,
+        27,
+        10,
+        0,
+        tzinfo=ZoneInfo("Asia/Seoul"),
+    )
 
 
 def test_app_renders_conflict_cards_and_three_safe_sources() -> None:

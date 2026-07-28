@@ -133,7 +133,7 @@ def test_transport_sends_only_opaque_client_key_in_internal_header() -> None:
     }
     assert opener.request.get_header("X-questock-client-key") == client_key
     assert json.loads(opener.request.data.decode("utf-8")) == (
-        _chat_request().model_dump(mode="json")
+        _chat_request().model_dump(mode="json", exclude_none=True)
     )
     assert "2001:db8::1" not in client_key
     assert "ui-unit" not in client_key

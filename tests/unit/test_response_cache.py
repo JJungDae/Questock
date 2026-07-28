@@ -54,6 +54,7 @@ def _put(
     session_id: str = "session-a",
     question: str = "삼성전자 최근 뉴스",
     revision: int = 1,
+    checkpoint_id: str = "legacy",
 ) -> None:
     cache.put(
         session_id=session_id,
@@ -63,6 +64,7 @@ def _put(
         model_fingerprint="a" * 64,
         response=_response(),
         observation=_observation(),
+        checkpoint_id=checkpoint_id,
     )
 
 
@@ -72,6 +74,7 @@ def _get(
     session_id: str = "session-a",
     question: str = "삼성전자 최근 뉴스",
     revision: int = 1,
+    checkpoint_id: str = "legacy",
 ):
     return cache.get(
         session_id=session_id,
@@ -79,6 +82,7 @@ def _get(
         question=question,
         revision=revision,
         model_fingerprint="a" * 64,
+        checkpoint_id=checkpoint_id,
     )
 
 
@@ -112,6 +116,20 @@ def test_question_normalization_hits_but_session_isolation_is_exact() -> None:
 
     assert _get(cache, question="삼성전자 최근 뉴스") is not None
     assert _get(cache, session_id="session-b") is None
+
+
+def test_checkpoint_identity_prevents_earlier_context_cache_hit() -> None:
+    cache = ResponseCache(enabled=True)
+    _put(cache, checkpoint_id="20260727T1400KST")
+
+    assert (
+        _get(cache, checkpoint_id="20260727T1400KST")
+        is not None
+    )
+    assert (
+        _get(cache, checkpoint_id="20260727T1000KST")
+        is None
+    )
 
 
 def test_ttl_boundary_never_returns_stale_value() -> None:

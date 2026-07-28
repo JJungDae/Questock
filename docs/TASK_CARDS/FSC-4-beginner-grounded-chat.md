@@ -466,9 +466,11 @@ Publication status:
   `edb46ae` (`Polish FSC-4 answers and plan M5`)
 - remote branch:
   `fix/fsc4-answer-presentation-polish` — pushed
-- draft PR:
-  `#18` — <https://github.com/JJungDae/Questock/pull/18>
+- PR:
+  `#18` — `MERGED` — <https://github.com/JJungDae/Questock/pull/18>
+- merge SHA:
+  `6f50ee922c2a1c74278ead2f679472ba3e19bc8b`
 - focused publish-preflight regression:
   `85 passed, 2 warnings`
-- PR CI: `NOT_REPORTED`
-- merge and deployment: `NOT_STARTED`
+- quality-gate run `30323480083`: `PASS`
+- deployment: `NOT_STARTED`
