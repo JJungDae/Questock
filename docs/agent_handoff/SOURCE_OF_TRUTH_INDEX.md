@@ -175,7 +175,7 @@ FSC-4 post-deployment answer-presentation follow-up:
 local PASS; implementation commit `edb46ae`; remote branch pushed;
 draft PR #18 OPEN
 <https://github.com/JJungDae/Questock/pull/18>;
-focused publish-preflight `85 passed, 2 warnings`; PR CI PENDING;
+focused publish-preflight `85 passed, 2 warnings`; PR CI NOT_REPORTED;
 merge and deployment NOT_STARTED
 
 SC-06 verification:

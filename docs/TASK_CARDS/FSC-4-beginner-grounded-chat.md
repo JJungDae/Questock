@@ -470,5 +470,5 @@ Publication status:
   `#18` — <https://github.com/JJungDae/Questock/pull/18>
 - focused publish-preflight regression:
   `85 passed, 2 warnings`
-- PR CI: `PENDING`
+- PR CI: `NOT_REPORTED`
 - merge and deployment: `NOT_STARTED`
