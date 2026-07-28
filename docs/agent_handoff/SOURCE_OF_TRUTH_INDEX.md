@@ -1,11 +1,11 @@
 # QUESTOCK SOURCE OF TRUTH INDEX
 
 > 기준일: 2026-07-28
-> 기준 branch: canonical `main`; deployed runtime release `824f06f014415fd66ad9bbd1c9743f03be02efcc`
+> 기준 branch: canonical `main`; deployed runtime release `c96008229cae34c4c3243a4cbfe099c98cc594c5`
 > Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
 > Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
 > B9 planning base: `b9ddf7461306d16cf1da14634ce458050d78f7bc`
-> 상태: `B9 PASS / M4 Gate PASS / FSC-0~FSC-4 PASS / complete; M5-01 PASS / DEPLOYED / COMPLETE at 824f06f014415fd66ad9bbd1c9743f03be02efcc`
+> 상태: `B9 PASS / M4 Gate PASS / FSC-0~FSC-4 PASS / complete; M5-01 PASS / DEPLOYED / COMPLETE; M5-01-HR1 PASS / DEPLOYED / COMPLETE at c96008229cae34c4c3243a4cbfe099c98cc594c5`
 
 ## 1. 목적
 
@@ -63,17 +63,17 @@ PASS / complete
 Task Card 사실 동기화 완료, B6-0에서 상태 확인
 
 현재 완료 bundle:
-B9, First Service Completion, M5-01
+B9, First Service Completion, M5-01, M5-01-HR1
 
 현재 공식 bundle:
-M5-01-HR1 Hybrid Intent Router -
-INDEPENDENT REVIEW PASS / DEPLOYMENT AUTHORIZED
+Human Owner differentiation decision -
+candidate: `As-of Replay / 시점 비교 답변`
 
 현재 checkpoint:
-M5-01 post-deployment answer-quality closure
-LOCAL PASS / HUMAN OWNER APPROVED;
-M5-01-HR1 local implementation and validation complete;
-independent review fix closed; release execution in progress
+M5-01-HR1 Hybrid Intent Router
+PASS / DEPLOYED / COMPLETE;
+production browser verification PASS;
+Human Owner 직접 확인 가능
 
 M5-01 실행 기준:
 docs/TASK_CARDS/M5-01-as-of-price-grounded-answer.md
@@ -295,7 +295,23 @@ affected regression `164 passed`, full regression `2158 passed`, Ruff and
 compile PASS, M3 Gate `34/34`, Critical `17/17`, public exposure `0`, tracked
 and new-file secret scans findings `[]`, diff check PASS;
 Human Owner authorized GitHub publication, merge, and deployment on
-`2026-07-28`; release execution in progress
+`2026-07-28`;
+implementation commit `2eb29bd8e090e0a950238f95a394470ed33723fb`;
+PR `#24`, merge/release SHA
+`c96008229cae34c4c3243a4cbfe099c98cc594c5`;
+PR quality-gate run `30338001377` PASS;
+merged-main quality-gate run `30338154423` PASS;
+deployment run `30338271294` PASS;
+release image
+`sha256:ca844177af644501e28406012f22c5d91d08f1bea0afb6658ce0c4c319373602`;
+API/UI health, external UI health, and recorded 7-scenario smoke PASS;
+rollback target
+`824f06f014415fd66ad9bbd1c9743f03be02efcc` /
+`sha256:b91c9ec9bf6cada77167c68606a565c0854f06ac168fa4d9f321934c5e9df42a`;
+rollback execution `NOT_RUN` because deployment passed;
+production browser verified ambiguous risk routing, explicit price routing,
+answer completion/loading cleanup, and cleared question input;
+M5-01-HR1 `PASS / DEPLOYED / COMPLETE`
 
 Competitive differentiation review:
 `docs/agent_handoff/COMPETITIVE_DIFFERENTIATION_REVIEW_2026-07-28.md`;
@@ -313,7 +329,8 @@ B6 완료 SHA:
 60e6203b265a967a8b6ba45da2ba3128e1e1bcfe
 
 다음 공식 checkpoint:
-Human Owner deployed-UI feedback;
+Human Owner differentiation decision;
+leading candidate `As-of Replay / 시점 비교 답변`;
 new implementation checkpoint not declared
 
 B9 계획:
@@ -430,6 +447,9 @@ docs/TASK_CARDS/B9-release-deployment-traceability.md
 docs/TASK_CARDS/M5-01-as-of-price-grounded-answer.md
 
 current:
+Human Owner differentiation decision
+
+completed M5 extension:
 docs/TASK_CARDS/M5-01-hybrid-intent-router.md
 
 completed FSC execution standard:
@@ -439,8 +459,8 @@ current execution decision:
 docs/agent_handoff/FIRST_SERVICE_COMPLETION_EXECUTION_DECISION_2026-07-27.md
 
 next:
-M5-01-HR1 release execution and production verification;
-then Human Owner differentiation decision
+Human Owner selects the differentiation scope;
+then create its bounded Task Card before implementation
 ```
 
 ## 6. 금지
