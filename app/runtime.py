@@ -20,6 +20,10 @@ from app.services.demo_source_gateway import (
 )
 from app.services.glossary_service import GlossaryService
 from app.services.hybrid_intent_router import HybridIntentRouter
+from app.services.m5_d1_evidence_comparison import (
+    M5D1EvidenceComparisonError,
+    M5D1EvidenceComparisonStore,
+)
 from app.services.m5_news_snapshot import M5NewsSnapshotError
 from app.services.m5_source_gateway import M5RecordedSourceGateway
 from app.services.market_snapshot_store import (
@@ -49,7 +53,7 @@ _REQUEST_PROTECTION_ENV = "QUESTOCK_REQUEST_PROTECTION_ENABLED"
 _RESPONSE_CACHE_ENV = "QUESTOCK_RESPONSE_CACHE_ENABLED"
 _HYBRID_ROUTER_ENV = "QUESTOCK_HYBRID_ROUTER_ENABLED"
 _RUNTIME_VERSION = "b9-recorded-v1"
-_M5_RUNTIME_DATA_VERSION = "m5-01-v1-c963ba0d-438138c4"
+_M5_RUNTIME_DATA_VERSION = "m5-d1-v2-evidence-crosscheck"
 
 
 class RuntimeConfigurationError(ValueError):
@@ -189,6 +193,12 @@ def build_runtime(
         raise RuntimeConfigurationError(
             "recorded market data is invalid"
         ) from None
+    try:
+        evidence_comparison_store = M5D1EvidenceComparisonStore()
+    except M5D1EvidenceComparisonError:
+        raise RuntimeConfigurationError(
+            "recorded M5-D1 comparison data is invalid"
+        ) from None
     service = _build_chat_service(
         config=canonical_config,
         source_gateway=gateway,
@@ -198,6 +208,7 @@ def build_runtime(
         ),
         utc_now=lambda: basis_at,
         market_snapshot_store=market_snapshot_store,
+        evidence_comparison_store=evidence_comparison_store,
     )
     return RuntimeState(
         config=canonical_config,
@@ -213,6 +224,7 @@ def _build_chat_service(
     snapshot_id: str,
     utc_now: Callable[[], object] | None = None,
     market_snapshot_store: RecordedMarketSnapshotStore | None = None,
+    evidence_comparison_store: M5D1EvidenceComparisonStore | None = None,
 ) -> ChatService:
     composer = None
     intent_router = HybridIntentRouter()
@@ -263,6 +275,7 @@ def _build_chat_service(
             live_llm_enabled=live_llm_enabled,
             market_snapshot_store=market_snapshot_store,
             intent_router=intent_router,
+            evidence_comparison_store=evidence_comparison_store,
         )
     except (MarketSnapshotStoreError, TypeError, ValueError):
         raise RuntimeConfigurationError(

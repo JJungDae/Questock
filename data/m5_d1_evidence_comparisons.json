@@ -1,0 +1,1516 @@
+{
+  "built_at": "2026-07-28T12:51:40.289001Z",
+  "disclosure_backgrounds": [
+    {
+      "link_basis": "verified_body_fact",
+      "security_id": "KRX:005930",
+      "source": {
+        "published_at": "2026-05-14T15:00:00Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260515002181",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002181",
+        "title": "삼성전자 공시 핵심: 분기보고서 (제58기)"
+      },
+      "source_locator": "PDF 53쪽 · III. 재무에 관한 사항 > 1. 요약재무정보 > 가. 요약연결재무정보",
+      "text": "2026년 1분기 연결 매출액은 133,873,444백만원이다.",
+      "topics": [
+        "1분기",
+        "매출",
+        "실적"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "verified_body_fact",
+      "security_id": "KRX:005930",
+      "source": {
+        "published_at": "2026-05-14T15:00:00Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260515002181",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002181",
+        "title": "삼성전자 공시 핵심: 분기보고서 (제58기)"
+      },
+      "source_locator": "PDF 53쪽 · III. 재무에 관한 사항 > 1. 요약재무정보 > 가. 요약연결재무정보",
+      "text": "2026년 1분기 연결 영업이익은 57,232,797백만원이다.",
+      "topics": [
+        "1분기",
+        "실적",
+        "영업이익"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "verified_body_fact",
+      "security_id": "KRX:005930",
+      "source": {
+        "published_at": "2026-05-14T15:00:00Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260515002181",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002181",
+        "title": "삼성전자 공시 핵심: 분기보고서 (제58기)"
+      },
+      "source_locator": "PDF 52쪽 · II. 사업의 내용 > 7. 기타 참고사항 > 라. 사업부문별 요약 재무 현황",
+      "text": "2026년 1분기 DS 부문 매출액은 817,156억원이다.",
+      "topics": [
+        "1분기",
+        "매출",
+        "실적"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "verified_body_fact",
+      "security_id": "KRX:005930",
+      "source": {
+        "published_at": "2026-05-14T15:00:00Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260515002181",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002181",
+        "title": "삼성전자 공시 핵심: 분기보고서 (제58기)"
+      },
+      "source_locator": "PDF 52쪽 · II. 사업의 내용 > 7. 기타 참고사항 > 라. 사업부문별 요약 재무 현황",
+      "text": "2026년 1분기 DS 부문 영업이익은 536,633억원이다.",
+      "topics": [
+        "1분기",
+        "실적",
+        "영업이익"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "verified_body_fact",
+      "security_id": "KRX:005930",
+      "source": {
+        "published_at": "2026-05-14T15:00:00Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260515002181",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002181",
+        "title": "삼성전자 공시 핵심: 분기보고서 (제58기)"
+      },
+      "source_locator": "PDF 18쪽 · II. 사업의 내용 > 4. 매출 및 수주상황 > 가. 매출실적 > (1) 주요 제품별 매출실적",
+      "text": "2026년 1분기 메모리 제품 매출실적은 747,800억원이다.",
+      "topics": [
+        "1분기",
+        "생산",
+        "판매"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "verified_body_fact",
+      "security_id": "KRX:005930",
+      "source": {
+        "published_at": "2026-05-14T15:00:00Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260515002181",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002181",
+        "title": "삼성전자 공시 핵심: 분기보고서 (제58기)"
+      },
+      "source_locator": "PDF 16쪽 · II. 사업의 내용 > 3. 원재료 및 생산설비 > 라. 생산설비 및 투자 현황 등 > 시설투자 현황",
+      "text": "2026년 1분기 시설투자 합계는 112,332억원이다.",
+      "topics": [
+        "1분기",
+        "생산",
+        "시설투자",
+        "투자"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "verified_body_fact",
+      "security_id": "KRX:005930",
+      "source": {
+        "published_at": "2026-05-14T15:00:00Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260515002181",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002181",
+        "title": "삼성전자 공시 핵심: 분기보고서 (제58기)"
+      },
+      "source_locator": "PDF 23쪽 · II. 사업의 내용 > 5. 위험관리 및 파생거래 > 나. 주요 재무위험관리 > (1) 시장위험 > 환율변동위험",
+      "text": "회사는 USD와 EUR 등을 중심으로 환율변동위험에 노출되어 있으며, 위험을 줄이더라도 완전히 제거되지 않을 수 있다고 기재했다.",
+      "topics": [
+        "불확실성",
+        "위험",
+        "환율"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "verified_body_fact",
+      "security_id": "KRX:005930",
+      "source": {
+        "published_at": "2026-05-14T15:00:00Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260515002181",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002181",
+        "title": "삼성전자 공시 핵심: 분기보고서 (제58기)"
+      },
+      "source_locator": "PDF 21쪽 · II. 사업의 내용 > 4. 매출 및 수주상황 > 바. 수주상황",
+      "text": "DS부문 Foundry 사업부는 Tesla와 반도체 위탁생산 계약을 체결했으며 수주총액은 16,544백만 달러이다.",
+      "topics": [
+        "계약",
+        "반도체",
+        "사업",
+        "수주",
+        "테슬라",
+        "파운드리"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "verified_body_fact",
+      "security_id": "KRX:005930",
+      "source": {
+        "published_at": "2026-05-14T15:00:00Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260515002181",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002181",
+        "title": "삼성전자 공시 핵심: 분기보고서 (제58기)"
+      },
+      "source_locator": "PDF 31쪽 · II. 사업의 내용 > 6. 주요계약 및 연구개발활동 > 라. 연구개발실적 > DS 부문 > HBM",
+      "text": "DS 부문은 1c D램과 4나노 베이스 다이를 적용한 HBM4의 양산 출하를 연구개발 실적으로 기재했다.",
+      "topics": [
+        "d램",
+        "hbm4",
+        "기술",
+        "제품"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "verified_body_fact",
+      "security_id": "KRX:000660",
+      "source": {
+        "published_at": "2026-05-14T15:00:00Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260515002287",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002287",
+        "title": "SK하이닉스 공시 핵심: 분기보고서 (제79기)"
+      },
+      "source_locator": "PDF 36쪽 · III. 재무에 관한 사항 > 2. 연결재무제표 > 2-2. 연결 포괄손익계산서",
+      "text": "2026년 1분기 연결 매출액은 52,576,287백만원이다.",
+      "topics": [
+        "1분기",
+        "매출",
+        "실적"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "verified_body_fact",
+      "security_id": "KRX:000660",
+      "source": {
+        "published_at": "2026-05-14T15:00:00Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260515002287",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002287",
+        "title": "SK하이닉스 공시 핵심: 분기보고서 (제79기)"
+      },
+      "source_locator": "PDF 37쪽 · III. 재무에 관한 사항 > 2. 연결재무제표 > 2-2. 연결 포괄손익계산서",
+      "text": "2026년 1분기 연결 영업이익은 37,610,283백만원이다.",
+      "topics": [
+        "1분기",
+        "실적",
+        "영업이익"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "verified_body_fact",
+      "security_id": "KRX:000660",
+      "source": {
+        "published_at": "2026-05-14T15:00:00Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260515002287",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002287",
+        "title": "SK하이닉스 공시 핵심: 분기보고서 (제79기)"
+      },
+      "source_locator": "PDF 91쪽 · III. 재무에 관한 사항 > 3. 연결재무제표 주석 > 21. 매출액 (연결) > 품목별 구분",
+      "text": "2026년 1분기 DRAM 매출액은 40,658,636백만원이다.",
+      "topics": [
+        "1분기",
+        "d램",
+        "매출",
+        "실적"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "verified_body_fact",
+      "security_id": "KRX:000660",
+      "source": {
+        "published_at": "2026-05-14T15:00:00Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260515002287",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002287",
+        "title": "SK하이닉스 공시 핵심: 분기보고서 (제79기)"
+      },
+      "source_locator": "PDF 25쪽 · II. 사업의 내용 > 7. 기타 참고사항 > 나. 회사의 현황 > 1. 영업개황 및 사업부문의 구분",
+      "text": "단일 반도체 부문 기준 2026년 1분기 영업이익률은 72%로 기재됐다.",
+      "topics": [
+        "1분기",
+        "반도체",
+        "실적",
+        "영업이익"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "verified_body_fact",
+      "security_id": "KRX:000660",
+      "source": {
+        "published_at": "2026-05-14T15:00:00Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260515002287",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002287",
+        "title": "SK하이닉스 공시 핵심: 분기보고서 (제79기)"
+      },
+      "source_locator": "PDF 14쪽 · II. 사업의 내용 > 3. 원재료 및 생산설비 > 다. 생산능력 및 생산능력의 산출근거 > 2. 생산실적 및 가동률",
+      "text": "2026년 1분기 반도체 생산실적은 11,465,147백만원이다.",
+      "topics": [
+        "1분기",
+        "반도체",
+        "생산",
+        "판매"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "verified_body_fact",
+      "security_id": "KRX:000660",
+      "source": {
+        "published_at": "2026-05-14T15:00:00Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260515002287",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002287",
+        "title": "SK하이닉스 공시 핵심: 분기보고서 (제79기)"
+      },
+      "source_locator": "PDF 15쪽 · II. 사업의 내용 > 3. 원재료 및 생산설비 > 4. 투자계획(현황)",
+      "text": "2026년 1분기 유형자산 취득 기준 투자집행액은 7,348십억원이다.",
+      "topics": [
+        "1분기",
+        "생산",
+        "시설투자",
+        "투자"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "verified_body_fact",
+      "security_id": "KRX:000660",
+      "source": {
+        "published_at": "2026-05-14T15:00:00Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260515002287",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002287",
+        "title": "SK하이닉스 공시 핵심: 분기보고서 (제79기)"
+      },
+      "source_locator": "PDF 51쪽 · III. 재무에 관한 사항 > 3. 연결재무제표 주석 > 6. 금융위험관리 (연결) > 환위험 민감도",
+      "text": "USD 환율이 10% 상승하면 연결 세전이익이 2,953,682백만원 증가하고, 10% 하락하면 같은 금액 감소한다.",
+      "topics": [
+        "불확실성",
+        "위험",
+        "환율"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "verified_body_fact",
+      "security_id": "KRX:000660",
+      "source": {
+        "published_at": "2026-05-14T15:00:00Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260515002287",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002287",
+        "title": "SK하이닉스 공시 핵심: 분기보고서 (제79기)"
+      },
+      "source_locator": "PDF 20쪽 · II. 사업의 내용 > 6. 주요계약 및 연구개발활동 > 가. 주요 계약",
+      "text": "Intel NAND 사업 영업양수도는 2025년 3월 28일 최종 종결됐다.",
+      "topics": [
+        "계약",
+        "사업",
+        "수주"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "verified_body_fact",
+      "security_id": "KRX:000660",
+      "source": {
+        "published_at": "2026-05-14T15:00:00Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260515002287",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002287",
+        "title": "SK하이닉스 공시 핵심: 분기보고서 (제79기)"
+      },
+      "source_locator": "PDF 21쪽 · II. 사업의 내용 > 6. 주요계약 및 연구개발활동 > 다. 연구개발 실적 > 모바일용 DRAM",
+      "text": "1cnm 16Gb LPDDR6 제품은 최대 10.7Gbps 동작속도를 구현할 수 있다고 공시됐다.",
+      "topics": [
+        "d램",
+        "기술",
+        "제품"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "verified_body_fact",
+      "security_id": "KRX:005380",
+      "source": {
+        "published_at": "2026-05-14T15:00:00Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260515002418",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002418",
+        "title": "현대자동차 공시 핵심: 분기보고서 (제59기 1분기)"
+      },
+      "source_locator": "PDF 46쪽 · III. 재무에 관한 사항 > 2. 연결재무제표 > 2-2. 연결 손익계산서",
+      "text": "2026년 1분기 연결 매출액은 45,938,886백만원이다.",
+      "topics": [
+        "1분기",
+        "매출",
+        "실적"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "verified_body_fact",
+      "security_id": "KRX:005380",
+      "source": {
+        "published_at": "2026-05-14T15:00:00Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260515002418",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002418",
+        "title": "현대자동차 공시 핵심: 분기보고서 (제59기 1분기)"
+      },
+      "source_locator": "PDF 47쪽 · III. 재무에 관한 사항 > 2. 연결재무제표 > 2-2. 연결 손익계산서",
+      "text": "2026년 1분기 연결 영업이익은 2,514,686백만원이다.",
+      "topics": [
+        "1분기",
+        "실적",
+        "영업이익"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "verified_body_fact",
+      "security_id": "KRX:005380",
+      "source": {
+        "published_at": "2026-05-14T15:00:00Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260515002418",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002418",
+        "title": "현대자동차 공시 핵심: 분기보고서 (제59기 1분기)"
+      },
+      "source_locator": "PDF 14쪽 · II. 사업의 내용 > 4. (제조서비스업)매출 및 수주상황 > 가. 매출실적 > ② 현대자동차 매출현황(별도기준)",
+      "text": "현대자동차 별도기준 2026년 1분기 RV 매출은 9,565,448백만원이다.",
+      "topics": [
+        "1분기",
+        "생산",
+        "판매"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "verified_body_fact",
+      "security_id": "KRX:005380",
+      "source": {
+        "published_at": "2026-05-14T15:00:00Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260515002418",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002418",
+        "title": "현대자동차 공시 핵심: 분기보고서 (제59기 1분기)"
+      },
+      "source_locator": "PDF 13쪽 · II. 사업의 내용 > 3. (제조서비스업)원재료 및 생산설비 > 라. 설비의 신설ㆍ매입 계획 등 > (2) 주요 투자 현황",
+      "text": "2026년 1분기 차량부문 CAPEX 실적은 12,255억원이다.",
+      "topics": [
+        "1분기",
+        "생산",
+        "시설투자",
+        "투자"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "verified_body_fact",
+      "security_id": "KRX:005380",
+      "source": {
+        "published_at": "2026-05-14T15:00:00Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260515002418",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002418",
+        "title": "현대자동차 공시 핵심: 분기보고서 (제59기 1분기)"
+      },
+      "source_locator": "PDF 119쪽 · III. 재무에 관한 사항 > 3. 연결재무제표 주석 > 34. 위험관리 (연결) > 시장위험 민감도 분석",
+      "text": "EUR 환율이 5% 상승하면 세전이익이 160,825백만원 증가하고, 5% 하락하면 같은 금액 감소한다.",
+      "topics": [
+        "불확실성",
+        "위험",
+        "환율"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "verified_body_fact",
+      "security_id": "KRX:005380",
+      "source": {
+        "published_at": "2026-05-14T15:00:00Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260515002418",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002418",
+        "title": "현대자동차 공시 핵심: 분기보고서 (제59기 1분기)"
+      },
+      "source_locator": "PDF 30쪽 · II. 사업의 내용 > 7. (제조서비스업)기타 참고사항 > 사. 회사의 중ㆍ장기 전략",
+      "text": "현대자동차는 2030년 글로벌 판매 목표를 555만대로 유지할 계획이다.",
+      "topics": [
+        "계약",
+        "사업",
+        "수주"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "verified_body_fact",
+      "security_id": "KRX:005380",
+      "source": {
+        "published_at": "2026-05-14T15:00:00Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260515002418",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260515002418",
+        "title": "현대자동차 공시 핵심: 분기보고서 (제59기 1분기)"
+      },
+      "source_locator": "PDF 30쪽 · II. 사업의 내용 > 7. (제조서비스업)기타 참고사항 > 사. 회사의 중ㆍ장기 전략",
+      "text": "현대자동차는 2030년까지 전동화 차량 판매를 330만대까지 확대할 계획이다.",
+      "topics": [
+        "기술",
+        "전기차",
+        "제품"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "official_list_metadata",
+      "security_id": "KRX:000660",
+      "source": {
+        "published_at": "2026-07-22T14:59:59Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260722800178",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260722800178",
+        "title": "풍문또는보도에대한해명"
+      },
+      "source_locator": "DART list metadata · receipt 20260722800178",
+      "text": "2026-07-22 DART에 '풍문또는보도에대한해명' 공시가 제출됐습니다. 이 연결은 공시 목록 메타데이터를 공식 배경으로 사용하며, 세부 본문 사실을 뜻하지 않습니다.",
+      "topics": [
+        "보도",
+        "이슈"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "official_list_metadata",
+      "security_id": "KRX:000660",
+      "source": {
+        "published_at": "2026-07-22T14:59:59Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260722800829",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260722800829",
+        "title": "신규시설투자등"
+      },
+      "source_locator": "DART list metadata · receipt 20260722800829",
+      "text": "2026-07-22 DART에 '신규시설투자등' 공시가 제출됐습니다. 이 연결은 공시 목록 메타데이터를 공식 배경으로 사용하며, 세부 본문 사실을 뜻하지 않습니다.",
+      "topics": [
+        "반도체",
+        "생산",
+        "시설투자",
+        "투자"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "official_list_metadata",
+      "security_id": "KRX:005380",
+      "source": {
+        "published_at": "2026-07-23T14:59:59Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260723000599",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260723000599",
+        "title": "주요사항보고서(자기주식처분결정)"
+      },
+      "source_locator": "DART list metadata · receipt 20260723000599",
+      "text": "2026-07-23 DART에 '주요사항보고서(자기주식처분결정)' 공시가 제출됐습니다. 이 연결은 공시 목록 메타데이터를 공식 배경으로 사용하며, 세부 본문 사실을 뜻하지 않습니다.",
+      "topics": [
+        "수급",
+        "자사주",
+        "주주환원"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "official_list_metadata",
+      "security_id": "KRX:005380",
+      "source": {
+        "published_at": "2026-07-23T14:59:59Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260723800315",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260723800315",
+        "title": "연결재무제표기준영업(잠정)실적(공정공시)"
+      },
+      "source_locator": "DART list metadata · receipt 20260723800315",
+      "text": "2026-07-23 DART에 '연결재무제표기준영업(잠정)실적(공정공시)' 공시가 제출됐습니다. 이 연결은 공시 목록 메타데이터를 공식 배경으로 사용하며, 세부 본문 사실을 뜻하지 않습니다.",
+      "topics": [
+        "2분기",
+        "매출",
+        "실적",
+        "영업이익"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "official_list_metadata",
+      "security_id": "KRX:005380",
+      "source": {
+        "published_at": "2026-07-23T14:59:59Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260723800321",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260723800321",
+        "title": "현금ㆍ현물배당을위한주주명부폐쇄(기준일)결정"
+      },
+      "source_locator": "DART list metadata · receipt 20260723800321",
+      "text": "2026-07-23 DART에 '현금ㆍ현물배당을위한주주명부폐쇄(기준일)결정' 공시가 제출됐습니다. 이 연결은 공시 목록 메타데이터를 공식 배경으로 사용하며, 세부 본문 사실을 뜻하지 않습니다.",
+      "topics": [
+        "배당",
+        "주주환원"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "official_list_metadata",
+      "security_id": "KRX:005380",
+      "source": {
+        "published_at": "2026-07-23T14:59:59Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260723800323",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260723800323",
+        "title": "현금ㆍ현물배당결정"
+      },
+      "source_locator": "DART list metadata · receipt 20260723800323",
+      "text": "2026-07-23 DART에 '현금ㆍ현물배당결정' 공시가 제출됐습니다. 이 연결은 공시 목록 메타데이터를 공식 배경으로 사용하며, 세부 본문 사실을 뜻하지 않습니다.",
+      "topics": [
+        "배당",
+        "주주환원"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "official_list_metadata",
+      "security_id": "KRX:005380",
+      "source": {
+        "published_at": "2026-07-24T14:59:59Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260724800692",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260724800692",
+        "title": "생산중단"
+      },
+      "source_locator": "DART list metadata · receipt 20260724800692",
+      "text": "2026-07-24 DART에 '생산중단' 공시가 제출됐습니다. 이 연결은 공시 목록 메타데이터를 공식 배경으로 사용하며, 세부 본문 사실을 뜻하지 않습니다.",
+      "topics": [
+        "생산",
+        "생산중단",
+        "생산차질"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "official_list_metadata",
+      "security_id": "KRX:005930",
+      "source": {
+        "published_at": "2026-07-21T14:59:59Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260721801260",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260721801260",
+        "title": "최대주주등소유주식변동신고서"
+      },
+      "source_locator": "DART list metadata · receipt 20260721801260",
+      "text": "2026-07-21 DART에 '최대주주등소유주식변동신고서' 공시가 제출됐습니다. 이 연결은 공시 목록 메타데이터를 공식 배경으로 사용하며, 세부 본문 사실을 뜻하지 않습니다.",
+      "topics": [
+        "수급",
+        "지분"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "link_basis": "official_list_metadata",
+      "security_id": "KRX:005930",
+      "source": {
+        "published_at": "2026-07-23T14:59:59Z",
+        "publisher": "금융감독원 DART",
+        "source_id": "disclosure:20260723800875",
+        "source_type": "disclosure",
+        "source_url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260723800875",
+        "title": "풍문또는보도에대한해명(미확정)"
+      },
+      "source_locator": "DART list metadata · receipt 20260723800875",
+      "text": "2026-07-23 DART에 '풍문또는보도에대한해명(미확정)' 공시가 제출됐습니다. 이 연결은 공시 목록 메타데이터를 공식 배경으로 사용하며, 세부 본문 사실을 뜻하지 않습니다.",
+      "topics": [
+        "보도",
+        "이슈"
+      ],
+      "verified_against_source": true
+    }
+  ],
+  "event_clusters": [
+    {
+      "article_sources": [
+        {
+          "published_at": "2026-07-24T04:22:00Z",
+          "publisher": "etnews.com",
+          "source_id": "news:54d45d1b3ade2771394ac93e5788e1191b16cf4edf9f42b9c600041796acddc2",
+          "source_type": "news",
+          "source_url": "https://www.etnews.com/20260724000165",
+          "title": "[ET특징주]현대차, 2분기 실적 부진에 하락세"
+        },
+        {
+          "published_at": "2026-07-24T05:53:00Z",
+          "publisher": "imaeil.com",
+          "source_id": "news:f47496bb7df24c6a4ebec2ff2b724f1d032585ccc546abdbcd57e002059d979f",
+          "source_type": "news",
+          "source_url": "https://www.imaeil.com/page/view/2026072414411012698",
+          "title": "현대차, 7%대 약세…2분기 실적 부진 여파"
+        }
+      ],
+      "cluster_basis": "deterministic_title_similarity",
+      "event_id": "event:d1208b8f7be0ff30559da3f58e3c4416fa55c349d271ea80f09581b190b14273",
+      "event_label": "현대차, 7%대 약세…2분기 실적 부진 여파",
+      "event_terms": [
+        "2분기",
+        "실적",
+        "분기"
+      ],
+      "first_published_at": "2026-07-24T04:22:00Z",
+      "last_published_at": "2026-07-24T05:53:00Z",
+      "review_status": "conservative_automatic",
+      "security_id": "KRX:005380",
+      "security_match_basis": "title_alias_only"
+    },
+    {
+      "article_sources": [
+        {
+          "published_at": "2026-07-24T04:50:00Z",
+          "publisher": "hbnpress.com",
+          "source_id": "news:37df0995bdf2994683b8cf40b51a9cae27bc82312519fe49bd9d08b1ec70e3de",
+          "source_type": "news",
+          "source_url": "https://hbnpress.com/news/view/1065587885336910",
+          "title": "현대차·기아, 관세 이어 파업 부담...협력사까지 긴장"
+        },
+        {
+          "published_at": "2026-07-25T08:00:00Z",
+          "publisher": "newsworks.co.kr",
+          "source_id": "news:7fa033ba082a09a30027fee1b772530f8b3181c4935f567a21a6d166f9bd4bcd",
+          "source_type": "news",
+          "source_url": "https://www.newsworks.co.kr/news/articleView.html?idxno=848190",
+          "title": "트럼프 관세·임단협 줄다리기 수렁 빠진 현대차…파업 장기화 '시름'"
+        }
+      ],
+      "cluster_basis": "deterministic_title_similarity",
+      "event_id": "event:3a7a2431d4ccaa0f0eff741368c6edf2d104eb9a1449173b3df246e9df89259d",
+      "event_label": "현대차·기아, 관세 이어 파업 부담...협력사까지 긴장",
+      "event_terms": [
+        "파업",
+        "관세"
+      ],
+      "first_published_at": "2026-07-24T04:50:00Z",
+      "last_published_at": "2026-07-25T08:00:00Z",
+      "review_status": "conservative_automatic",
+      "security_id": "KRX:005380",
+      "security_match_basis": "title_alias_only"
+    },
+    {
+      "article_sources": [
+        {
+          "published_at": "2026-07-24T20:00:00Z",
+          "publisher": "g-enews.com",
+          "source_id": "news:e284ccf7d8596deb09a6450eee49d0ef07ff2f24996707cb2025dbd0f8ce2611",
+          "source_type": "news",
+          "source_url": "https://www.g-enews.com/view.php?ud=2026072422151858952bd56fbc3c_1",
+          "title": "현대차 2분기 영업익 21% 급감… 신차·로봇 앞세워 하반기 반등 승부수"
+        },
+        {
+          "published_at": "2026-07-26T04:20:00Z",
+          "publisher": "pinpointnews.co.kr",
+          "source_id": "news:9b2f7170b664118742f7d8b8fb989ef9eb40c9a842194bacaedad474c9592f5c",
+          "source_type": "news",
+          "source_url": "https://www.pinpointnews.co.kr/news/articleView.html?idxno=471469",
+          "title": "현대차, 2분기 실적 부담에도 로봇 성장성 부각…우려 넘어 재평가 기대"
+        }
+      ],
+      "cluster_basis": "deterministic_title_similarity",
+      "event_id": "event:2e981ba3b23f78c8a49dd02f56965abe28c86843ee08bcce741981d7763fecf0",
+      "event_label": "현대차, 2분기 실적 부담에도 로봇 성장성 부각…우려 넘어 재평가 기대",
+      "event_terms": [
+        "2분기",
+        "로봇",
+        "분기"
+      ],
+      "first_published_at": "2026-07-24T20:00:00Z",
+      "last_published_at": "2026-07-26T04:20:00Z",
+      "review_status": "conservative_automatic",
+      "security_id": "KRX:005380",
+      "security_match_basis": "title_alias_only"
+    },
+    {
+      "article_sources": [
+        {
+          "published_at": "2026-07-25T05:40:00Z",
+          "publisher": "4th.kr",
+          "source_id": "news:e637e2dc9f8f34cf7a6a14aa75af8e2ed854c3651b597fd12e7db35d0805b530",
+          "source_type": "news",
+          "source_url": "http://www.4th.kr/news/articleView.html?idxno=2115254",
+          "title": "[샌프란 AI써밋] 현대차그룹, 엔비디아·웨이모·구글과 피지컬 AI 동맹..."
+        },
+        {
+          "published_at": "2026-07-26T03:20:00Z",
+          "publisher": "inthenews.co.kr",
+          "source_id": "news:f397c654434d1fbe5c489c84f02d37accbc4b4200c311abc5b23427c8004f322",
+          "source_type": "news",
+          "source_url": "https://www.inthenews.co.kr/news/article.html?no=89752",
+          "title": "현대차그룹, 엔비디아·웨이모·구글과 AI 연합전선…로봇·자율주행 사..."
+        }
+      ],
+      "cluster_basis": "deterministic_title_similarity",
+      "event_id": "event:288152ec115e7c47de6ff6844f9be2f68cb52a3a95e895241973ce110f606e16",
+      "event_label": "현대차그룹, 엔비디아·웨이모·구글과 AI 연합전선…로봇·자율주행 사...",
+      "event_terms": [
+        "엔비디아",
+        "웨이모",
+        "구글",
+        "현대차그룹",
+        "구글과",
+        "ai"
+      ],
+      "first_published_at": "2026-07-25T05:40:00Z",
+      "last_published_at": "2026-07-26T03:20:00Z",
+      "review_status": "conservative_automatic",
+      "security_id": "KRX:005380",
+      "security_match_basis": "title_alias_only"
+    },
+    {
+      "article_sources": [
+        {
+          "published_at": "2026-07-25T21:02:00Z",
+          "publisher": "kukinews.com",
+          "source_id": "news:0cbe593c0a4ef30381920a50abf03b0c8931675b1e70f05868498c3f08a5a144",
+          "source_type": "news",
+          "source_url": "https://www.kukinews.com/article/view/kuk202607240117",
+          "title": "57만원 vs 90만원…현대차 목표가 가른 ‘로봇 가치’"
+        },
+        {
+          "published_at": "2026-07-26T06:26:00Z",
+          "publisher": "newsis.com",
+          "source_id": "news:929d2dccfc821af266372dfddac8e5f6bdb629ed5614475bcafee77ceaf73af2",
+          "source_type": "news",
+          "source_url": "https://www.newsis.com/view/NISX20260726_0003723613",
+          "title": "로봇 대장주라더니…현대차 목표가 하향 리포트 쏟아졌다"
+        }
+      ],
+      "cluster_basis": "deterministic_title_similarity",
+      "event_id": "event:9eb5d1970795820cab23cbac71ec8eda7bea1aea8a0c061e224ae562f100434f",
+      "event_label": "로봇 대장주라더니…현대차 목표가 하향 리포트 쏟아졌다",
+      "event_terms": [
+        "목표가",
+        "로봇"
+      ],
+      "first_published_at": "2026-07-25T21:02:00Z",
+      "last_published_at": "2026-07-26T06:26:00Z",
+      "review_status": "conservative_automatic",
+      "security_id": "KRX:005380",
+      "security_match_basis": "title_alias_only"
+    },
+    {
+      "article_sources": [
+        {
+          "published_at": "2026-07-27T01:26:00Z",
+          "publisher": "queen.co.kr",
+          "source_id": "news:2c871cdf69e96424c17bf0bcac186b6677b2c5044256a8dc48b58072ad968adf",
+          "source_type": "news",
+          "source_url": "http://www.queen.co.kr/news/articleView.html?idxno=460811",
+          "title": "삼성전자, HBM5에 2나노 GAA 공정 적용……속도 50% 이상 향상, AI 반도체..."
+        },
+        {
+          "published_at": "2026-07-27T01:29:00Z",
+          "publisher": "joongang.co.kr",
+          "source_id": "news:7c134cef90877a11d594109f083b6ab81bd74fec984933848f73927760a0d8c7",
+          "source_type": "news",
+          "source_url": "https://www.joongang.co.kr/article/25448396",
+          "title": "삼성전자 “HBM5에 2나노 공정 적용”…동작속도 50% 높인다"
+        },
+        {
+          "published_at": "2026-07-27T01:36:00Z",
+          "publisher": "zdnet.co.kr",
+          "source_id": "news:59a6d614e2ed4b22a3d6f948f5b43bd213d3828cf7c5a79b9d7514345da970f0",
+          "source_type": "news",
+          "source_url": "https://zdnet.co.kr/view/?no=20260727102913",
+          "title": "삼성전자, HBM5 베이스 다이에 '2나노' 적용…속도 50%↑"
+        },
+        {
+          "published_at": "2026-07-27T01:46:00Z",
+          "publisher": "iminju.net",
+          "source_id": "news:3bb568b881b329d3c8312b49f90041a1ec3bedb693049b1877a9ed9e1c086fcf",
+          "source_type": "news",
+          "source_url": "http://www.iminju.net/news/articleView.html?idxno=167137",
+          "title": "삼성전자 \"HBM5에 GAA 2나노 적용…속도 50% 향상\""
+        },
+        {
+          "published_at": "2026-07-27T01:54:00Z",
+          "publisher": "mt.co.kr",
+          "source_id": "news:6db9b171cf2ec2b377f2dd76330787c73954dd0a3ffcbe565cf4ece94dc17788",
+          "source_type": "news",
+          "source_url": "https://www.mt.co.kr/industry/2026/07/27/2026072710044482997",
+          "title": "삼성전자 \"HBM5에 2나노 공정 적용…동작 속도 전작 대비 50%↑\""
+        },
+        {
+          "published_at": "2026-07-27T02:08:00Z",
+          "publisher": "joseilbo.com",
+          "source_id": "news:c403491e3ef427cbff2caecd59143ba627ccef79d3df42cac519a9a9766ef03e",
+          "source_type": "news",
+          "source_url": "http://www.joseilbo.com/news/news_read.php?uid=572672&class=17&grp=",
+          "title": "삼성전자, HBM5 베이스다이에 2나노 적용…“속도 50% 이상 높인다”"
+        },
+        {
+          "published_at": "2026-07-27T02:12:00Z",
+          "publisher": "greened.kr",
+          "source_id": "news:520f714320d51b3b46e0e9fbc46d650010aa8d2104d71de29a7cebd7769639c8",
+          "source_type": "news",
+          "source_url": "https://www.greened.kr/news/articleView.html?idxno=345971",
+          "title": "삼성전자, HBM5에 2나노 공정 적용…\"기술 리더십 강화\""
+        },
+        {
+          "published_at": "2026-07-27T02:16:00Z",
+          "publisher": "huffingtonpost.kr",
+          "source_id": "news:d181cff4701a7a7ed2c2635a21d6e2082fb05d4f961f0b9e6998690f2593bf0f",
+          "source_type": "news",
+          "source_url": "https://www.huffingtonpost.kr/article/259016",
+          "title": "삼성전자 파운드리 HBM5에 최선단 2나노 공정 적용한다, 기술개발실장 ..."
+        },
+        {
+          "published_at": "2026-07-27T02:18:00Z",
+          "publisher": "biz.chosun.com",
+          "source_id": "news:8f551c879c3a323c54578448df7b411080ce8fd26e03087d3c7f8c12e8b0e405",
+          "source_type": "news",
+          "source_url": "https://biz.chosun.com/it-science/ict/2026/07/27/QTUS5SHEHJFTXAMDSCHRTLHLVQ/",
+          "title": "삼성전자 “HBM5에 최첨단 2나노 공정 도입, 처리 속도 50%↑\""
+        },
+        {
+          "published_at": "2026-07-27T02:18:00Z",
+          "publisher": "inews24.com",
+          "source_id": "news:c5ed90bbb11102f82d196f2daa3bd72a88fba56709535bf4f40ec9564f3e30d2",
+          "source_type": "news",
+          "source_url": "http://www.inews24.com/view/1988965",
+          "title": "삼성전자 \"HBM5에 2나노 공정 적용⋯AI 메모리 성능↑\""
+        },
+        {
+          "published_at": "2026-07-27T03:00:00Z",
+          "publisher": "munhwa.com",
+          "source_id": "news:257c00f5fc0036f09d2f7b1b0833dc2b940ce1b9869dda614a0c51773aa05b0c",
+          "source_type": "news",
+          "source_url": "https://www.munhwa.com/article/11605237",
+          "title": "삼성전자, HBM5 속도 50% 향상 승부수…구자흠 “2나노 공정 적용”"
+        },
+        {
+          "published_at": "2026-07-27T03:06:00Z",
+          "publisher": "whitepaper.co.kr",
+          "source_id": "news:9de95813912dec70cb7d1f57165f8d7ea2cde250699a011ca406031a3760af94",
+          "source_type": "news",
+          "source_url": "http://www.whitepaper.co.kr/news/articleView.html?idxno=265000",
+          "title": "삼성전자, HBM5에 2나노 승부수…AI 메모리 주도권 노린다"
+        },
+        {
+          "published_at": "2026-07-27T04:14:00Z",
+          "publisher": "etnews.com",
+          "source_id": "news:3f3cffe775c05d797685555cd063a0d193fa35a3496b4b031a82fde13099fc77",
+          "source_type": "news",
+          "source_url": "https://www.etnews.com/20260727000264",
+          "title": "삼성전자, HBM5 베이스 다이에 2나노 공정 추진…“속도 50% 향상 필요”"
+        },
+        {
+          "published_at": "2026-07-27T04:28:00Z",
+          "publisher": "econovill.com",
+          "source_id": "news:663690777b39793d95efd771251486b9ec1890770759075d02e90f678c1cc1f4",
+          "source_type": "news",
+          "source_url": "https://www.econovill.com/news/articleView.html?idxno=746244",
+          "title": "삼성전자, HBM5 두뇌에 2나노 심는다…\"속도 50% 끌어올려야\""
+        },
+        {
+          "published_at": "2026-07-27T04:42:00Z",
+          "publisher": "newslock.co.kr",
+          "source_id": "news:60ef6f322e1de2edefb2239691ee5ea7c8107bb0a13d168972e1bf11d4213a2c",
+          "source_type": "news",
+          "source_url": "http://www.newslock.co.kr/news/articleView.html?idxno=133498",
+          "title": "삼성전자, HBM5에 2나노 GAA 적용…\"AI 반도체 경쟁력 강화\""
+        },
+        {
+          "published_at": "2026-07-27T04:42:00Z",
+          "publisher": "biz.sbs.co.kr",
+          "source_id": "news:b38429c0065ba24d08f047c52c556e7b533e313f2f1365d1190c078eac8b40ee",
+          "source_type": "news",
+          "source_url": "https://biz.sbs.co.kr/article_hub/20000324830?division=NAVER",
+          "title": "삼성전자 \"HBM5에 2나노 공정 적용\"…속도 50% 향상 목표"
+        },
+        {
+          "published_at": "2026-07-27T05:04:00Z",
+          "publisher": "news.einfomax.co.kr",
+          "source_id": "news:5daf5ce8c766d3845589fa31735faabf05bee98875723913c988a3289951f92b",
+          "source_type": "news",
+          "source_url": "https://news.einfomax.co.kr/news/articleView.html?idxno=4427050",
+          "title": "삼성전자, HBM5 베이스다이에 2나노 공정 적용…파운드리 경쟁력 강화"
+        },
+        {
+          "published_at": "2026-07-27T05:32:00Z",
+          "publisher": "ddaily.co.kr",
+          "source_id": "news:d76e93961d47245106cf85b26016861388b3f33477f2284aa6657184e8b9f41e",
+          "source_type": "news",
+          "source_url": "https://www.ddaily.co.kr/page/view/2026072714115963869",
+          "title": "삼성전자 \"HBM5서 GAA 2나노 적용, 전작 대비 동작 속도 50% 이상 높일 것..."
+        },
+        {
+          "published_at": "2026-07-27T06:16:00Z",
+          "publisher": "businesspost.co.kr",
+          "source_id": "news:309a0e7966274cadb2de6c7a26ab0908c2721db8a475c0b1b8cafd2a9512cb6d",
+          "source_type": "news",
+          "source_url": "https://www.businesspost.co.kr/BP?command=article_view&num=443220",
+          "title": "삼성전자 HBM5에 2나노 선제 적용 방침, \"HBM4E 대비 속도 50% 향상\""
+        },
+        {
+          "published_at": "2026-07-27T06:49:00Z",
+          "publisher": "nocutnews.co.kr",
+          "source_id": "news:8af44aa1d673fee3d8b9c19c48487fe4b259475002ef9e85c2c6f5a71b9a39e4",
+          "source_type": "news",
+          "source_url": "https://www.nocutnews.co.kr/news/6553883",
+          "title": "삼성전자 \"HBM5, 최선단 2나노 공정…동작속도 50% 향상\""
+        },
+        {
+          "published_at": "2026-07-27T07:12:00Z",
+          "publisher": "fnnews.com",
+          "source_id": "news:6c77ac672e5b43a45cb181f3f6f675459818110b515996a8488f9a5ca11c5621",
+          "source_type": "news",
+          "source_url": "http://www.fnnews.com/news/202607271604302470",
+          "title": "삼성전자 \"HBM5에 GAA기반 2나노 공정 적용...동작속도 50% 높일 것\""
+        },
+        {
+          "published_at": "2026-07-27T07:14:00Z",
+          "publisher": "m-i.kr",
+          "source_id": "news:c27c2b848ed8eb1a98e599934847698e63f562a9753f683ff1fc14f3754a97a9",
+          "source_type": "news",
+          "source_url": "https://www.m-i.kr/news/articleView.html?idxno=1395793",
+          "title": "삼성전자 \"HBM5, 2나노 공정 적용…동작속도 50% 향상\""
+        },
+        {
+          "published_at": "2026-07-27T07:22:00Z",
+          "publisher": "metroseoul.co.kr",
+          "source_id": "news:56c4ed03a2f6a528b70e3741eba4713c951b6c5d6701e047ab89e0aa068c171e",
+          "source_type": "news",
+          "source_url": "http://www.metroseoul.co.kr/article/20260727500503",
+          "title": "삼성전자, \"HBM5에 최선단 2나노 공정 도입…동작속도 50% 향상\""
+        },
+        {
+          "published_at": "2026-07-27T08:07:00Z",
+          "publisher": "hankookilbo.com",
+          "source_id": "news:bc3ae870a69554552535f777e05ee0fd102d6f73bc570865666b83af0d7208a5",
+          "source_type": "news",
+          "source_url": "https://www.hankookilbo.com/news/article/A2026072716460002158?did=NA",
+          "title": "삼성전자 \"HBM5에 2나노 공정 적용\"… 동작속도 50% 높인다"
+        },
+        {
+          "published_at": "2026-07-27T08:09:00Z",
+          "publisher": "khan.co.kr",
+          "source_id": "news:cd89253c7150b9ac3441627783803737b24391780c104734e4f2129c129423e4",
+          "source_type": "news",
+          "source_url": "https://www.khan.co.kr/article/202607271709001",
+          "title": "삼성전자 “HBM5, 최선단 2나노 공정으로 동작속도 50% 향상”"
+        },
+        {
+          "published_at": "2026-07-27T08:22:00Z",
+          "publisher": "kbench.com",
+          "source_id": "news:ab2098068e8935d19fc1bd7cd3726cc27cafbd91e61cebf3c389dbbb6c68adfb",
+          "source_type": "news",
+          "source_url": "https://kbench.com/?q=node%2F280696",
+          "title": "삼성전자, HBM5 최선단 2나노 GAA 공정적용…50% 성능 향상"
+        },
+        {
+          "published_at": "2026-07-27T09:34:00Z",
+          "publisher": "biz.newdaily.co.kr",
+          "source_id": "news:d64860390ffb4a85d88dd4344a9248ebe72e23cab3298dcc67b70095bbc6b717",
+          "source_type": "news",
+          "source_url": "https://biz.newdaily.co.kr/site/data/html/2026/07/27/2026072700309.html",
+          "title": "삼성전자, HBM5에 2나노 공정 적용 \"HBM4E보다 속도 50% 높인다\""
+        }
+      ],
+      "cluster_basis": "deterministic_title_similarity",
+      "event_id": "event:4466ae4ae13280dfa8ebf33ef50bd51f0d8ec9b51f1d8ef276856459cfa799f8",
+      "event_label": "삼성전자 \"HBM5에 GAA 2나노 적용…속도 50% 향상\"",
+      "event_terms": [
+        "hbm5",
+        "2나노",
+        "파운드리",
+        "hbm4",
+        "나노",
+        "적용",
+        "공정",
+        "속도",
+        "향상",
+        "동작속도",
+        "gaa",
+        "최선단",
+        "높인다",
+        "ai",
+        "이상",
+        "대비",
+        "베이스다이에",
+        "hbm4e",
+        "승부수",
+        "베이스",
+        "반도체",
+        "메모리",
+        "다이에",
+        "경쟁력",
+        "전작",
+        "성능",
+        "동작",
+        "도입",
+        "높일"
+      ],
+      "first_published_at": "2026-07-27T01:26:00Z",
+      "last_published_at": "2026-07-27T09:34:00Z",
+      "review_status": "conservative_automatic",
+      "security_id": "KRX:005930",
+      "security_match_basis": "title_alias_only"
+    },
+    {
+      "article_sources": [
+        {
+          "published_at": "2026-07-27T01:32:00Z",
+          "publisher": "dailycar.co.kr",
+          "source_id": "news:14efbfb9a77a46450adade787845f2ba5885c5c4828a0de78648d141b943c0a6",
+          "source_type": "news",
+          "source_url": "https://www.dailycar.co.kr/content/news.html?type=view&autoId=62118",
+          "title": "삼성전자·브로드컴, AI 반도체 ‘5년간 2천억 달러 투입’..초강력 동맹..."
+        },
+        {
+          "published_at": "2026-07-27T02:20:00Z",
+          "publisher": "dailypop.kr",
+          "source_id": "news:1d237716de1df315884e6e0829f92b1e9a7492884dbfdde3279d92247bbbd754",
+          "source_type": "news",
+          "source_url": "http://www.dailypop.kr/news/articleView.html?idxno=100911",
+          "title": "삼성전자·브로드컴 '2000억 달러 동맹'…'원스톱 턴키'로 AI 반도체 판도..."
+        },
+        {
+          "published_at": "2026-07-27T05:10:00Z",
+          "publisher": "nspna.com",
+          "source_id": "news:11fe341710b7142ea93383f862dd1c78636d090fe1d3d4c3d3bf53d4ccb372ea",
+          "source_type": "news",
+          "source_url": "https://www.nspna.com/news/?mode=view&newsid=822037",
+          "title": "삼성전자·브로드컴, 2000억 달러 규모 AI 반도체 전략적 협력"
+        },
+        {
+          "published_at": "2026-07-27T05:22:00Z",
+          "publisher": "mediawatch.kr",
+          "source_id": "news:f37fa0f78c330d0db026d19754955a142bf31bb03c882b4b1e6b7dda7e612315",
+          "source_type": "news",
+          "source_url": "https://www.mediawatch.kr/news/article.html?no=260479",
+          "title": "삼성전자·브로드컴, 300조 규모 AI 반도체 동맹… ‘파운드리·메모리’..."
+        },
+        {
+          "published_at": "2026-07-27T06:02:00Z",
+          "publisher": "hellot.net",
+          "source_id": "news:e2c5ba35d2490e497c0061e865836f3e9f90a20d6964a2eb5ac012a28ef73d62",
+          "source_type": "news",
+          "source_url": "https://www.hellot.net/news/article.html?no=114015",
+          "title": "삼성전자·브로드컴, 2030년까지 2000억 달러 AI 반도체 협력"
+        },
+        {
+          "published_at": "2026-07-27T08:52:00Z",
+          "publisher": "mdtoday.co.kr",
+          "source_id": "news:69d3cca91add81b1bace025e1712116aa2f142cd5da177ffc544dd74bb798a40",
+          "source_type": "news",
+          "source_url": "https://www.mdtoday.co.kr/news/articleView.html?idxno=606340",
+          "title": "삼성전자·브로드컴, 290조원 규모 AI 반도체 동맹 : 메디컬투데이TV"
+        }
+      ],
+      "cluster_basis": "deterministic_title_similarity",
+      "event_id": "event:a81b440aafcb9e3552ea0e1c3eccd254e63cf04a4e00ce1624993b6c05911a09",
+      "event_label": "삼성전자·브로드컴, 2000억 달러 규모 AI 반도체 전략적 협력",
+      "event_terms": [
+        "브로드컴",
+        "반도체",
+        "ai",
+        "동맹",
+        "달러",
+        "규모",
+        "협력"
+      ],
+      "first_published_at": "2026-07-27T01:32:00Z",
+      "last_published_at": "2026-07-27T08:52:00Z",
+      "review_status": "conservative_automatic",
+      "security_id": "KRX:005930",
+      "security_match_basis": "title_alias_only"
+    }
+  ],
+  "report_inventory_sha256": "b7e2b7f332c8aa3e07fca05693531726b3cd3e6796ec197015310a8853aa5363",
+  "report_perspectives": [
+    {
+      "actual_or_estimate": "interpretation",
+      "security_id": "KRX:000660",
+      "source": {
+        "published_at": "2026-06-25T14:59:59Z",
+        "publisher": "삼성증권",
+        "source_id": "report:1b48d268a21fc90f0633435dde5bb07937b31b8b3f5ed0dee4633dd9970f9757",
+        "source_type": "research_report",
+        "source_url": "https://www.samsungpop.com/common.do?cmd=down&contentType=application/pdf&inlineYn=Y&saveKey=research.pdf&fileName=2010/2026062507153736K_02_02.pdf",
+        "title": "SK하이닉스(000660_BUY)-SK하이닉스 ADR, 7월 나스닥 입성"
+      },
+      "source_locator": "PDF 1쪽",
+      "text": "삼성증권은 신주 2.5%를 활용한 ADR 상장이 해외 투자자의 가격 비교 기준과 수급에 영향을 줄 수 있다고 해석했습니다.",
+      "topics": [
+        "adr",
+        "etf",
+        "주식",
+        "수급"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "actual_or_estimate": "interpretation",
+      "security_id": "KRX:000660",
+      "source": {
+        "published_at": "2026-07-13T14:59:59Z",
+        "publisher": "미래에셋증권",
+        "source_id": "report:543d4870086a0ba0516c1151f1df1b8d6eb61724be20d9e84671ec41c41a6086",
+        "source_type": "research_report",
+        "source_url": "https://securities.miraeasset.com/bbs/download/2145820.pdf?attachmentId=2145820",
+        "title": "Market Issue-SK하이닉스 급락 코멘트"
+      },
+      "source_locator": "PDF 1쪽",
+      "text": "미래에셋증권은 당시 하락 배경을 ADR 프리미엄 확대와 이벤트 소진, 실적 기대 조정이 함께 작용한 것으로 해석했습니다.",
+      "topics": [
+        "adr",
+        "실적",
+        "하락",
+        "반도체",
+        "메모리"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "actual_or_estimate": "interpretation",
+      "security_id": "KRX:000660",
+      "source": {
+        "published_at": "2026-07-13T14:59:59Z",
+        "publisher": "삼성증권",
+        "source_id": "report:7d2241456d4a057ee8e3797958fffc5015a46da397bb4a18c28f0045d489bb40",
+        "source_type": "research_report",
+        "source_url": "https://www.samsungpop.com/common.do?cmd=down&contentType=application/pdf&inlineYn=Y&saveKey=research.pdf&fileName=3020/2026071313282859K_02_02.pdf",
+        "title": "ETP Weekly Insight-SK하이닉스 ADR 단일종목 레버리지 ETF, 미국 상장 대기 중"
+      },
+      "source_locator": "PDF 1쪽",
+      "text": "삼성증권은 SK하이닉스 ADR을 기초로 한 미국 단일종목 레버리지·인버스 ETF 출시 가능성을 점검했습니다.",
+      "topics": [
+        "adr",
+        "etf",
+        "수급"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "actual_or_estimate": "estimate",
+      "security_id": "KRX:000660",
+      "source": {
+        "published_at": "2026-07-14T14:59:59Z",
+        "publisher": "미래에셋증권",
+        "source_id": "report:507b5c97d586446073e68b28a6c7f1c283fad61420377db3ba9b3eb7e700d9a3",
+        "source_type": "research_report",
+        "source_url": "https://securities.miraeasset.com/bbs/download/2145830.pdf?attachmentId=2145830",
+        "title": "SK하이닉스(000660_매수)-시선을 약간만 아래로"
+      },
+      "source_locator": "PDF 1쪽",
+      "text": "미래에셋증권은 2026년 추정치는 낮췄지만 일반 메모리와 HBM 가격 환경을 근거로 2027년 성장 관점은 유지했습니다.",
+      "topics": [
+        "hbm4",
+        "d램",
+        "메모리",
+        "실적",
+        "전망"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "actual_or_estimate": "interpretation",
+      "security_id": "KRX:000660",
+      "source": {
+        "published_at": "2026-07-21T14:59:59Z",
+        "publisher": "삼성증권",
+        "source_id": "report:4337ee748a70f2a746121f109c01d46bfb633cc8c07874851a0a7bdb825385e9",
+        "source_type": "research_report",
+        "source_url": "https://www.samsungpop.com/common.do?cmd=down&contentType=application/pdf&inlineYn=Y&saveKey=research.pdf&fileName=1010/2026072116033003K_02_02.pdf",
+        "title": "MSCI 2026년 8월 정기 리뷰 전망-편입 불가 규정의 완화 및 SK하이닉스 ADR 이슈"
+      },
+      "source_locator": "PDF 1쪽",
+      "text": "삼성증권은 MSCI 정기변경 규칙과 SK하이닉스 ADR 발행이 지수 수급에 미칠 수 있는 조건을 함께 점검했습니다.",
+      "topics": [
+        "adr",
+        "msci",
+        "수급"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "actual_or_estimate": "interpretation",
+      "security_id": "KRX:005380",
+      "source": {
+        "published_at": "2026-07-08T14:59:59Z",
+        "publisher": "키움증권",
+        "source_id": "report:28233cfaf594ad11cfbf93189b4dc0bc2f4f07e029790b467f1345e1c4611a3c",
+        "source_type": "research_report",
+        "source_url": "https://bbn.kiwoom.com/rfCR12175",
+        "title": "현대차(005380_BUY)-내러티브보다는 펀더멘털 회복 가능성에 주목"
+      },
+      "source_locator": "PDF 1쪽",
+      "text": "키움증권은 계열사 화재와 환율 등 2분기 부담을 반영하면서, 회복 여부는 생산 정상화와 본업 수익성에서 확인해야 한다고 봤습니다.",
+      "topics": [
+        "관세",
+        "실적",
+        "생산차질",
+        "환율",
+        "자동차"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "actual_or_estimate": "estimate",
+      "security_id": "KRX:005380",
+      "source": {
+        "published_at": "2026-07-20T14:59:59Z",
+        "publisher": "미래에셋증권",
+        "source_id": "report:232633ccf070f8efcbc6971630ce43a95ef36280b76a6dd52512d21083b75939",
+        "source_type": "research_report",
+        "source_url": "https://securities.miraeasset.com/bbs/download/2145958.pdf?attachmentId=2145958",
+        "title": "현대차(005380_매수)-2Q26 프리뷰. 우려를 넘어 로봇 모멘텀 주목"
+      },
+      "source_locator": "PDF 1쪽",
+      "text": "미래에셋증권은 해외 생산 차질이 2분기 실적에 부담을 줬지만 3분기에는 로봇 사업 관련 일정이 촉매가 될 수 있다고 봤습니다.",
+      "topics": [
+        "2분기",
+        "실적",
+        "생산차질",
+        "로봇",
+        "환율"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "actual_or_estimate": "interpretation",
+      "security_id": "KRX:005380",
+      "source": {
+        "published_at": "2026-07-23T14:59:59Z",
+        "publisher": "삼성증권",
+        "source_id": "report:a24a1b105d1d9c36ef1f1eb20fda3dab194b51fd9b4f8e745d57f6d995f9ab7e",
+        "source_type": "research_report",
+        "source_url": "https://www.samsungpop.com/common.do?cmd=down&contentType=application/pdf&inlineYn=Y&saveKey=research.pdf&fileName=2010/2026072218341956K_02_07.pdf",
+        "title": "현대차(005380_BUY)-2Q26 Review 살아남는 자가 강한 자"
+      },
+      "source_locator": "PDF 1쪽",
+      "text": "삼성증권은 생산 차질·인센티브·원재료 부담을 2분기 이익 감소 요인으로 보고, 하반기 공급 정상화와 피지컬 AI를 점검했습니다.",
+      "topics": [
+        "2분기",
+        "실적",
+        "생산차질",
+        "로봇",
+        "관세"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "actual_or_estimate": "actual",
+      "security_id": "KRX:005380",
+      "source": {
+        "published_at": "2026-07-24T14:59:59Z",
+        "publisher": "미래에셋증권",
+        "source_id": "report:fee68cb8d78876950a68f2cece67327edb4d9a7bc7883d093726db8300cff80e",
+        "source_type": "research_report",
+        "source_url": "https://securities.miraeasset.com/bbs/download/2146110.pdf?attachmentId=2146110",
+        "title": "현대차(005380_매수)-2Q26 리뷰. 우려 대비 양호, 로봇 모멘텀 주목"
+      },
+      "source_locator": "PDF 1쪽",
+      "text": "미래에셋증권은 2분기 매출 49.2조원과 영업이익 2.85조원을 확인하고, 환율·인센티브·생산 차질과 로봇 모멘텀을 함께 짚었습니다.",
+      "topics": [
+        "2분기",
+        "실적",
+        "생산차질",
+        "로봇",
+        "환율"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "actual_or_estimate": "actual",
+      "security_id": "KRX:005380",
+      "source": {
+        "published_at": "2026-07-24T14:59:59Z",
+        "publisher": "키움증권",
+        "source_id": "report:55e4a93871b030e1891ced97b8bbbaa4b3f6b8f7f1b7e3114e280b85ac4ef09a",
+        "source_type": "research_report",
+        "source_url": "https://bbn.kiwoom.com/rfCR12216",
+        "title": "현대차(005380_BUY)-상반기의 부진을 딛고 수익성 가이던스 유지"
+      },
+      "source_locator": "PDF 1쪽",
+      "text": "키움증권은 2분기 매출 49.2조원과 영업이익 2.85조원, 연간 영업이익률 가이던스 유지와 하이브리드 신차·로봇 일정을 확인했습니다.",
+      "topics": [
+        "2분기",
+        "실적",
+        "가이던스",
+        "하이브리드",
+        "로봇"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "actual_or_estimate": "estimate",
+      "security_id": "KRX:005930",
+      "source": {
+        "published_at": "2026-07-06T14:59:59Z",
+        "publisher": "삼성증권",
+        "source_id": "report:9e5f151160a51f37be0436c1b42a9b5b3e854bc91c377f50faec60310f34c512",
+        "source_type": "research_report",
+        "source_url": "https://www.samsungpop.com/common.do?cmd=down&contentType=application/pdf&inlineYn=Y&saveKey=research.pdf&fileName=2010/2026070308030148K_02_01.pdf",
+        "title": "삼성전자(005930_BUY)-변동성을 극복하면 사이클이 보인다"
+      },
+      "source_locator": "PDF 1쪽",
+      "text": "삼성증권은 D램 가격 개선을 근거로 메모리 이익 회복과 상승 사이클 지속 가능성을 제시했습니다.",
+      "topics": [
+        "실적",
+        "d램",
+        "메모리",
+        "반도체",
+        "hbm4"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "actual_or_estimate": "interpretation",
+      "security_id": "KRX:005930",
+      "source": {
+        "published_at": "2026-07-07T14:59:59Z",
+        "publisher": "미래에셋증권",
+        "source_id": "report:3f8083c29fc6bdea08c5bff01dbeb79a1216f2fc3001f24b09a252c19ee09a57",
+        "source_type": "research_report",
+        "source_url": "https://securities.miraeasset.com/bbs/download/2145721.pdf?attachmentId=2145721",
+        "title": "Market Issue-삼성전자 하락 코멘트"
+      },
+      "source_locator": "PDF 1쪽",
+      "text": "미래에셋증권은 실적 발표 뒤 하락을 펀더멘털 훼손보다 외국인 차익실현과 리밸런싱 성격의 수급 요인으로 해석했습니다.",
+      "topics": [
+        "실적",
+        "하락",
+        "수급",
+        "외국인"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "actual_or_estimate": "estimate",
+      "security_id": "KRX:005930",
+      "source": {
+        "published_at": "2026-07-07T14:59:59Z",
+        "publisher": "미래에셋증권",
+        "source_id": "report:98227e66f1a37cb44fb0b6e41ace572806335af9b328c0e0b13a9d6737ec0b7b",
+        "source_type": "research_report",
+        "source_url": "https://securities.miraeasset.com/bbs/download/2145729.pdf?attachmentId=2145729",
+        "title": "삼성전자(005930_매수)-과격한 주가 반응에 뇌동하지 말자"
+      },
+      "source_locator": "PDF 1쪽",
+      "text": "미래에셋증권은 잠정실적이 기대를 웃돌았고 HBM4 가격과 메모리 사이클을 근거로 이익 전망을 높였습니다.",
+      "topics": [
+        "실적",
+        "hbm4",
+        "메모리",
+        "하락",
+        "전망"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "actual_or_estimate": "interpretation",
+      "security_id": "KRX:005930",
+      "source": {
+        "published_at": "2026-07-08T14:59:59Z",
+        "publisher": "삼성증권",
+        "source_id": "report:c9b13bbdf5d2d69f017008e5ef52c58e4d04404fde359259c6445ef9005dff1f",
+        "source_type": "research_report",
+        "source_url": "https://www.samsungpop.com/common.do?cmd=down&contentType=application/pdf&inlineYn=Y&saveKey=research.pdf&fileName=2010/2026070713183238K_02_02.pdf",
+        "title": "삼성전자(005930_BUY)-과격한 조정, 그러나 사이클은 전반전"
+      },
+      "source_locator": "PDF 1쪽",
+      "text": "삼성증권은 2분기 영업이익과 메모리 이익을 확인하면서 급격한 주가 조정과 업황 사이클을 구분해 볼 필요가 있다고 해석했습니다.",
+      "topics": [
+        "실적",
+        "메모리",
+        "하락",
+        "전망"
+      ],
+      "verified_against_source": true
+    },
+    {
+      "actual_or_estimate": "estimate",
+      "security_id": "KRX:005930",
+      "source": {
+        "published_at": "2026-07-08T14:59:59Z",
+        "publisher": "키움증권",
+        "source_id": "report:56facd21eb6687d71f61667b0487e01a0fd66436638a4b521170820095cb03f9",
+        "source_type": "research_report",
+        "source_url": "https://bbn.kiwoom.com/rfCR12174",
+        "title": "삼성전자(005930_BUY)-하반기, EPS 성장률 둔화 예상"
+      },
+      "source_locator": "PDF 1쪽",
+      "text": "키움증권은 2분기 영업이익을 확인한 뒤 3분기 개선을 예상하면서도 하반기 EPS 성장 속도 둔화 가능성을 제시했습니다.",
+      "topics": [
+        "실적",
+        "3분기",
+        "메모리",
+        "전망",
+        "반도체"
+      ],
+      "verified_against_source": true
+    }
+  ],
+  "schema_version": "m5-d1-evidence-comparison-v2",
+  "source_inventory_sha256": "338f2caed9757ab09024819f9cb333b74754f1d90399ef7869441eacb69c3124"
+}

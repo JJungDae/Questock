@@ -16,6 +16,7 @@ from app.ui.projections import (
     ProjectionError,
     project_baseline_answer,
     project_baseline_sources,
+    project_evidence_comparison,
     project_process_stages,
 )
 from app.ui.transport import (
@@ -379,11 +380,84 @@ def _render_response(response: ChatResponse) -> None:
                 safe_label = _escape_markdown_label(label)
                 st.markdown(f"- [{safe_label}]({source.link_url})")
 
+    comparison = project_evidence_comparison(
+        response.evidence_comparison
+    )
+    if comparison is not None:
+        with st.expander("근거 대조 보기", expanded=False):
+            st.markdown("**함께 묶어 본 사건**")
+            st.markdown(
+                _escape_markdown_text(comparison.event_label)
+            )
+            st.caption(comparison.lineage_text)
+            if comparison.article_count_text is not None:
+                st.caption(comparison.article_count_text)
+            if comparison.articles:
+                st.markdown("**이 사건을 다룬 기사**")
+                for source in comparison.articles:
+                    _render_comparison_source(source)
+            if comparison.common_facts:
+                st.markdown("**공통으로 확인된 사실**")
+                for item in comparison.common_facts:
+                    _render_comparison_item(item)
+            if comparison.perspectives:
+                st.markdown("**증권사 리포트에서 보는 관점**")
+                for item in comparison.perspectives:
+                    _render_comparison_item(item)
+            if comparison.disclosures:
+                st.markdown("**DART에서 확인되는 공식 배경**")
+                for item in comparison.disclosures:
+                    _render_comparison_item(item)
+            if comparison.limitations:
+                st.markdown("**아직 확인되지 않은 점**")
+                for item in comparison.limitations:
+                    st.markdown(
+                        f"- {_escape_markdown_text(item)}"
+                    )
+
     with st.expander("답변이 만들어진 과정", expanded=False):
         for stage in project_process_stages(response.diagnostics_public):
             st.markdown(f"**{stage.title}**")
             for field in stage.fields:
                 st.text(f"{field.label}: {field.value}")
+
+
+def _render_comparison_item(item: object) -> None:
+    text = _escape_markdown_text(getattr(item, "text", ""))
+    source = getattr(item, "source", None)
+    if source is None:
+        st.markdown(f"- {text}")
+        return
+    link_url = getattr(source, "link_url", None)
+    label = (
+        f"{getattr(source, 'source_type', '자료')} · "
+        f"{getattr(source, 'publisher', '')}"
+    )
+    source_locator = getattr(item, "source_locator", None)
+    if source_locator:
+        label = f"{label} · {source_locator}"
+    if link_url is None:
+        st.markdown(
+            f"- {text} ({_escape_markdown_text(label)})"
+        )
+        return
+    st.markdown(
+        f"- {text} "
+        f"([{_escape_markdown_label(label)}]({link_url}))"
+    )
+
+
+def _render_comparison_source(source: object) -> None:
+    title = getattr(source, "title", "원문")
+    publisher = getattr(source, "publisher", "")
+    link_url = getattr(source, "link_url", None)
+    label = f"{publisher} · {title}"
+    if link_url is None:
+        st.markdown(f"- {_escape_markdown_text(label)}")
+        return
+    st.markdown(
+        f"- [{_escape_markdown_label(label)}]({link_url})"
+    )
 
 
 def _compact_sources(sources: tuple[object, ...]) -> tuple[object, ...]:

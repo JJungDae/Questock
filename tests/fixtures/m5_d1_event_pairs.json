@@ -1,0 +1,104 @@
+{
+  "schema_version": "m5-d1-event-pairs-v1",
+  "pairs": [
+    {
+      "pair_id": "build-samsung-hbm5-01",
+      "partition": "build",
+      "security_id": "KRX:005930",
+      "left_title": "삼성전자, HBM5에 2나노 GAA 공정 적용…속도 50% 이상 향상",
+      "right_title": "삼성전자 HBM5 베이스다이에 2나노 적용…속도 50% 높인다",
+      "hours_apart": 0.4,
+      "expected_same_event": true
+    },
+    {
+      "pair_id": "build-hyundai-earnings-01",
+      "partition": "build",
+      "security_id": "KRX:005380",
+      "left_title": "현대차, 7%대 약세…2분기 실적 부진 여파",
+      "right_title": "현대차, 2분기 실적 부진에 하락세",
+      "hours_apart": 2.5,
+      "expected_same_event": true
+    },
+    {
+      "pair_id": "build-samsung-separate-01",
+      "partition": "build",
+      "security_id": "KRX:005930",
+      "left_title": "삼성전자 HBM5에 2나노 공정 적용",
+      "right_title": "삼성전자·브로드컴 AI 반도체 전략적 협력",
+      "hours_apart": 3.0,
+      "expected_same_event": false
+    },
+    {
+      "pair_id": "eval-samsung-broadcom-01",
+      "partition": "evaluation",
+      "security_id": "KRX:005930",
+      "left_title": "삼성전자·브로드컴 2000억 달러 규모 AI 반도체 전략적 협력",
+      "right_title": "삼성전자 브로드컴과 AI 반도체 동맹…파운드리 협력",
+      "hours_apart": 4.0,
+      "expected_same_event": true
+    },
+    {
+      "pair_id": "eval-hyundai-alliance-01",
+      "partition": "evaluation",
+      "security_id": "KRX:005380",
+      "left_title": "현대차그룹 엔비디아·웨이모·구글과 AI 연합전선",
+      "right_title": "현대차그룹 엔비디아 웨이모 구글과 피지컬 AI 동맹",
+      "hours_apart": 5.0,
+      "expected_same_event": true
+    },
+    {
+      "pair_id": "eval-hyundai-target-01",
+      "partition": "evaluation",
+      "security_id": "KRX:005380",
+      "left_title": "현대차 목표가 가른 로봇 가치",
+      "right_title": "로봇 대장주 현대차 목표가 하향 리포트",
+      "hours_apart": 8.0,
+      "expected_same_event": true
+    },
+    {
+      "pair_id": "eval-sk-market-01",
+      "partition": "evaluation",
+      "security_id": "KRX:000660",
+      "left_title": "코스피 FOMC·SK하이닉스 실적 소화하며 회복 시도",
+      "right_title": "주간증시전망 FOMC·SK하이닉스 실적이 분수령",
+      "hours_apart": 10.0,
+      "expected_same_event": true
+    },
+    {
+      "pair_id": "eval-samsung-separate-01",
+      "partition": "evaluation",
+      "security_id": "KRX:005930",
+      "left_title": "삼성전자 HBM5 2나노 공정 적용",
+      "right_title": "삼성전자 브로드컴 AI 반도체 전략적 협력",
+      "hours_apart": 6.0,
+      "expected_same_event": false
+    },
+    {
+      "pair_id": "eval-hyundai-separate-01",
+      "partition": "evaluation",
+      "security_id": "KRX:005380",
+      "left_title": "현대차그룹 엔비디아·웨이모·구글과 AI 동맹",
+      "right_title": "현대차 목표가 가른 로봇 가치",
+      "hours_apart": 12.0,
+      "expected_same_event": false
+    },
+    {
+      "pair_id": "eval-sk-separate-01",
+      "partition": "evaluation",
+      "security_id": "KRX:000660",
+      "left_title": "FOMC·SK하이닉스 실적 소화하며 코스피 회복",
+      "right_title": "HBM4 가격 급등에 서버 원가 비중 상승",
+      "hours_apart": 18.0,
+      "expected_same_event": false
+    },
+    {
+      "pair_id": "eval-time-window-01",
+      "partition": "evaluation",
+      "security_id": "KRX:005930",
+      "left_title": "삼성전자 HBM5 2나노 공정 적용",
+      "right_title": "삼성전자 HBM5 2나노 공정 성능 향상",
+      "hours_apart": 48.0,
+      "expected_same_event": false
+    }
+  ]
+}

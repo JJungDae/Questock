@@ -48,6 +48,7 @@ def collect_m5_news(
     output: list[dict[str, Any]] = []
     for security_id, (security_name, _aliases) in SECURITY_TERMS.items():
         items: list[dict[str, Any]] = []
+        api_call_count = 0
         for day in COLLECTION_DATES:
             queries = (
                 (f"{security_name} {day}", "date", 2),
@@ -72,6 +73,7 @@ def collect_m5_news(
                     timeout_seconds=15,
                     transport=transport,
                 )
+                api_call_count += len(pages)
                 safe_id = security_id.replace(":", "-")
                 raw_path = raw_dir / (
                     f"{safe_id}-{day.replace(' ', '-')}"
@@ -91,11 +93,17 @@ def collect_m5_news(
                     + "\n",
                     encoding="utf-8",
                 )
-                for page in pages:
+                for page_index, page in enumerate(pages):
                     raw_items = page.get("items")
                     if isinstance(raw_items, list):
                         items.extend(
-                            item
+                            {
+                                **item,
+                                "_questock_query_provenance": (
+                                    f"{query}|{sort}|"
+                                    f"start={1 + page_index * 100}"
+                                ),
+                            }
                             for item in raw_items
                             if isinstance(item, dict)
                         )
@@ -103,6 +111,7 @@ def collect_m5_news(
             {
                 "security_id": security_id,
                 "items": items,
+                "api_call_count": api_call_count,
             }
         )
     return tuple(output)
