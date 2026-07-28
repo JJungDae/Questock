@@ -288,6 +288,7 @@ def test_runtime_env_is_atomic_api_only_and_one_generation_rollback() -> None:
     assert "QUESTOCK_LLM_MODE=gemini" in install
     assert "QUESTOCK_REQUEST_PROTECTION_ENABLED=true" in install
     assert "QUESTOCK_RESPONSE_CACHE_ENABLED=true" in install
+    assert "QUESTOCK_HYBRID_ROUTER_ENABLED=true" in install
     assert "LLM_MODEL=gemini/gemini-3.5-flash" in install
     assert "LLM_THINKING_LEVEL=minimal" in install
     assert "LLM_TIMEOUT_SECONDS=15" in install

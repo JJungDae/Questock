@@ -54,6 +54,8 @@ def test_json_sink_emits_exact_stable_allowlisted_payload() -> None:
         "evidence_decision": "partial",
         "fallback_used": False,
         "intent": "recent_issue",
+        "intent_classifier_status": "not_called",
+        "intent_routing": "deterministic",
         "llm_call_count": 1,
         "provider_statuses": {
             "disclosure": "timeout",
@@ -140,7 +142,9 @@ def test_observation_allows_approved_safe_tokens(
         {"retrieval_strategy": "C:\\private\\strategy"},
         {"evidence_decision": "unknown"},
         {"total_latency_ms": float("nan")},
-        {"llm_call_count": 2},
+        {"llm_call_count": 3},
+        {"intent_routing": "unknown"},
+        {"intent_classifier_status": "accepted"},
         {"fallback_used": 1},
     ],
 )
@@ -149,3 +153,24 @@ def test_observation_rejects_malformed_or_content_bearing_fields(
 ) -> None:
     with pytest.raises(ObservationValidationError):
         _observation(**updates)
+
+
+@pytest.mark.parametrize(
+    ("routing", "status"),
+    [
+        ("hybrid_llm", "not_called"),
+        ("hybrid_llm", "timeout"),
+        ("hybrid_fallback", "not_called"),
+        ("hybrid_fallback", "accepted"),
+        ("cached", "accepted"),
+    ],
+)
+def test_observation_rejects_inconsistent_classifier_state(
+    routing: str,
+    status: str,
+) -> None:
+    with pytest.raises(ObservationValidationError):
+        _observation(
+            intent_routing=routing,
+            intent_classifier_status=status,
+        )

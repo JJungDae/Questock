@@ -50,18 +50,25 @@ def collect_m5_news(
         items: list[dict[str, Any]] = []
         for day in COLLECTION_DATES:
             queries = (
-                f"{security_name} {day}",
+                (f"{security_name} {day}", "date", 2),
                 (
                     f"{security_name} {QUALITY_TERMS[security_id]} "
-                    f"{day}"
+                    f"{day}",
+                    "date",
+                    2,
                 ),
+                (f"{security_name} {day}", "sim", 1),
+                (f"{security_name} 주가 {day}", "sim", 1),
             )
-            for query_index, query in enumerate(queries, start=1):
+            for query_index, (query, sort, max_calls) in enumerate(
+                queries,
+                start=1,
+            ):
                 pages = collect_news_query_pages(
                     query=query,
-                    sort="date",
+                    sort=sort,
                     display=100,
-                    max_calls=2,
+                    max_calls=max_calls,
                     timeout_seconds=15,
                     transport=transport,
                 )

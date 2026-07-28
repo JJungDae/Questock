@@ -604,3 +604,54 @@ Status as of `2026-07-28`:
 M5-01 satisfies its required implementation, validation, deployment, smoke,
 and documentation criteria. Optional Flash-versus-Pro comparison remains
 outside completion and was not run.
+
+---
+
+## 14. Human Owner post-deployment answer-quality closure
+
+Status as of `2026-07-28`:
+
+- branch: `fix/m5-answer-quality-closure`
+- base: `9bf9b1a6992e172417f68c734f0dcd460a6af5d2`
+- result: `LOCAL PASS / HUMAN OWNER APPROVED`
+- commit, push, PR, merge, deployment: `NOT_RUN`
+
+The Human Owner approved the local closure after deployed-UI feedback exposed
+price-move answer and loading-state problems.
+
+Implemented closure:
+
+- price-move questions default to the selected calendar day
+- same-day news is retrieved before disclosure or research-report fallback
+- optional disclosure/report gaps no longer downgrade or clutter a
+  news-supported price-move answer
+- exact price facts are not repeated inside the generated explanation
+- no-evidence and provider-failure answers are not upgraded merely because a
+  market snapshot exists
+- fixed price-move fallback rewrites title-only evidence into a natural public
+  sentence
+- HBM generation variants retain a shared retrieval token
+- `왜 주가변동성이 위험요인이야?` is no longer classified as a direct-price
+  request
+- completed answers explicitly clear the Streamlit loading placeholder
+- M5 news recollection added a relevance-sorted historical query route, but
+  retained the existing seven documents because no additional article passed
+  the direct-company, event, and time criteria
+
+Validation:
+
+- focused answer, policy, retrieval, time-grounding, and M5 golden tests:
+  `258 passed, 1 warning`
+- Streamlit UI regression: `13 passed, 1 warning`
+- full regression: `2122 passed, 2 warnings`
+- Ruff: `PASS`
+- local browser with Gemini disabled:
+  - Samsung Electronics price-move answer used two same-day news items
+  - no research-report evidence or repeated exact price was shown
+  - completed-answer/loading overlap: `0`
+  - repeated submission left no loading message
+- live Gemini calls: `0`
+
+The remaining general-language ambiguity is owned by
+`M5-01-HR1 Hybrid Intent Router`; it is not silently folded into this completed
+closure.

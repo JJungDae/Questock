@@ -169,6 +169,18 @@ def test_app_submit_uses_injected_transport_and_renders_process() -> None:
         assert forbidden not in visible_text.casefold()
 
 
+def test_app_repeated_submissions_leave_no_loading_spinner() -> None:
+    transport = FakeTransport(_response())
+    app = AppTest.from_function(_app, args=(transport,)).run()
+
+    _submit(app, "삼성전자 최근 뉴스")
+    assert not app.get("spinner")
+
+    _submit(app, "삼성전자 위험 요인")
+    assert not app.get("spinner")
+    assert len(transport.requests) == 2
+
+
 def test_app_renders_glossary_cards_source_detail_and_fixed_fallback() -> None:
     response = _glossary_response()
     transport = FakeTransport(response)

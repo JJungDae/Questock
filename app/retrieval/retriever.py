@@ -19,6 +19,7 @@ BM25_B = 0.75
 SCORE_ROUND_DIGITS = 6
 
 _TOKEN_PATTERN = re.compile(r"[가-힣]+|[a-z0-9]+")
+_HBM_VARIANT = re.compile(r"hbm[0-9][a-z0-9]*")
 _GENERIC_QUERY_TOKENS = frozenset(
     {
         "최근",
@@ -186,10 +187,13 @@ def _tokenize_query(query: str) -> list[str]:
 
 def _tokenize_text(value: str) -> list[str]:
     normalized = unicodedata.normalize("NFKC", value).casefold()
-    return [
-        _normalize_korean_token(token)
-        for token in _TOKEN_PATTERN.findall(normalized)
-    ]
+    output: list[str] = []
+    for token in _TOKEN_PATTERN.findall(normalized):
+        canonical = _normalize_korean_token(token)
+        output.append(canonical)
+        if _HBM_VARIANT.fullmatch(canonical):
+            output.append("hbm")
+    return output
 
 
 def _normalize_korean_token(token: str) -> str:

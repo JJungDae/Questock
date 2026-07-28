@@ -150,6 +150,8 @@ def test_direct_script_runs_from_clean_repository_shell() -> None:
             "evidence_decision",
             "fallback_used",
             "intent",
+            "intent_classifier_status",
+            "intent_routing",
             "llm_call_count",
             "provider_statuses",
             "request_id",
@@ -160,6 +162,8 @@ def test_direct_script_runs_from_clean_repository_shell() -> None:
         expected_strategy = (
             "glossary-direct-m3-05-v1"
             if observation["intent"] == "financial_term"
+            else "market-snapshot-m5-01-v1"
+            if observation["intent"] == "price"
             else "lexical-bm25-m2-03-v1"
         )
         assert observation["retrieval_strategy"] == expected_strategy

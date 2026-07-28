@@ -51,8 +51,13 @@ from app.evidence.policy import EvidenceDecision, EvidencePolicy
 from app.llm.base import LLMRequest, LLMResult, LLMStatus, create_llm_result
 from app.retrieval import filter_evidence, retrieve_evidence
 from app.services.planning_observation import (
+    ObservedQueryPlan,
     PublicResolutionStatus,
     build_observed_query_plan,
+)
+from app.services.hybrid_intent_router import (
+    HybridIntentRouter,
+    HybridRoutingResult,
 )
 from app.services.market_snapshot_schema import checkpoint_id
 from app.services.market_snapshot_store import (
@@ -173,6 +178,7 @@ class ChatService:
         model_fingerprint: str = "disabled",
         live_llm_enabled: bool = False,
         market_snapshot_store: RecordedMarketSnapshotStore | None = None,
+        intent_router: HybridIntentRouter | None = None,
     ) -> None:
         if (
             type(deadline_seconds) not in {int, float}
@@ -229,6 +235,7 @@ class ChatService:
         self._model_fingerprint = model_fingerprint
         self._live_llm_enabled = live_llm_enabled
         self._market_snapshot_store = market_snapshot_store
+        self._intent_router = intent_router or HybridIntentRouter()
 
     async def chat(
         self,
@@ -295,12 +302,20 @@ class ChatService:
             raise ChatServiceError("chat request is invalid")
         started_at = self._monotonic()
         try:
-            observed = build_observed_query_plan(
+            deterministic = build_observed_query_plan(
                 request.message,
                 basis_date=basis_at.astimezone(SEOUL_TZ).date(),
                 resolver=self._resolver,
                 session=self._session_store.get(session_id),
             )
+            routing = await self._route_intent(
+                request.message,
+                deterministic,
+                basis_at=basis_at,
+                started_at=started_at,
+                client_key=client_key,
+            )
+            observed = routing.observed
             plan = observed.plan
             market_snapshot = self._market_snapshot(
                 plan,
@@ -320,6 +335,12 @@ class ChatService:
                     response=response,
                     plan=plan,
                     session_id=session_id,
+                )
+                self._emit_price_observation(
+                    plan=plan,
+                    snapshot=market_snapshot,
+                    routing=routing,
+                    started_at=started_at,
                 )
                 return response
             call_budget = self._new_call_budget()
@@ -421,6 +442,7 @@ class ChatService:
                 pipeline=pipeline,
                 composition=composition,
                 call_budget=call_budget,
+                routing=routing,
                 started_at=started_at,
             )
             if resulting_revision is not None and observation is not None:
@@ -439,6 +461,38 @@ class ChatService:
             raise
         except Exception:
             raise ChatServiceError("chat service unavailable") from None
+
+    async def _route_intent(
+        self,
+        query: str,
+        deterministic: ObservedQueryPlan,
+        *,
+        basis_at: datetime,
+        started_at: float,
+        client_key: str | None,
+    ) -> HybridRoutingResult:
+        if not self._intent_router.should_classify(
+            query,
+            deterministic,
+        ):
+            return self._intent_router.deterministic(deterministic)
+        try:
+            async with self._request_protector.admit(
+                client_key,
+                timeout_seconds=self._remaining(started_at),
+            ):
+                return await self._intent_router.classify(
+                    query,
+                    deterministic,
+                    basis_date=basis_at.astimezone(SEOUL_TZ).date(),
+                    timeout_seconds=self._remaining(started_at),
+                )
+        except RequestProtectionLimitError:
+            return self._intent_router.fallback(
+                deterministic,
+                status="rate_limited",
+                classifier_called=False,
+            )
 
     def _market_snapshot(
         self,
@@ -676,6 +730,7 @@ class ChatService:
         pipeline: "_PipelineResult",
         composition: CompositionResult,
         call_budget: LLMCallBudget,
+        routing: HybridRoutingResult,
         started_at: float,
     ) -> RequestObservation | None:
         try:
@@ -707,10 +762,15 @@ class ChatService:
                 retrieval_strategy=pipeline.retrieval.strategy,
                 evidence_decision=str(pipeline.decision.status),
                 total_latency_ms=round(elapsed_ms, 3),
-                llm_call_count=call_budget.snapshot().calls_used,
+                llm_call_count=(
+                    routing.classifier_call_count
+                    + call_budget.snapshot().calls_used
+                ),
                 fallback_used=fallback_used_for_generation_mode(
                     composition.generation_mode
                 ),
+                intent_routing=routing.mode,
+                intent_classifier_status=routing.classifier_status,
             )
         except Exception:
             return None
@@ -730,10 +790,53 @@ class ChatService:
                 request_id=self._request_id_factory(),
                 total_latency_ms=0.0,
                 llm_call_count=0,
+                intent_routing="cached",
+                intent_classifier_status="not_called",
             )
             self._observation_sink.emit(cached)
         except Exception:
             return
+
+    def _emit_price_observation(
+        self,
+        *,
+        plan: QueryPlan,
+        snapshot: MarketSnapshot | None,
+        routing: HybridRoutingResult,
+        started_at: float,
+    ) -> RequestObservation | None:
+        try:
+            security_id = (
+                f"{plan.security.market}:{plan.security.ticker}"
+                if plan.security is not None
+                else None
+            )
+            elapsed_ms = (
+                self._monotonic() - started_at
+            ) * 1000
+            observation = RequestObservation(
+                request_id=self._request_id_factory(),
+                intent=plan.intent,
+                security_id=security_id,
+                provider_statuses=(),
+                evidence_count=0,
+                retrieval_strategy="market-snapshot-m5-01-v1",
+                evidence_decision=(
+                    "complete" if snapshot is not None else "no_evidence"
+                ),
+                total_latency_ms=round(elapsed_ms, 3),
+                llm_call_count=routing.classifier_call_count,
+                fallback_used=False,
+                intent_routing=routing.mode,
+                intent_classifier_status=routing.classifier_status,
+            )
+        except Exception:
+            return None
+        try:
+            self._observation_sink.emit(observation)
+        except Exception:
+            pass
+        return observation
 
     def _deadline_safe_composition(
         self,
@@ -857,9 +960,10 @@ def _run_evidence_pipeline(
         documents_by_id=documents_by_id,
         basis_at=basis_at,
     )
-    retrieval = retrieve_evidence(
+    retrieval = _retrieve_for_plan(
         freshness.evidence,
         request,
+        plan=plan,
         documents_by_id=documents_by_id,
     )
     decision = EvidencePolicy().evaluate(
@@ -880,6 +984,38 @@ def _run_evidence_pipeline(
         retrieval=retrieval,
         decision=decision,
         budget=budget,
+    )
+
+
+def _retrieve_for_plan(
+    evidence: tuple[Evidence, ...],
+    request: RetrievalRequest,
+    *,
+    plan: QueryPlan,
+    documents_by_id: Mapping[str, FinancialDocument],
+) -> RetrievalResult:
+    if plan.intent == "price_move":
+        news_request = request.model_copy(
+            deep=True,
+            update={
+                "source_types": ["news"],
+                "top_k": 6,
+            },
+        )
+        news_result = retrieve_evidence(
+            evidence,
+            news_request,
+            documents_by_id=documents_by_id,
+        )
+        if (
+            news_result.status == RetrievalStatus.OK
+            and news_result.evidence
+        ):
+            return news_result
+    return retrieve_evidence(
+        evidence,
+        request,
+        documents_by_id=documents_by_id,
     )
 
 
@@ -1343,18 +1479,14 @@ def _attach_price_movement(
 ) -> ChatResponse:
     sections = response.answer_sections.model_copy(deep=True)
     sections.summary = [
-        _price_summary_text(snapshot),
+        _price_movement_context_text(snapshot),
         *sections.summary,
-    ]
-    sections.facts = [
-        _price_fact_text(snapshot),
-        *sections.facts,
     ]
     uncertainty = (
         "확인된 자료는 가격 움직임의 가능한 배경 요인입니다. "
         "하나의 원인으로 단정할 수 없습니다."
     )
-    if uncertainty not in sections.uncertainty:
+    if response.evidence and uncertainty not in sections.uncertainty:
         sections.uncertainty.append(uncertainty)
     if snapshot.market_status == "closed":
         closed_notice = _closed_market_text(snapshot)
@@ -1363,14 +1495,22 @@ def _attach_price_movement(
     return response.model_copy(
         deep=True,
         update={
-            "status": (
-                "partial"
-                if response.status
-                in {"no_evidence", "provider_failed"}
-                else response.status
-            ),
             "answer_sections": sections,
         },
+    )
+
+
+def _price_movement_context_text(snapshot: MarketSnapshot) -> str:
+    direction = (
+        "상승"
+        if snapshot.change > 0
+        else "하락"
+        if snapshot.change < 0
+        else "보합"
+    )
+    return (
+        f"{_kst_label(snapshot.observed_at)}에는 전 거래일 KRX 종가보다 "
+        f"{abs(snapshot.change_percent):.2f}% {direction}했습니다."
     )
 
 

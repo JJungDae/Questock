@@ -166,24 +166,30 @@ class EvidencePolicy:
         _validate_target_security(canonical_plan, canonical_retrieval.evidence)
 
         required_sources = tuple(canonical_plan.required_sources)
+        coverage_sources = _coverage_sources(canonical_plan)
         returned_sources = {item.source_type for item in canonical_retrieval.evidence}
         satisfied_sources = tuple(source for source in required_sources if source in returned_sources)
-        missing_sources = tuple(source for source in required_sources if source not in returned_sources)
+        missing_sources = tuple(source for source in coverage_sources if source not in returned_sources)
         no_data_sources = tuple(
             source
-            for source in required_sources
+            for source in coverage_sources
             if source in canonical_providers
             and _provider_status(canonical_providers[source]) == ProviderStatus.NO_DATA
         )
         failed_sources = tuple(
             source
-            for source in required_sources
+            for source in coverage_sources
             if source in canonical_providers
             and _provider_status(canonical_providers[source]) in _FAILURE_ERROR_CODES
         )
         limiting_warning = any(
-            warning.code in _LIMITING_WARNINGS and warning.source_type in required_sources
+            warning.code in _LIMITING_WARNINGS and warning.source_type in coverage_sources
             for warning in canonical_freshness.warnings
+        )
+        decision_warnings = tuple(
+            warning
+            for warning in canonical_freshness.warnings
+            if warning.source_type in coverage_sources
         )
 
         retrieval_status = _retrieval_status(canonical_retrieval)
@@ -202,7 +208,7 @@ class EvidencePolicy:
             canonical_plan,
             status=status,
             evidence=tuple(canonical_retrieval.evidence),
-            warnings=canonical_freshness.warnings,
+            warnings=decision_warnings,
             satisfied_sources=satisfied_sources,
             missing_sources=missing_sources,
             no_data_sources=no_data_sources,
@@ -686,18 +692,22 @@ def _validate_decision_invariants(
         return
 
     required = tuple(plan.required_sources)
+    coverage = _coverage_sources(plan)
+    expected_missing = tuple(
+        source for source in coverage if source not in decision.satisfied_sources
+    )
     if (
         len(decision.satisfied_sources) != len(set(decision.satisfied_sources))
         or len(decision.missing_sources) != len(set(decision.missing_sources))
         or set(decision.satisfied_sources) & set(decision.missing_sources)
-        or set(decision.satisfied_sources) | set(decision.missing_sources) != set(required)
+        or decision.missing_sources != expected_missing
         or not _is_ordered_subsequence(decision.satisfied_sources, required)
-        or not _is_ordered_subsequence(decision.missing_sources, required)
-        or not set(decision.no_data_sources).issubset(required)
-        or not set(decision.failed_sources).issubset(required)
+        or not _is_ordered_subsequence(decision.missing_sources, coverage)
+        or not set(decision.no_data_sources).issubset(coverage)
+        or not set(decision.failed_sources).issubset(coverage)
         or set(decision.no_data_sources) & set(decision.failed_sources)
-        or not _is_ordered_subsequence(decision.no_data_sources, required)
-        or not _is_ordered_subsequence(decision.failed_sources, required)
+        or not _is_ordered_subsequence(decision.no_data_sources, coverage)
+        or not _is_ordered_subsequence(decision.failed_sources, coverage)
     ):
         raise EvidencePolicyValidationError("policy inputs are inconsistent")
 
@@ -734,6 +744,12 @@ def _provider_status(result: ProviderResult[Any]) -> ProviderStatus:
         return ProviderStatus(result.status)
     except (TypeError, ValueError):
         raise EvidencePolicyValidationError("provider results are invalid") from None
+
+
+def _coverage_sources(plan: QueryPlan) -> tuple[str, ...]:
+    if plan.intent == "price_move":
+        return ("news",)
+    return tuple(plan.required_sources)
 
 
 def _retrieval_status(result: RetrievalResult) -> RetrievalStatus:

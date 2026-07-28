@@ -165,8 +165,15 @@ class AnswerComposer:
                     "copy only those exact short IDs into evidence_ids. "
                     "Attribute reported events to news, filing facts to the filing, "
                     "and analyst views to the report. Separate fact, outside view, "
-                    "bounded interpretation, and uncertainty. Never provide direct "
-                    "investment action, target-price advice, or guaranteed future "
+                    "bounded interpretation, and uncertainty. "
+                    "For a price_move question, use same-day news before a filing "
+                    "or research report. If news shows a company event but does not "
+                    "directly explain the market move, call it same-day background "
+                    "rather than a confirmed cause. Do not repeat exact price or "
+                    "percentage facts because the service adds verified market "
+                    "context separately. "
+                    "Never provide direct investment action, target-price advice, "
+                    "or guaranteed future "
                     "performance. Never output a URL.\n"
                     "{format_instructions}",
                 ),
@@ -766,12 +773,13 @@ def _fixed_result(
         evidence,
     )[:_fixed_evidence_limit(plan.answer_focus)]
     for index, item in enumerate(projected_evidence):
-        if is_unsafe_answer_text(item.snippet, intent=plan.intent):
+        public_text = _fixed_claim_text(plan, item)
+        if is_unsafe_answer_text(public_text, intent=plan.intent):
             fixed_rejection_count += 1
             continue
         claim = CitationClaim(
             claim_id=f"fixed-{index + 1}",
-            text=item.snippet,
+            text=public_text,
             evidence_ids=(item.evidence_id,),
         )
         try:
@@ -842,6 +850,20 @@ def _fixed_detail_section(answer_focus: str) -> AnswerSectionName:
     if answer_focus == "outlook":
         return "uncertainty"
     return "facts"
+
+
+def _fixed_claim_text(plan: QueryPlan, item: Evidence) -> str:
+    canonical = item.snippet.strip()
+    title_prefix = "기사 제목에서 확인되는 내용:"
+    if (
+        plan.intent == "price_move"
+        and item.source_type == "news"
+        and canonical.startswith(title_prefix)
+    ):
+        title = canonical[len(title_prefix):].strip()
+        if title:
+            return f"당일 보도에서 {title} 관련 소식이 확인됐습니다."
+    return canonical
 
 
 def _merge_fixed_report_evidence(

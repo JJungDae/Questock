@@ -157,10 +157,13 @@ PRICE_MOVE_PATTERNS = (
 DIRECT_PRICE_PATTERNS = (
     "\ud604\uc7ac \uc8fc\uac00",
     "\uc9c0\uae08 \uc8fc\uac00",
+    "\uc624\ub298 \uc8fc\uac00",
     "\uc8fc\uac00 \uc54c\ub824",
     "\uc8fc\uac00 \uc5bc\ub9c8",
-    "\uc8fc\uac00",
-    "\uac00\uaca9",
+    "\uc8fc\uac00 \uc5b4\ub54c",
+    "\uc8fc\uc2dd \uc5b4\ub54c",
+    "\uac00\uaca9 \uc54c\ub824",
+    "\uac00\uaca9 \uc5bc\ub9c8",
     "\uc5bc\ub9c8",
     "\uc62c\ub790\uc5b4",
     "\ub0b4\ub838\uc5b4",
@@ -450,6 +453,11 @@ class QueryPlanner:
             and session.current_date_range is not None
         ):
             date_range = session.current_date_range.model_copy(deep=True)
+        if date_range is None and intent == PRICE_MOVE:
+            date_range = DateRange(
+                start=self._basis_date,
+                end=self._basis_date,
+            )
 
         sources, evidence = SOURCE_EVIDENCE_MATRIX[intent]
         return QueryPlan(
@@ -505,12 +513,12 @@ def _classify_intent(normalized_query: str) -> Intent:
         return OUT_OF_SCOPE
     if _contains_any(normalized_query, PRICE_MOVE_PATTERNS):
         return PRICE_MOVE
-    if _contains_any(normalized_query, DIRECT_PRICE_PATTERNS):
-        return PRICE
     if _contains_any(normalized_query, FINANCIAL_TERM_CUES) and _contains_any(normalized_query, FINANCIAL_TERM_MARKERS):
         return FINANCIAL_TERM
     if _contains_any(normalized_query, RISK_PATTERNS):
         return RISK_FACTORS
+    if _contains_any(normalized_query, DIRECT_PRICE_PATTERNS):
+        return PRICE
     if _contains_any(normalized_query, MULTI_SOURCE_PATTERNS):
         return MULTI_SOURCE_SUMMARY
     if _contains_any(normalized_query, DISCLOSURE_PATTERNS):
