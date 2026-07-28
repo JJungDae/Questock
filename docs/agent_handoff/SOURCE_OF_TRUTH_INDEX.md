@@ -1,11 +1,11 @@
 # QUESTOCK SOURCE OF TRUTH INDEX
 
 > 기준일: 2026-07-28
-> 기준 branch: canonical `main`; deployed runtime release `136271ea80802a39f1981e539f183d544d95e23a`
+> 기준 branch: canonical `main`; deployed runtime release `824f06f014415fd66ad9bbd1c9743f03be02efcc`
 > Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
 > Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
 > B9 planning base: `b9ddf7461306d16cf1da14634ce458050d78f7bc`
-> 상태: `B9 PASS / M4 Gate PASS / FSC-0~FSC-4 PASS / complete; FSC-4 deployed at 136271ea80802a39f1981e539f183d544d95e23a; PR #18 MERGED at 6f50ee922c2a1c74278ead2f679472ba3e19bc8b; M5-01 LOCAL IMPLEMENTATION PASS / RELEASE NOT_STARTED`
+> 상태: `B9 PASS / M4 Gate PASS / FSC-0~FSC-4 PASS / complete; M5-01 PASS / DEPLOYED / COMPLETE at 824f06f014415fd66ad9bbd1c9743f03be02efcc`
 
 ## 1. 목적
 
@@ -63,14 +63,14 @@ PASS / complete
 Task Card 사실 동기화 완료, B6-0에서 상태 확인
 
 현재 완료 bundle:
-B9, First Service Completion
+B9, First Service Completion, M5-01
 
 현재 공식 bundle:
-M5-01 as-of price-grounded answer
+M5-01 as-of price-grounded answer - PASS / DEPLOYED / COMPLETE
 
 현재 checkpoint:
-M5-01 local implementation - PASS /
-implementation commit, push, PR, deployment NOT_STARTED
+Human Owner deployed-UI feedback;
+new implementation checkpoint not declared
 
 M5-01 실행 기준:
 docs/TASK_CARDS/M5-01-as-of-price-grounded-answer.md
@@ -236,8 +236,26 @@ Service Completion Gate:
 PASS / complete
 
 A15-M:
-activation prerequisites reviewed; M5-01 local implementation PASS /
-release integration NOT_STARTED
+activation prerequisites reviewed; M5-01 PASS / DEPLOYED / COMPLETE
+
+M5-01:
+`PASS / DEPLOYED / COMPLETE`;
+Task Card `docs/TASK_CARDS/M5-01-as-of-price-grounded-answer.md`;
+implementation PR #19 and UI closure PRs #20, #21, #22 MERGED;
+final merge/deployed release
+`824f06f014415fd66ad9bbd1c9743f03be02efcc`;
+final PR quality-gate run `30329244843` PASS;
+final merged-main quality-gate run `30329322602` PASS;
+final deployment run `30329400059` PASS;
+deployed image
+`sha256:b91c9ec9bf6cada77167c68606a565c0854f06ac168fa4d9f321934c5e9df42a`;
+API/UI health, 54-document recorded snapshot, and 7-scenario smoke PASS;
+production browser PASS for trading-day price, checkpoint conversation clear,
+weekend closed-market status, actual prior observation time, and completed
+answer/loading separation;
+rollback target `40dca28ed9c9a93d6ebf7c95161fda52ec1e01ef` /
+`sha256:f0283455a40679c405ed1ae5489d2444de199f31bbdba97675a029509a52b359`;
+rollback execution `NOT_RUN` because deployment passed
 
 B6 구현:
 PASS / complete
@@ -246,7 +264,8 @@ B6 완료 SHA:
 60e6203b265a967a8b6ba45da2ba3128e1e1bcfe
 
 다음 공식 checkpoint:
-M5-01 release integration - NOT_STARTED
+Human Owner deployed-UI feedback;
+new implementation checkpoint not declared
 
 B9 계획:
 docs/TASK_CARDS/B9-release-deployment-traceability.md
@@ -359,9 +378,10 @@ docs/TASK_CARDS/B6-REMAINDER-integrated-implementation-plan.md
 docs/TASK_CARDS/B7-integrated-implementation-plan.md
 docs/TASK_CARDS/B8-quality-observability.md
 docs/TASK_CARDS/B9-release-deployment-traceability.md
+docs/TASK_CARDS/M5-01-as-of-price-grounded-answer.md
 
 current:
-docs/TASK_CARDS/M5-01-as-of-price-grounded-answer.md
+none declared; Human Owner deployed-UI feedback
 
 completed FSC execution standard:
 docs/TASK_CARDS/FSC-4-beginner-grounded-chat.md
@@ -370,7 +390,7 @@ current execution decision:
 docs/agent_handoff/FIRST_SERVICE_COMPLETION_EXECUTION_DECISION_2026-07-27.md
 
 next:
-M5-01 implementation commit, push, PR, deployment - NOT_STARTED
+new implementation checkpoint not declared
 ```
 
 ## 6. 금지
