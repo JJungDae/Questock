@@ -59,17 +59,25 @@ class LiteLLMClient:
 
         started_at = self._monotonic()
         try:
-            response = await self._completion(
-                model=self._config.model,
-                messages=[
+            completion_kwargs = {
+                "model": self._config.model,
+                "messages": [
                     {"role": item.role, "content": item.content}
                     for item in request.messages
                 ],
-                timeout=min(float(timeout_seconds), self._config.timeout_seconds),
-                max_tokens=self._config.max_output_tokens,
-                reasoning_effort=self._config.thinking_level,
-                num_retries=0,
-                api_key=self._api_key,
+                "timeout": min(
+                    float(timeout_seconds),
+                    self._config.timeout_seconds,
+                ),
+                "max_tokens": self._config.max_output_tokens,
+                "reasoning_effort": self._config.thinking_level,
+                "num_retries": 0,
+                "api_key": self._api_key,
+            }
+            if request.temperature is not None:
+                completion_kwargs["temperature"] = request.temperature
+            response = await self._completion(
+                **completion_kwargs,
             )
         except asyncio.CancelledError:
             raise

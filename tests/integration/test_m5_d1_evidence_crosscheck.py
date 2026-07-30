@@ -1,15 +1,69 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from app.api.schemas import ChatRequest
+from app.llm.base import (
+    LLMRequest,
+    LLMResult,
+    LLMStatus,
+    create_llm_result,
+)
 from app.runtime import RuntimeConfig, build_runtime
 from app.services.service_snapshot import SERVICE_SNAPSHOT_ID
 from app.ui.projections import project_evidence_comparison
 
 SEOUL_TZ = ZoneInfo("Asia/Seoul")
+
+
+class _ComparisonLLM:
+    def __init__(
+        self,
+        *,
+        status: LLMStatus = LLMStatus.OK,
+    ) -> None:
+        self.status = status
+        self.requests: list[LLMRequest] = []
+
+    async def complete(
+        self,
+        request: LLMRequest,
+        *,
+        timeout_seconds: float,
+    ) -> LLMResult:
+        del timeout_seconds
+        self.requests.append(request.model_copy(deep=True))
+        rendered = "\n".join(
+            item.content for item in request.messages
+        )
+        snippet = next(
+            line.split("Snippet: ", 1)[1].strip()
+            for line in rendered.splitlines()
+            if line.startswith("Snippet: ")
+        )
+        content = json.dumps(
+            {
+                "claims": [
+                    {
+                        "claim_id": "comparison-summary",
+                        "section": "summary",
+                        "text": snippet,
+                        "evidence_ids": ["E1"],
+                    }
+                ]
+            },
+            ensure_ascii=False,
+        )
+        return create_llm_result(
+            status=self.status,
+            content=content if self.status == LLMStatus.OK else None,
+            model="gemini/gemini-3.5-flash",
+            provider="gemini",
+            latency_ms=1,
+        )
 
 
 def test_recorded_runtime_attaches_cited_temporal_comparison() -> None:
@@ -41,12 +95,12 @@ def test_recorded_runtime_attaches_cited_temporal_comparison() -> None:
     assert comparison.common_facts == []
     assert comparison.missing_evidence
     assert all(
-        item.source.source_url.startswith(("http://", "https://"))
-        for item in comparison.different_interpretations
+        item.source.source_url is None
+        for item in comparison.report_perspectives
     )
     assert all(
         item.source_locator
-        for item in comparison.different_interpretations
+        for item in comparison.report_perspectives
     )
     assert all(
         item.source is None
@@ -59,7 +113,7 @@ def test_recorded_runtime_attaches_cited_temporal_comparison() -> None:
     assert "원출처 관계 미확인" in view.lineage_text
     assert view.article_count_text == "전체 27건 중 20건 표시"
     assert view.articles
-    assert view.perspectives
+    assert view.report_perspectives
     assert view.disclosures
 
 
@@ -227,6 +281,181 @@ def test_explicit_evidence_crosscheck_attaches_matching_event() -> None:
     )
 
     assert response.evidence_comparison is not None
-    assert "같은 주제의 사건 묶음" in (
-        response.answer_sections.summary[0]
+    comparison = response.evidence_comparison
+    assert comparison.common_facts
+    assert comparison.different_interpretations
+    assert "2분기 실적 부진" in response.answer_sections.summary[0]
+    assert response.answer_sections.interpretation
+    assert any(
+        "DART" in item
+        for item in response.answer_sections.interpretation
+    )
+
+
+def test_explicit_unmatched_comparison_keeps_general_answer_after_notice() -> None:
+    state = build_runtime(
+        config=RuntimeConfig(
+            source_mode="recorded",
+            snapshot_id=SERVICE_SNAPSHOT_ID,
+            llm_mode="disabled",
+        )
+    )
+    response = asyncio.run(
+        state.chat_service.chat(
+            ChatRequest(
+                message="삼성전자 실적 관련 최근 뉴스 근거를 대조해줘.",
+                session_id="m5-d1-unmatched-comparison",
+                as_of=datetime(
+                    2026,
+                    7,
+                    27,
+                    21,
+                    tzinfo=SEOUL_TZ,
+                ),
+            )
+        )
+    )
+
+    assert response.evidence_comparison is None
+    assert "동일 사건 대조 자료" in response.answer_sections.summary[0]
+    assert (
+        len(response.answer_sections.summary) > 1
+        or response.answer_sections.facts
+        or response.answer_sections.positive_factors
+        or response.answer_sections.risk_factors
+    )
+
+
+def test_matching_comparison_uses_low_randomness_gemini_once(
+    monkeypatch,
+) -> None:
+    client = _ComparisonLLM()
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    monkeypatch.setattr(
+        "app.runtime.LiteLLMClient",
+        lambda config: client,
+    )
+    state = build_runtime(
+        config=RuntimeConfig(
+            source_mode="recorded",
+            snapshot_id=SERVICE_SNAPSHOT_ID,
+            llm_mode="gemini",
+        )
+    )
+
+    response = asyncio.run(
+        state.chat_service.chat(
+            ChatRequest(
+                message="현대차 실적 관련 최근 뉴스 근거를 대조해줘.",
+                session_id="m5-d1-gemini-comparison",
+                as_of=datetime(
+                    2026,
+                    7,
+                    27,
+                    21,
+                    tzinfo=SEOUL_TZ,
+                ),
+            )
+        )
+    )
+
+    assert len(client.requests) == 1
+    request = client.requests[0]
+    assert request.temperature == 0.1
+    rendered = "\n".join(
+        item.content for item in request.messages
+    )
+    assert "뉴스 공통 사실:" in rendered
+    assert "기사별 강조점 차이:" in rendered
+    assert response.diagnostics_public.generation.mode == "llm"
+    assert response.diagnostics_public.generation.llm_status == "ok"
+    assert response.evidence_comparison is not None
+    assert response.evidence_comparison.common_facts
+    assert response.evidence_comparison.different_interpretations
+    assert response.evidence_comparison.support_summary in (
+        response.answer_sections.interpretation
+    )
+
+
+def test_matching_comparison_keeps_cited_fallback_when_gemini_times_out(
+    monkeypatch,
+) -> None:
+    client = _ComparisonLLM(status=LLMStatus.TIMEOUT)
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    monkeypatch.setattr(
+        "app.runtime.LiteLLMClient",
+        lambda config: client,
+    )
+    state = build_runtime(
+        config=RuntimeConfig(
+            source_mode="recorded",
+            snapshot_id=SERVICE_SNAPSHOT_ID,
+            llm_mode="gemini",
+        )
+    )
+
+    response = asyncio.run(
+        state.chat_service.chat(
+            ChatRequest(
+                message="현대차 실적 관련 최근 뉴스 근거를 대조해줘.",
+                session_id="m5-d1-gemini-timeout",
+                as_of=datetime(
+                    2026,
+                    7,
+                    27,
+                    21,
+                    tzinfo=SEOUL_TZ,
+                ),
+            )
+        )
+    )
+
+    assert len(client.requests) == 1
+    assert response.diagnostics_public.generation.mode == "fixed_template"
+    assert response.diagnostics_public.generation.llm_status == "timeout"
+    assert "llm_generation_degraded" in response.warnings
+    comparison = response.evidence_comparison
+    assert comparison is not None
+    assert comparison.common_facts[0].text in (
+        response.answer_sections.summary
+    )
+    assert comparison.different_interpretations[0].text in (
+        response.answer_sections.interpretation
+    )
+
+
+def test_public_report_evidence_omits_report_urls() -> None:
+    state = build_runtime(
+        config=RuntimeConfig(
+            source_mode="recorded",
+            snapshot_id=SERVICE_SNAPSHOT_ID,
+            llm_mode="disabled",
+        )
+    )
+    response = asyncio.run(
+        state.chat_service.chat(
+            ChatRequest(
+                message="현대차 리포트 핵심을 요약해줘.",
+                session_id="m5-d1-report-link-policy",
+                as_of=datetime(
+                    2026,
+                    7,
+                    27,
+                    21,
+                    tzinfo=SEOUL_TZ,
+                ),
+            )
+        )
+    )
+
+    reports = [
+        item
+        for item in response.evidence
+        if item.source_type == "research_report"
+    ]
+    assert reports
+    assert all(item.source_url is None for item in reports)
+    assert all(
+        all("url" not in key.casefold() for key in item.locator)
+        for item in reports
     )

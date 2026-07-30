@@ -298,6 +298,55 @@ _REPORT_PERSPECTIVES = (
         "estimate",
     ),
 )
+_NEWS_COMPARISON_CLAIMS = {
+    frozenset(
+        {
+            "news:54d45d1b3ade2771394ac93e5788e1191b16cf4edf9f42b9c600041796acddc2",
+            "news:f47496bb7df24c6a4ebec2ff2b724f1d032585ccc546abdbcd57e002059d979f",
+        }
+    ): {
+        "common_facts": [
+            {
+                "text": (
+                    "두 기사는 모두 현대차의 2분기 실적 부진과 "
+                    "7월 24일 주가 약세를 함께 다뤘습니다."
+                ),
+                "source_ids": [
+                    "news:54d45d1b3ade2771394ac93e5788e1191b16cf4edf9f42b9c600041796acddc2",
+                    "news:f47496bb7df24c6a4ebec2ff2b724f1d032585ccc546abdbcd57e002059d979f",
+                ],
+                "corroboration_status": "lineage_unknown",
+            }
+        ],
+        "different_interpretations": [
+            {
+                "text": (
+                    "전자신문은 2분기 영업이익 감소와 당일 주가 "
+                    "하락 폭을 중심으로 설명했습니다."
+                ),
+                "source_ids": [
+                    "news:54d45d1b3ade2771394ac93e5788e1191b16cf4edf9f42b9c600041796acddc2"
+                ],
+                "corroboration_status": "lineage_unknown",
+            },
+            {
+                "text": (
+                    "매일신문은 판매 감소와 관세·원재료 부담을 "
+                    "실적 부진의 배경으로 강조했습니다."
+                ),
+                "source_ids": [
+                    "news:f47496bb7df24c6a4ebec2ff2b724f1d032585ccc546abdbcd57e002059d979f"
+                ],
+                "corroboration_status": "lineage_unknown",
+            },
+        ],
+        "support_summary": (
+            "증권사 리포트는 생산 차질·환율·인센티브·원재료 부담을 "
+            "실적 부진의 배경으로 제시하며, DART에서는 7월 23일 "
+            "잠정실적 공시 제출이 확인됩니다."
+        ),
+    },
+}
 
 
 class M5D1ComparisonBuildError(RuntimeError):
@@ -320,7 +369,7 @@ def build_comparison_payload(
     disclosures = _build_disclosure_backgrounds(service_documents)
     disclosures.extend(_build_event_disclosure_metadata(source_inventory))
     payload = {
-        "schema_version": "m5-d1-evidence-comparison-v2",
+        "schema_version": "m5-d1-evidence-comparison-v3",
         "built_at": built_at.astimezone(UTC).isoformat().replace("+00:00", "Z"),
         "source_inventory_sha256": source_inventory.get("source_sha256"),
         "report_inventory_sha256": _canonical_sha256(report_inventory),
@@ -364,6 +413,14 @@ def _build_clusters(news_items: list[dict[str, Any]]) -> list[dict[str, Any]]:
             if not terms:
                 continue
             sources = [_news_source(item) for item in group]
+            claims = _NEWS_COMPARISON_CLAIMS.get(
+                frozenset(item["source_id"] for item in sources),
+                {
+                    "common_facts": [],
+                    "different_interpretations": [],
+                    "support_summary": None,
+                },
+            )
             digest = hashlib.sha256(
                 "\n".join(item["source_id"] for item in sources).encode("utf-8")
             ).hexdigest()
@@ -382,6 +439,11 @@ def _build_clusters(news_items: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     "security_match_basis": "title_alias_only",
                     "cluster_basis": "deterministic_title_similarity",
                     "review_status": "conservative_automatic",
+                    "common_facts": claims["common_facts"],
+                    "different_interpretations": (
+                        claims["different_interpretations"]
+                    ),
+                    "support_summary": claims["support_summary"],
                 }
             )
     return output

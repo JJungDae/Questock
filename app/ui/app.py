@@ -368,8 +368,11 @@ def _render_response(response: ChatResponse) -> None:
     if notices:
         st.info(f"참고: {' · '.join(notices)}")
 
+    comparison = project_evidence_comparison(
+        response.evidence_comparison
+    )
     sources = project_baseline_sources(response)
-    if sources:
+    if sources and comparison is None:
         st.caption("참고한 자료")
         for source in _compact_sources(sources):
             title = _compact_source_title(source)
@@ -380,9 +383,6 @@ def _render_response(response: ChatResponse) -> None:
                 safe_label = _escape_markdown_label(label)
                 st.markdown(f"- [{safe_label}]({source.link_url})")
 
-    comparison = project_evidence_comparison(
-        response.evidence_comparison
-    )
     if comparison is not None:
         with st.expander("근거 대조 보기", expanded=False):
             st.markdown("**함께 묶어 본 사건**")
@@ -400,9 +400,13 @@ def _render_response(response: ChatResponse) -> None:
                 st.markdown("**공통으로 확인된 사실**")
                 for item in comparison.common_facts:
                     _render_comparison_item(item)
-            if comparison.perspectives:
+            if comparison.news_interpretations:
+                st.markdown("**기사마다 다르게 강조한 내용**")
+                for item in comparison.news_interpretations:
+                    _render_comparison_item(item)
+            if comparison.report_perspectives:
                 st.markdown("**증권사 리포트에서 보는 관점**")
-                for item in comparison.perspectives:
+                for item in comparison.report_perspectives:
                     _render_comparison_item(item)
             if comparison.disclosures:
                 st.markdown("**DART에서 확인되는 공식 배경**")
@@ -424,27 +428,29 @@ def _render_response(response: ChatResponse) -> None:
 
 def _render_comparison_item(item: object) -> None:
     text = _escape_markdown_text(getattr(item, "text", ""))
-    source = getattr(item, "source", None)
-    if source is None:
+    sources = getattr(item, "sources", ())
+    if not sources:
         st.markdown(f"- {text}")
         return
-    link_url = getattr(source, "link_url", None)
-    label = (
-        f"{getattr(source, 'source_type', '자료')} · "
-        f"{getattr(source, 'publisher', '')}"
-    )
     source_locator = getattr(item, "source_locator", None)
-    if source_locator:
-        label = f"{label} · {source_locator}"
-    if link_url is None:
-        st.markdown(
-            f"- {text} ({_escape_markdown_text(label)})"
+    st.markdown(f"- {text}")
+    for source in sources:
+        link_url = getattr(source, "link_url", None)
+        label = (
+            f"{getattr(source, 'source_type', '자료')} · "
+            f"{getattr(source, 'publisher', '')}"
         )
-        return
-    st.markdown(
-        f"- {text} "
-        f"([{_escape_markdown_label(label)}]({link_url}))"
-    )
+        if source_locator:
+            label = f"{label} · {source_locator}"
+        if link_url is None:
+            st.markdown(
+                f"  - {_escape_markdown_text(label)}"
+            )
+        else:
+            st.markdown(
+                "  - "
+                f"[{_escape_markdown_label(label)}]({link_url})"
+            )
 
 
 def _render_comparison_source(source: object) -> None:

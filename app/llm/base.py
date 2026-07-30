@@ -52,6 +52,7 @@ class LLMRequest(BaseModel):
 
     messages: tuple[LLMMessage, ...] = Field(min_length=1, max_length=8)
     response_schema: dict[str, Any]
+    temperature: float | None = Field(default=None, ge=0.0, le=2.0)
 
     @field_validator("response_schema")
     @classmethod

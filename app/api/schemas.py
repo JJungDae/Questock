@@ -219,7 +219,7 @@ class PublicComparisonSource(PublicModel):
     title: str = Field(min_length=1, max_length=500)
     publisher: str = Field(min_length=1, max_length=120)
     published_at: datetime
-    source_url: str = Field(min_length=1, max_length=2000)
+    source_url: str | None = Field(default=None, min_length=1, max_length=2000)
 
 
 class PublicComparisonLineageSummary(PublicModel):
@@ -270,9 +270,9 @@ class PublicEvidenceComparison(PublicModel):
     article_displayed_count: int = Field(ge=2, le=20)
     source_lineage_summary: PublicComparisonLineageSummary
     common_facts: list[PublicComparisonClaim] = Field(max_length=20)
-    different_interpretations: list[PublicComparisonPerspective] = Field(
-        max_length=20
-    )
+    different_interpretations: list[PublicComparisonClaim] = Field(max_length=20)
+    report_perspectives: list[PublicComparisonPerspective] = Field(max_length=20)
+    support_summary: str | None = Field(default=None, max_length=1000)
     unconfirmed_claims: list[str] = Field(max_length=20)
     missing_evidence: list[str] = Field(max_length=20)
     disclosure_links: list[PublicDisclosureLink] = Field(max_length=20)
