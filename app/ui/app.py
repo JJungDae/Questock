@@ -401,15 +401,15 @@ def _render_response(response: ChatResponse) -> None:
                 for item in comparison.common_facts:
                     _render_comparison_item(item)
             if comparison.news_interpretations:
-                st.markdown("**기사마다 다르게 강조한 내용**")
+                st.markdown("**뉴스가 다르게 본 점**")
                 for item in comparison.news_interpretations:
                     _render_comparison_item(item)
             if comparison.report_perspectives:
-                st.markdown("**증권사 리포트에서 보는 관점**")
+                st.markdown("**뉴스와 연결되는 리포트 배경**")
                 for item in comparison.report_perspectives:
                     _render_comparison_item(item)
             if comparison.disclosures:
-                st.markdown("**DART에서 확인되는 공식 배경**")
+                st.markdown("**DART가 확인해 주는 범위**")
                 for item in comparison.disclosures:
                     _render_comparison_item(item)
             if comparison.limitations:

@@ -542,8 +542,16 @@ class ChatService:
             and not _comparison_query_matches_event(query, comparison)
         ):
             return response
+        attached_comparison = (
+            comparison.model_copy(
+                update={"answer_integrated": True},
+                deep=True,
+            )
+            if explicit_comparison
+            else comparison
+        )
         updated = response.model_copy(
-            update={"evidence_comparison": comparison},
+            update={"evidence_comparison": attached_comparison},
             deep=True,
         )
         if not explicit_comparison:
@@ -551,7 +559,7 @@ class ChatService:
         return updated.model_copy(
             update={
                 "answer_sections": _comparison_answer_sections(
-                    comparison,
+                    attached_comparison,
                     generated=updated.answer_sections,
                 ),
             },
@@ -1185,10 +1193,11 @@ def _comparison_answer_sections(
         item.text for item in comparison.common_facts[:1]
         if item.text not in summary
     ]
-    interpretation = [
-        item.text
-        for item in comparison.different_interpretations[:2]
-    ]
+    interpretation = _comparison_news_interpretation(
+        comparison,
+        generated=generated,
+    )
+    inference = []
     if (
         comparison.support_summary
         and (
@@ -1199,13 +1208,64 @@ def _comparison_answer_sections(
             )
         )
     ):
-        interpretation.append(comparison.support_summary)
+        inference.append(comparison.support_summary)
     uncertainty = list(comparison.missing_evidence[:2])
     return AnswerSections(
         summary=summary,
         facts=facts,
         interpretation=interpretation,
+        inference=inference,
         uncertainty=uncertainty,
+    )
+
+
+def _comparison_news_interpretation(
+    comparison: PublicEvidenceComparison,
+    *,
+    generated: AnswerSections,
+) -> list[str]:
+    generated_items = [
+        _clean_comparison_summary(item)
+        for item in generated.interpretation[:2]
+        if _clean_comparison_summary(item)
+    ]
+    if generated_items:
+        return [_connect_comparison_sentences(generated_items)]
+    return [
+        _connect_comparison_sentences(
+            [
+                item.text
+                for item in comparison.different_interpretations[:2]
+            ]
+        )
+    ] if comparison.different_interpretations else []
+
+
+def _connect_comparison_sentences(items: list[str]) -> str:
+    canonical = [
+        item.strip()
+        for item in items
+        if isinstance(item, str) and item.strip()
+    ]
+    if not canonical:
+        return ""
+    if len(canonical) == 1:
+        return _ensure_comparison_synthesis(canonical[0])
+    first = canonical[0].rstrip()
+    if first.endswith("."):
+        first = first[:-1]
+    second = canonical[1].strip()
+    return _ensure_comparison_synthesis(f"{first}. 반면 {second}")
+
+
+def _ensure_comparison_synthesis(value: str) -> str:
+    canonical = value.strip()
+    if "즉" in canonical:
+        return canonical
+    canonical = canonical.rstrip(".")
+    return (
+        f"{canonical}. 즉 같은 사건을 다루더라도 기사마다 강조한 "
+        "지점이 달랐습니다."
     )
 
 

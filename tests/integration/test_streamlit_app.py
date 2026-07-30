@@ -228,9 +228,10 @@ def test_app_renders_comparison_conclusion_and_detailed_panel() -> None:
     )
     for expected in (
         "공통으로 확인된 사실",
-        "기사마다 다르게 강조한 내용",
-        "증권사 리포트에서 보는 관점",
-        "DART에서 확인되는 공식 배경",
+        "뉴스가 다르게 본 점",
+        "뉴스와 연결되는 리포트 배경",
+        "DART가 확인해 주는 범위",
+        "자료를 함께 보면",
     ):
         assert expected in rendered
     assert "참고한 자료" not in rendered

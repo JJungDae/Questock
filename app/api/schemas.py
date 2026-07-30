@@ -258,6 +258,7 @@ class PublicDisclosureLink(PublicModel):
 
 
 class PublicEvidenceComparison(PublicModel):
+    answer_integrated: bool = False
     comparison_status: Literal[
         "coverage_only",
         "background_linked",

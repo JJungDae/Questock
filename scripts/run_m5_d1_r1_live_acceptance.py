@@ -74,6 +74,7 @@ async def _run() -> int:
             *response.answer_sections.summary,
             *response.answer_sections.facts,
             *response.answer_sections.interpretation,
+            *response.answer_sections.inference,
             *response.answer_sections.uncertainty,
         )
         body = "\n".join(body_items)
@@ -99,10 +100,10 @@ async def _run() -> int:
             and bool(comparison.different_interpretations)
             and comparison.support_summary is not None
             and comparison.common_facts[0].text in body
-            and all(
-                item.text in body
-                for item in comparison.different_interpretations
-            )
+            and len(response.answer_sections.interpretation) == 1
+            and "전자신문" in response.answer_sections.interpretation[0]
+            and "매일신문" in response.answer_sections.interpretation[0]
+            and "반면" in response.answer_sections.interpretation[0]
             and comparison.support_summary in body
             and future_evidence_count == 0
             and report_url_count == 0

@@ -5,6 +5,7 @@ import json
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+from app.answer.models import AnswerSections
 from app.api.schemas import ChatRequest
 from app.llm.base import (
     LLMRequest,
@@ -14,7 +15,10 @@ from app.llm.base import (
 )
 from app.runtime import RuntimeConfig, build_runtime
 from app.services.service_snapshot import SERVICE_SNAPSHOT_ID
-from app.ui.projections import project_evidence_comparison
+from app.ui.projections import (
+    project_baseline_answer,
+    project_evidence_comparison,
+)
 
 SEOUL_TZ = ZoneInfo("Asia/Seoul")
 
@@ -52,6 +56,18 @@ class _ComparisonLLM:
                         "section": "summary",
                         "text": snippet,
                         "evidence_ids": ["E1"],
+                    },
+                    {
+                        "claim_id": "comparison-interpretation",
+                        "section": "interpretation",
+                        "text": (
+                            "전자신문은 영업이익 감소와 당일 주가 반응을 "
+                            "중심으로 설명했습니다. 반면 매일신문은 판매 "
+                            "감소와 관세·원재료 부담을 실적 부진의 배경으로 "
+                            "강조했습니다. 즉 전자는 시장 반응을, 후자는 "
+                            "실적 부진의 원인을 더 강조했습니다."
+                        ),
+                        "evidence_ids": ["E3", "E4"],
                     }
                 ]
             },
@@ -88,6 +104,22 @@ def test_recorded_runtime_attaches_cited_temporal_comparison() -> None:
 
     comparison = response.evidence_comparison
     assert comparison is not None
+    assert not comparison.answer_integrated
+    general_view = project_baseline_answer(
+        response.model_copy(
+            update={
+                "answer_sections": AnswerSections(
+                    summary=["일반 답변"],
+                    interpretation=["일반적인 중요성 설명"],
+                )
+            },
+            deep=True,
+        )
+    )
+    assert ("interpretation", "왜 중요한가") in {
+        (item.key, item.title)
+        for item in general_view.cards
+    }
     assert all(
         source.published_at <= cutoff
         for source in comparison.article_sources
@@ -145,6 +177,7 @@ def test_explicit_repetition_question_is_answered_by_comparison_result() -> None
     )
 
     assert response.evidence_comparison is not None
+    assert response.evidence_comparison.answer_integrated
     assert "같은 주제의 사건 묶음" in (
         response.answer_sections.summary[0]
     )
@@ -187,6 +220,7 @@ def test_generic_repetition_answer_uses_selected_event_article_links() -> None:
 
     comparison = response.evidence_comparison
     assert comparison is not None
+    assert comparison.answer_integrated
     assert response.evidence
     assert {
         item.source_url for item in response.evidence
@@ -281,14 +315,33 @@ def test_explicit_evidence_crosscheck_attaches_matching_event() -> None:
     )
 
     assert response.evidence_comparison is not None
+    assert response.evidence_comparison.answer_integrated
     comparison = response.evidence_comparison
     assert comparison.common_facts
     assert comparison.different_interpretations
     assert "2분기 실적 부진" in response.answer_sections.summary[0]
-    assert response.answer_sections.interpretation
+    assert len(response.answer_sections.interpretation) == 1
+    assert "반면" in response.answer_sections.interpretation[0]
+    comparison_view = project_baseline_answer(response)
+    assert ("interpretation", "뉴스가 다르게 본 점") in {
+        (item.key, item.title)
+        for item in comparison_view.cards
+    }
+    assert ("inference", "자료를 함께 보면") in {
+        (item.key, item.title)
+        for item in comparison_view.cards
+    }
     assert any(
         "DART" in item
-        for item in response.answer_sections.interpretation
+        for item in response.answer_sections.inference
+    )
+    assert response.answer_sections.inference == [
+        comparison.support_summary
+    ]
+    assert any(
+        "공식 발표 이후" in item.text
+        and "구체적인 실적 수치" in item.text
+        for item in comparison.disclosure_links
     )
 
 
@@ -367,14 +420,20 @@ def test_matching_comparison_uses_low_randomness_gemini_once(
     )
     assert "뉴스 공통 사실:" in rendered
     assert "기사별 강조점 차이:" in rendered
+    assert "생산 차질·환율·인센티브" not in rendered
+    assert "DART에서는 7월 23일" not in rendered
     assert response.diagnostics_public.generation.mode == "llm"
     assert response.diagnostics_public.generation.llm_status == "ok"
     assert response.evidence_comparison is not None
+    assert response.evidence_comparison.answer_integrated
     assert response.evidence_comparison.common_facts
     assert response.evidence_comparison.different_interpretations
     assert response.evidence_comparison.support_summary in (
-        response.answer_sections.interpretation
+        response.answer_sections.inference
     )
+    assert len(response.answer_sections.interpretation) == 1
+    assert "반면" in response.answer_sections.interpretation[0]
+    assert "즉" in response.answer_sections.interpretation[0]
 
 
 def test_matching_comparison_keeps_cited_fallback_when_gemini_times_out(
@@ -416,12 +475,19 @@ def test_matching_comparison_keeps_cited_fallback_when_gemini_times_out(
     assert "llm_generation_degraded" in response.warnings
     comparison = response.evidence_comparison
     assert comparison is not None
+    assert comparison.answer_integrated
     assert comparison.common_facts[0].text in (
         response.answer_sections.summary
     )
-    assert comparison.different_interpretations[0].text in (
-        response.answer_sections.interpretation
-    )
+    assert len(response.answer_sections.interpretation) == 1
+    comparison_text = response.answer_sections.interpretation[0]
+    assert "전자신문" in comparison_text
+    assert "매일신문" in comparison_text
+    assert "반면" in comparison_text
+    assert "즉" in comparison_text
+    assert response.answer_sections.inference == [
+        comparison.support_summary
+    ]
 
 
 def test_public_report_evidence_omits_report_urls() -> None:

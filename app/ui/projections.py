@@ -153,6 +153,10 @@ _ANSWER_CARDS = (
     ("inference", "근거를 바탕으로 보면"),
     ("uncertainty", "앞으로 확인할 점"),
 )
+_COMPARISON_ANSWER_CARD_TITLES = {
+    "interpretation": "뉴스가 다르게 본 점",
+    "inference": "자료를 함께 보면",
+}
 
 
 class ProjectionError(RuntimeError):
@@ -242,6 +246,11 @@ def project_baseline_answer(response: ChatResponse) -> BaselineAnswerView:
     }
     cards = []
     for key, title in _ANSWER_CARDS:
+        if (
+            response.evidence_comparison is not None
+            and response.evidence_comparison.answer_integrated
+        ):
+            title = _COMPARISON_ANSWER_CARD_TITLES.get(key, title)
         values = tuple(
             _safe_text(item)
             for item in getattr(response.answer_sections, key)
