@@ -1,11 +1,11 @@
 # QUESTOCK SOURCE OF TRUTH INDEX
 
-> 기준일: 2026-07-29
-> 기준 branch: canonical `main`; deployed runtime release `459e0dd07d67a1e5791c74914e173b3d688eb75a`
+> 기준일: 2026-07-30
+> 기준 branch: canonical `main`; deployed runtime release `ea832bc82155e6182f49de2179f192997733da32`
 > Pre-B6 code baseline: `d937d625e26495a3ee8c5a5b2c327dfbd2512ea9`
 > Docs update/review base: `f5b3c646ec8696ac5c70d0d700e6fd729fd83bc4`
 > B9 planning base: `b9ddf7461306d16cf1da14634ce458050d78f7bc`
-> 상태: `B9 PASS / M4 Gate PASS / FSC-0~FSC-4 PASS / complete; M5-01 PASS / DEPLOYED / COMPLETE; M5-01-HR1 PASS / DEPLOYED / COMPLETE; M5-D1 PASS / DEPLOYED / COMPLETE; M5-E1 PASS / DEPLOYED / COMPLETE at 459e0dd07d67a1e5791c74914e173b3d688eb75a`
+> 상태: `B9 PASS / M4 Gate PASS / FSC-0~FSC-4 PASS / complete; M5-01 PASS / DEPLOYED / COMPLETE; M5-01-HR1 PASS / DEPLOYED / COMPLETE; M5-D1 PASS / DEPLOYED / COMPLETE; M5-E1 PASS / DEPLOYED / COMPLETE; M5-D1-R1 PASS / DEPLOYED / COMPLETE at ea832bc82155e6182f49de2179f192997733da32`
 
 ## 1. 목적
 
@@ -64,7 +64,8 @@ Task Card 사실 동기화 완료, B6-0에서 상태 확인
 
 현재 완료 bundle:
 B9, First Service Completion, M5-01, M5-01-HR1, M5-D1,
-M5-E1 quality remediation and evaluation gate
+M5-E1 quality remediation and evaluation gate, M5-D1-R1 comparison
+answer remediation
 
 M5-D1 Evidence Cross-check:
 M5-D1-0~M5-D1-6 `PASS / DEPLOYED / COMPLETE`;
@@ -88,6 +89,16 @@ PR #28 and follow-up PR #29 merged;
 GCE run 30390955630 deployed release
 459e0dd07d67a1e5791c74914e173b3d688eb75a;
 production UI verification PASS
+
+M5-D1-R1 comparison answer remediation:
+PR #31 merged at `ea832bc82155e6182f49de2179f192997733da32`;
+quality-gate run `30512798358` PASS;
+GCE deployment run `30512924354` PASS;
+API/UI health and 7-scenario release smoke PASS;
+Gemini comparison live acceptance 5/5 PASS;
+production browser verification PASS for the Hyundai earnings comparison,
+input reset, loading completion, detailed news/DART links, and public report
+link suppression; rollback `NOT_RUN - deployment passed`
 
 M5-E1 실행 기준:
 docs/TASK_CARDS/M5-E1-deepeval-quality-evaluation.md
