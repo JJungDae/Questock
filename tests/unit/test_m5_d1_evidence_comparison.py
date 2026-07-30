@@ -58,10 +58,15 @@ def test_hbm5_comparison_is_temporal_and_lineage_conservative() -> None:
         source.published_at <= cutoff
         for source in comparison.article_sources
     )
-    assert comparison.different_interpretations
+    assert comparison.different_interpretations == []
+    assert comparison.report_perspectives
     assert all(
         item.source.source_type == "research_report"
-        for item in comparison.different_interpretations
+        for item in comparison.report_perspectives
+    )
+    assert all(
+        item.source.source_url is None
+        for item in comparison.report_perspectives
     )
     assert len(comparison.disclosure_links) == 1
     assert "HBM4" in comparison.disclosure_links[0].text
@@ -102,7 +107,7 @@ def test_public_sidecar_contains_all_verified_report_perspectives() -> None:
         ).read_text(encoding="utf-8")
     )
 
-    assert payload["schema_version"] == "m5-d1-evidence-comparison-v2"
+    assert payload["schema_version"] == "m5-d1-evidence-comparison-v3"
     assert len(payload["event_clusters"]) == 7
     assert sum(
         len(cluster["article_sources"])
@@ -125,6 +130,14 @@ def test_public_sidecar_contains_all_verified_report_perspectives() -> None:
     assert "C:\\" not in serialized
     assert "page_text" not in serialized
     assert "api_key" not in serialized.casefold()
+    hyundai = next(
+        cluster
+        for cluster in payload["event_clusters"]
+        if cluster["event_label"].startswith("현대차, 7%대 약세")
+    )
+    assert hyundai["common_facts"]
+    assert len(hyundai["different_interpretations"]) == 2
+    assert hyundai["support_summary"]
 
 
 def test_event_links_require_event_specific_report_and_disclosure_topics() -> None:
@@ -147,6 +160,8 @@ def test_event_links_require_event_specific_report_and_disclosure_topics() -> No
     )
 
     assert hyundai is not None
+    assert hyundai.report_perspectives
+    assert hyundai.common_facts
     assert hyundai.different_interpretations
     assert any(
         item.source.title == "연결재무제표기준영업(잠정)실적(공정공시)"
@@ -154,7 +169,7 @@ def test_event_links_require_event_specific_report_and_disclosure_topics() -> No
         if item.source is not None
     )
     assert broadcom is not None
-    assert broadcom.different_interpretations == []
+    assert broadcom.report_perspectives == []
     assert len(broadcom.disclosure_links) == 1
     assert broadcom.disclosure_links[0].role == "no_link"
     assert broadcom.disclosure_links[0].source is None
@@ -165,7 +180,7 @@ def test_cutoff_ranking_uses_latest_eligible_article(
     tmp_path: Path,
 ) -> None:
     payload = {
-        "schema_version": "m5-d1-evidence-comparison-v2",
+        "schema_version": "m5-d1-evidence-comparison-v3",
         "built_at": "2026-07-28T00:00:00Z",
         "source_inventory_sha256": "0" * 64,
         "report_inventory_sha256": "1" * 64,
@@ -236,4 +251,7 @@ def _cluster(
         "security_match_basis": "title_alias_only",
         "cluster_basis": "deterministic_title_similarity",
         "review_status": "conservative_automatic",
+        "common_facts": [],
+        "different_interpretations": [],
+        "support_summary": None,
     }

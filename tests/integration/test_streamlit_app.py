@@ -9,8 +9,10 @@ from streamlit.testing.v1 import AppTest
 
 from app.api.schemas import ChatRequest
 from app.core.models import Evidence
+from app.runtime import RuntimeConfig, build_runtime
 from app.services.chat_service import ChatService
 from app.services.market_snapshot_store import RecordedMarketSnapshotStore
+from app.services.service_snapshot import SERVICE_SNAPSHOT_ID
 
 NOW = datetime(2026, 7, 25, 3, tzinfo=UTC)
 
@@ -48,6 +50,31 @@ def _glossary_response():
             ChatRequest(
                 message="PER이 뭐야?",
                 session_id="streamlit-glossary",
+            )
+        )
+    )
+
+
+def _comparison_response():
+    state = build_runtime(
+        config=RuntimeConfig(
+            source_mode="recorded",
+            snapshot_id=SERVICE_SNAPSHOT_ID,
+            llm_mode="disabled",
+        )
+    )
+    return asyncio.run(
+        state.chat_service.chat(
+            ChatRequest(
+                message="현대차 실적 관련 최근 뉴스 근거를 대조해줘.",
+                session_id="streamlit-comparison",
+                as_of=datetime(
+                    2026,
+                    7,
+                    27,
+                    21,
+                    tzinfo=ZoneInfo("Asia/Seoul"),
+                ),
             )
         )
     )
@@ -179,6 +206,37 @@ def test_app_repeated_submissions_leave_no_loading_spinner() -> None:
     _submit(app, "삼성전자 위험 요인")
     assert not app.get("spinner")
     assert len(transport.requests) == 2
+
+
+def test_app_renders_comparison_conclusion_and_detailed_panel() -> None:
+    response = _comparison_response()
+    transport = FakeTransport(response)
+    app = AppTest.from_function(_app, args=(transport,)).run()
+    app.selectbox[0].select("2026-07-27").run()
+    app.selectbox[1].select("전체 장 종료 후 (21:00)").run()
+
+    _submit(app, "현대차 실적 관련 최근 뉴스 근거를 대조해줘.")
+
+    assert not app.exception
+    labels = [item.label for item in app.expander]
+    assert "근거 대조 보기" in labels
+    rendered = "\n".join(
+        [
+            *(item.value for item in app.markdown),
+            *(item.value for item in app.text),
+        ]
+    )
+    for expected in (
+        "공통으로 확인된 사실",
+        "기사마다 다르게 강조한 내용",
+        "증권사 리포트에서 보는 관점",
+        "DART에서 확인되는 공식 배경",
+    ):
+        assert expected in rendered
+    assert "참고한 자료" not in rendered
+    for perspective in response.evidence_comparison.report_perspectives:
+        assert perspective.source.source_url is None
+        assert perspective.source.publisher in rendered
 
 
 def test_app_renders_glossary_cards_source_detail_and_fixed_fallback() -> None:

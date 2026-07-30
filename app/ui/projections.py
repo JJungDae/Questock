@@ -215,7 +215,7 @@ class ComparisonSourceView:
 @dataclass(frozen=True)
 class ComparisonItemView:
     text: str
-    source: ComparisonSourceView | None
+    sources: tuple[ComparisonSourceView, ...]
     source_locator: str | None
 
 
@@ -226,7 +226,8 @@ class EvidenceComparisonView:
     article_count_text: str | None
     articles: tuple[ComparisonSourceView, ...]
     common_facts: tuple[ComparisonItemView, ...]
-    perspectives: tuple[ComparisonItemView, ...]
+    news_interpretations: tuple[ComparisonItemView, ...]
+    report_perspectives: tuple[ComparisonItemView, ...]
     disclosures: tuple[ComparisonItemView, ...]
     limitations: tuple[str, ...]
 
@@ -317,33 +318,42 @@ def project_evidence_comparison(
     common_facts = tuple(
         ComparisonItemView(
             text=_safe_text(item.text),
-            source=next(
-                (
+            sources=tuple(
                     source_by_id[source_id]
                     for source_id in item.source_ids
                     if source_id in source_by_id
-                ),
-                None,
             ),
             source_locator=None,
         )
         for item in comparison.common_facts
     )
-    perspectives = tuple(
+    news_interpretations = tuple(
         ComparisonItemView(
             text=_safe_text(item.text),
-            source=_project_comparison_source(item.source),
-            source_locator=_safe_text(item.source_locator),
+            sources=tuple(
+                source_by_id[source_id]
+                for source_id in item.source_ids
+                if source_id in source_by_id
+            ),
+            source_locator=None,
         )
         for item in comparison.different_interpretations
+    )
+    report_perspectives = tuple(
+        ComparisonItemView(
+            text=_safe_text(item.text),
+            sources=(_project_comparison_source(item.source),),
+            source_locator=_safe_text(item.source_locator),
+        )
+        for item in comparison.report_perspectives
     )
     disclosures = tuple(
         ComparisonItemView(
             text=_safe_text(item.text),
-            source=(
-                _project_comparison_source(item.source)
+            sources=(
+                (_project_comparison_source(item.source),)
                 if item.source is not None
-                else None
+                else ()
             ),
             source_locator=(
                 _safe_text(item.source_locator)
@@ -374,7 +384,8 @@ def project_evidence_comparison(
         ),
         articles=articles,
         common_facts=common_facts,
-        perspectives=perspectives,
+        news_interpretations=news_interpretations,
+        report_perspectives=report_perspectives,
         disclosures=disclosures,
         limitations=tuple(
             _safe_text(item)
@@ -666,7 +677,11 @@ def _project_source(evidence: Evidence) -> BaselineSourceView:
         ),
         snippet=_safe_text(evidence.snippet),
         details=tuple(details),
-        link_url=_safe_http_url(evidence.source_url),
+        link_url=(
+            None
+            if evidence.source_type == "research_report"
+            else _safe_http_url(evidence.source_url)
+        ),
     )
 
 

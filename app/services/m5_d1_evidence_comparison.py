@@ -9,6 +9,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from app.api.schemas import (
+    PublicComparisonClaim,
     PublicComparisonLineageSummary,
     PublicComparisonPerspective,
     PublicComparisonSource,
@@ -45,6 +46,14 @@ _STOP_TOKENS = frozenset(
         "해줘",
         "관련",
         "대한",
+        "근거",
+        "대조",
+        "대조해줘",
+        "비교",
+        "비교해줘",
+        "반복",
+        "기사",
+        "보도",
     }
 )
 _EVENT_QUERY_MARKERS = (
@@ -104,6 +113,16 @@ class StoredComparisonSource(_StoredModel):
     source_url: str = Field(min_length=1, max_length=2000)
 
 
+class StoredComparisonClaim(_StoredModel):
+    text: str = Field(min_length=1, max_length=1000)
+    source_ids: list[str] = Field(min_length=1, max_length=20)
+    corroboration_status: Literal[
+        "independently_corroborated",
+        "same_lineage_repeated",
+        "lineage_unknown",
+    ]
+
+
 class StoredEventCluster(_StoredModel):
     event_id: str = Field(min_length=1, max_length=128)
     security_id: Literal["KRX:005930", "KRX:000660", "KRX:005380"]
@@ -118,6 +137,15 @@ class StoredEventCluster(_StoredModel):
     security_match_basis: Literal["title_alias_only"]
     cluster_basis: Literal["deterministic_title_similarity"]
     review_status: Literal["labeled", "conservative_automatic"]
+    common_facts: list[StoredComparisonClaim] = Field(
+        default_factory=list,
+        max_length=20,
+    )
+    different_interpretations: list[StoredComparisonClaim] = Field(
+        default_factory=list,
+        max_length=20,
+    )
+    support_summary: str | None = Field(default=None, max_length=1000)
 
 
 class StoredReportPerspective(_StoredModel):
@@ -144,7 +172,7 @@ class StoredDisclosureBackground(_StoredModel):
 
 
 class StoredComparisonPayload(_StoredModel):
-    schema_version: Literal["m5-d1-evidence-comparison-v2"]
+    schema_version: Literal["m5-d1-evidence-comparison-v3"]
     built_at: datetime
     source_inventory_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     report_inventory_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
@@ -182,20 +210,33 @@ class M5D1EvidenceComparisonStore:
             return None
         cutoff = as_of.astimezone(UTC)
         query_terms = _terms(query)
-        recognized_event_terms = query_terms.intersection(
+        security_clusters = [
+            cluster
+            for cluster in self._payload.event_clusters
+            if cluster.security_id == security_id
+        ]
+        globally_recognized_event_terms = query_terms.intersection(
             term
             for cluster in self._payload.event_clusters
             for term in cluster.event_terms
         )
+        recognized_event_terms = query_terms.intersection(
+            term
+            for cluster in security_clusters
+            for term in cluster.event_terms
+        )
+        if (
+            globally_recognized_event_terms
+            and not recognized_event_terms
+        ):
+            return None
         if not recognized_event_terms and not any(
             marker in query.casefold()
             for marker in _EVENT_QUERY_MARKERS
         ):
             return None
         candidates: list[tuple[float, StoredEventCluster]] = []
-        for cluster in self._payload.event_clusters:
-            if cluster.security_id != security_id:
-                continue
+        for cluster in security_clusters:
             eligible = [
                 item
                 for item in cluster.article_sources
@@ -222,6 +263,21 @@ class M5D1EvidenceComparisonStore:
             if item.published_at.astimezone(UTC) <= cutoff
         ]
         event_terms = set(selected.event_terms)
+        eligible_source_ids = {item.source_id for item in articles}
+        common_facts = [
+            PublicComparisonClaim.model_validate(
+                item.model_dump(mode="python")
+            )
+            for item in selected.common_facts
+            if set(item.source_ids).issubset(eligible_source_ids)
+        ]
+        different_interpretations = [
+            PublicComparisonClaim.model_validate(
+                item.model_dump(mode="python")
+            )
+            for item in selected.different_interpretations
+            if set(item.source_ids).issubset(eligible_source_ids)
+        ]
         perspectives = self._select_perspectives(
             security_id=security_id,
             event_terms=event_terms,
@@ -259,18 +315,26 @@ class M5D1EvidenceComparisonStore:
                 confirmed_republication_count=0,
                 unknown_count=len(articles),
             ),
-            common_facts=[],
-            different_interpretations=perspectives,
+            common_facts=common_facts,
+            different_interpretations=different_interpretations,
+            report_perspectives=perspectives,
+            support_summary=selected.support_summary,
             unconfirmed_claims=[],
-            missing_evidence=[
-                (
-                    "현재 수집본은 기사 제목 중심이므로 공통 사실이나 "
-                    "기사별 해석 차이는 단정하지 않았습니다."
-                ),
+            missing_evidence=(
+                [
+                    (
+                        "현재 수집본은 기사 제목 중심이므로 공통 사실이나 "
+                        "기사별 해석 차이는 단정하지 않았습니다."
+                    )
+                ]
+                if not common_facts and not different_interpretations
+                else []
+            )
+            + [
                 (
                     "기사 원출처 관계를 확인하지 못해 매체 수를 독립 "
                     "근거 수로 계산하지 않았습니다."
-                ),
+                )
             ],
             disclosure_links=disclosure_links,
         )
@@ -313,7 +377,10 @@ class M5D1EvidenceComparisonStore:
             PublicComparisonPerspective(
                 text=item.text,
                 source=PublicComparisonSource.model_validate(
-                    item.source.model_dump(mode="python")
+                    {
+                        **item.source.model_dump(mode="python"),
+                        "source_url": None,
+                    }
                 ),
                 source_locator=item.source_locator,
                 actual_or_estimate=item.actual_or_estimate,
@@ -404,12 +471,30 @@ class M5D1EvidenceComparisonStore:
                 raise M5D1EvidenceComparisonError(
                     "M5-D1 comparison data is invalid"
                 )
+            cluster_source_ids = {
+                source.source_id for source in cluster.article_sources
+            }
             for source in cluster.article_sources:
                 if source.source_type != "news":
                     raise M5D1EvidenceComparisonError(
                         "M5-D1 comparison data is invalid"
                     )
                 source_ids.add(source.source_id)
+            for claim in cluster.common_facts:
+                if (
+                    len(claim.source_ids) < 2
+                    or not set(claim.source_ids).issubset(
+                        cluster_source_ids
+                    )
+                ):
+                    raise M5D1EvidenceComparisonError(
+                        "M5-D1 comparison data is invalid"
+                    )
+            for claim in cluster.different_interpretations:
+                if not set(claim.source_ids).issubset(cluster_source_ids):
+                    raise M5D1EvidenceComparisonError(
+                        "M5-D1 comparison data is invalid"
+                    )
         for item in self._payload.report_perspectives:
             if (
                 item.source.source_type != "research_report"

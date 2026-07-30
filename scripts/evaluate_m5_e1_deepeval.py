@@ -158,7 +158,11 @@ def _retrieval_context(response: ChatResponse) -> list[str]:
                 f"뉴스 제목 | {source.title} | "
                 f"published_at={source.published_at.isoformat()}"
             )
+        for item in comparison.common_facts:
+            contexts.append(f"뉴스 공통 사실 | {item.text}")
         for item in comparison.different_interpretations:
+            contexts.append(f"기사별 강조점 차이 | {item.text}")
+        for item in comparison.report_perspectives:
             contexts.append(
                 f"검증 리포트 관점 | {item.source.title} | {item.text}"
             )
@@ -314,7 +318,7 @@ def _security_id(response: dict[str, Any]) -> str | None:
 
 def _comparison_sources(comparison: dict[str, Any]) -> list[dict[str, Any]]:
     output = list(comparison.get("article_sources", []))
-    for perspective in comparison.get("different_interpretations", []):
+    for perspective in comparison.get("report_perspectives", []):
         source = perspective.get("source")
         if isinstance(source, dict):
             output.append(source)
@@ -393,7 +397,10 @@ def _case_hard_gate(
         comparison_conservative = (
             lineage["confirmed_independent_count"] == 0
             and lineage["confirmed_republication_count"] == 0
-            and not comparison["common_facts"]
+            and all(
+                item.get("corroboration_status") == "lineage_unknown"
+                for item in comparison["common_facts"]
+            )
         )
     expected_comparison = case.get("expected_comparison", False)
     citation_summary = response["diagnostics_public"]["citation"]

@@ -1,5 +1,5 @@
 {
-  "built_at": "2026-07-28T12:51:40.289001Z",
+  "built_at": "2026-07-30T02:40:42.448910Z",
   "disclosure_backgrounds": [
     {
       "link_basis": "verified_body_fact",
@@ -710,6 +710,32 @@
         }
       ],
       "cluster_basis": "deterministic_title_similarity",
+      "common_facts": [
+        {
+          "corroboration_status": "lineage_unknown",
+          "source_ids": [
+            "news:54d45d1b3ade2771394ac93e5788e1191b16cf4edf9f42b9c600041796acddc2",
+            "news:f47496bb7df24c6a4ebec2ff2b724f1d032585ccc546abdbcd57e002059d979f"
+          ],
+          "text": "두 기사는 모두 현대차의 2분기 실적 부진과 7월 24일 주가 약세를 함께 다뤘습니다."
+        }
+      ],
+      "different_interpretations": [
+        {
+          "corroboration_status": "lineage_unknown",
+          "source_ids": [
+            "news:54d45d1b3ade2771394ac93e5788e1191b16cf4edf9f42b9c600041796acddc2"
+          ],
+          "text": "전자신문은 2분기 영업이익 감소와 당일 주가 하락 폭을 중심으로 설명했습니다."
+        },
+        {
+          "corroboration_status": "lineage_unknown",
+          "source_ids": [
+            "news:f47496bb7df24c6a4ebec2ff2b724f1d032585ccc546abdbcd57e002059d979f"
+          ],
+          "text": "매일신문은 판매 감소와 관세·원재료 부담을 실적 부진의 배경으로 강조했습니다."
+        }
+      ],
       "event_id": "event:d1208b8f7be0ff30559da3f58e3c4416fa55c349d271ea80f09581b190b14273",
       "event_label": "현대차, 7%대 약세…2분기 실적 부진 여파",
       "event_terms": [
@@ -721,7 +747,8 @@
       "last_published_at": "2026-07-24T05:53:00Z",
       "review_status": "conservative_automatic",
       "security_id": "KRX:005380",
-      "security_match_basis": "title_alias_only"
+      "security_match_basis": "title_alias_only",
+      "support_summary": "증권사 리포트는 생산 차질·환율·인센티브·원재료 부담을 실적 부진의 배경으로 제시하며, DART에서는 7월 23일 잠정실적 공시 제출이 확인됩니다."
     },
     {
       "article_sources": [
@@ -743,6 +770,8 @@
         }
       ],
       "cluster_basis": "deterministic_title_similarity",
+      "common_facts": [],
+      "different_interpretations": [],
       "event_id": "event:3a7a2431d4ccaa0f0eff741368c6edf2d104eb9a1449173b3df246e9df89259d",
       "event_label": "현대차·기아, 관세 이어 파업 부담...협력사까지 긴장",
       "event_terms": [
@@ -753,7 +782,8 @@
       "last_published_at": "2026-07-25T08:00:00Z",
       "review_status": "conservative_automatic",
       "security_id": "KRX:005380",
-      "security_match_basis": "title_alias_only"
+      "security_match_basis": "title_alias_only",
+      "support_summary": null
     },
     {
       "article_sources": [
@@ -775,6 +805,8 @@
         }
       ],
       "cluster_basis": "deterministic_title_similarity",
+      "common_facts": [],
+      "different_interpretations": [],
       "event_id": "event:2e981ba3b23f78c8a49dd02f56965abe28c86843ee08bcce741981d7763fecf0",
       "event_label": "현대차, 2분기 실적 부담에도 로봇 성장성 부각…우려 넘어 재평가 기대",
       "event_terms": [
@@ -786,7 +818,8 @@
       "last_published_at": "2026-07-26T04:20:00Z",
       "review_status": "conservative_automatic",
       "security_id": "KRX:005380",
-      "security_match_basis": "title_alias_only"
+      "security_match_basis": "title_alias_only",
+      "support_summary": null
     },
     {
       "article_sources": [
@@ -808,6 +841,8 @@
         }
       ],
       "cluster_basis": "deterministic_title_similarity",
+      "common_facts": [],
+      "different_interpretations": [],
       "event_id": "event:288152ec115e7c47de6ff6844f9be2f68cb52a3a95e895241973ce110f606e16",
       "event_label": "현대차그룹, 엔비디아·웨이모·구글과 AI 연합전선…로봇·자율주행 사...",
       "event_terms": [
@@ -822,7 +857,8 @@
       "last_published_at": "2026-07-26T03:20:00Z",
       "review_status": "conservative_automatic",
       "security_id": "KRX:005380",
-      "security_match_basis": "title_alias_only"
+      "security_match_basis": "title_alias_only",
+      "support_summary": null
     },
     {
       "article_sources": [
@@ -844,6 +880,8 @@
         }
       ],
       "cluster_basis": "deterministic_title_similarity",
+      "common_facts": [],
+      "different_interpretations": [],
       "event_id": "event:9eb5d1970795820cab23cbac71ec8eda7bea1aea8a0c061e224ae562f100434f",
       "event_label": "로봇 대장주라더니…현대차 목표가 하향 리포트 쏟아졌다",
       "event_terms": [
@@ -854,7 +892,8 @@
       "last_published_at": "2026-07-26T06:26:00Z",
       "review_status": "conservative_automatic",
       "security_id": "KRX:005380",
-      "security_match_basis": "title_alias_only"
+      "security_match_basis": "title_alias_only",
+      "support_summary": null
     },
     {
       "article_sources": [
@@ -1076,6 +1115,8 @@
         }
       ],
       "cluster_basis": "deterministic_title_similarity",
+      "common_facts": [],
+      "different_interpretations": [],
       "event_id": "event:4466ae4ae13280dfa8ebf33ef50bd51f0d8ec9b51f1d8ef276856459cfa799f8",
       "event_label": "삼성전자 \"HBM5에 GAA 2나노 적용…속도 50% 향상\"",
       "event_terms": [
@@ -1113,7 +1154,8 @@
       "last_published_at": "2026-07-27T09:34:00Z",
       "review_status": "conservative_automatic",
       "security_id": "KRX:005930",
-      "security_match_basis": "title_alias_only"
+      "security_match_basis": "title_alias_only",
+      "support_summary": null
     },
     {
       "article_sources": [
@@ -1167,6 +1209,8 @@
         }
       ],
       "cluster_basis": "deterministic_title_similarity",
+      "common_facts": [],
+      "different_interpretations": [],
       "event_id": "event:a81b440aafcb9e3552ea0e1c3eccd254e63cf04a4e00ce1624993b6c05911a09",
       "event_label": "삼성전자·브로드컴, 2000억 달러 규모 AI 반도체 전략적 협력",
       "event_terms": [
@@ -1182,7 +1226,8 @@
       "last_published_at": "2026-07-27T08:52:00Z",
       "review_status": "conservative_automatic",
       "security_id": "KRX:005930",
-      "security_match_basis": "title_alias_only"
+      "security_match_basis": "title_alias_only",
+      "support_summary": null
     }
   ],
   "report_inventory_sha256": "b7e2b7f332c8aa3e07fca05693531726b3cd3e6796ec197015310a8853aa5363",
@@ -1511,6 +1556,6 @@
       "verified_against_source": true
     }
   ],
-  "schema_version": "m5-d1-evidence-comparison-v2",
+  "schema_version": "m5-d1-evidence-comparison-v3",
   "source_inventory_sha256": "338f2caed9757ab09024819f9cb333b74754f1d90399ef7869441eacb69c3124"
 }

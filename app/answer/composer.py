@@ -272,6 +272,9 @@ class AnswerComposer:
                     "configurable": {
                         "timeout_seconds": timeout_seconds,
                         "call_budget": canonical_budget,
+                        "temperature": _generation_temperature(
+                            canonical_question
+                        ),
                     },
                 },
             )
@@ -493,6 +496,7 @@ class AnswerComposer:
         prompt_value: Any,
         config: Mapping[str, Any],
     ) -> dict[str, Any]:
+        configurable = config.get("configurable", {})
         messages = tuple(
             LLMMessage(
                 role="user" if getattr(item, "type", "") == "human" else "system",
@@ -503,8 +507,12 @@ class AnswerComposer:
         request = LLMRequest(
             messages=messages,
             response_schema=StructuredAnswerDraft.model_json_schema(),
+            temperature=(
+                configurable.get("temperature")
+                if isinstance(configurable, Mapping)
+                else None
+            ),
         )
-        configurable = config.get("configurable", {})
         timeout_seconds = (
             configurable.get("timeout_seconds", 8.0)
             if isinstance(configurable, Mapping)
@@ -592,7 +600,40 @@ def _response_style(question: str, plan: QueryPlan) -> str:
         instructions.append(
             "State the actual downside or uncertainty first; do not pad the answer with positive catalysts."
         )
+    if _is_comparison_question(normalized):
+        instructions.append(
+            "This is an evidence-comparison question. Keep the main answer "
+            "to a concise conclusion: state the supported common point, then "
+            "the meaningful difference in emphasis, and one limitation. Do "
+            "not list source titles, URLs, or every supporting detail because "
+            "the service renders those in a separate comparison panel."
+        )
     return " ".join(instructions)
+
+
+def _is_comparison_question(normalized_question: str) -> bool:
+    return any(
+        marker in normalized_question
+        for marker in (
+            "대조",
+            "비교",
+            "같은 사건",
+            "다른 사건",
+            "반복",
+            "재탕",
+            "재인용",
+            "원출처",
+            "독립 기사",
+            "독립 보도",
+            "중복 기사",
+            "중복 보도",
+        )
+    )
+
+
+def _generation_temperature(question: str) -> float | None:
+    normalized = " ".join(question.split()).casefold()
+    return 0.1 if _is_comparison_question(normalized) else None
 
 
 def _boundary_content(value: object) -> str:
