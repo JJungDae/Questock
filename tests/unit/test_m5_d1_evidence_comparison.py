@@ -168,6 +168,12 @@ def test_event_links_require_event_specific_report_and_disclosure_topics() -> No
         for item in hyundai.disclosure_links
         if item.source is not None
     )
+    assert any(
+        "공식 발표 이후" in item.text
+        and "공시 목록 메타데이터" in item.text
+        and "구체적인 실적 수치" in item.text
+        for item in hyundai.disclosure_links
+    )
     assert broadcom is not None
     assert broadcom.report_perspectives == []
     assert len(broadcom.disclosure_links) == 1

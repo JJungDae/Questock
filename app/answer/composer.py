@@ -602,11 +602,16 @@ def _response_style(question: str, plan: QueryPlan) -> str:
         )
     if _is_comparison_question(normalized):
         instructions.append(
-            "This is an evidence-comparison question. Keep the main answer "
-            "to a concise conclusion: state the supported common point, then "
-            "the meaningful difference in emphasis, and one limitation. Do "
-            "not list source titles, URLs, or every supporting detail because "
-            "the service renders those in a separate comparison panel."
+            "This is an evidence-comparison question. Put the supported shared "
+            "point in summary or facts. In interpretation, write exactly one "
+            "connected conversational paragraph that contrasts the meaningful "
+            "difference in emphasis, using transitions such as '반면' and an "
+            "explicit synthesis such as '즉'. Do not emit one separate claim "
+            "per publisher and do not merely list evidence snippets. Include "
+            "one concise limitation in uncertainty when supported. Do not "
+            "mention source titles, URLs, research-report content, disclosure "
+            "content, or every supporting detail because the service renders "
+            "and connects those separately."
         )
     return " ".join(instructions)
 
